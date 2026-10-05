@@ -1,0 +1,634 @@
+{
+  "model": "openai/gpt-6-luna",
+  "set": "governed",
+  "results": [
+    {
+      "kind": "context_incomplete",
+      "status_reasons": [
+        "3 pieces of information missing"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Count the delivery line before posting and compare it with the delivery note and purchase order.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "A shortage of 4 against an ordered quantity of 100 is larger than the allowed tolerance: 2% of 100 is 2, and the smaller of that and 2 units is 2. Therefore, do not post until the shift lead confirms a recount.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "After the shift lead confirms the recount, post the counted quantity\u2014not the ordered quantity\u2014and record the reason for the deviation.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post the goods receipt against the purchase order line. If the WMS shows an error code, follow GUIDE-WMS-003 and do not bypass the error by using a different purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the delivery note is missing or refers to an unknown purchase order, do not unload and inform the shift lead.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the supplier label does not match the delivery note in material number, quantity, or batch or serial number, do not post; move the handling unit to B-02 and inform the shift lead.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Has the shift lead confirmed a recount? Posting a larger deviation must wait for that confirmation.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Is the delivery note present, and does it refer to an open purchase order?",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Does the supplier label match the delivery note for material number, quantity, and batch or serial number?",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "For this larger deviation, the shift lead must confirm the recount before posting.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "After a confirmed short delivery, the shift lead informs purchasing.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 11,
+      "citations": 11,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [
+        "status context_incomplete, expected supported",
+        "unexpected warning: SOP-INB-001 rev 2"
+      ],
+      "case_id": "E-01",
+      "title": "Short delivery, 96 of 100",
+      "passed": false,
+      "seconds": 10.1
+    },
+    {
+      "kind": "context_incomplete",
+      "status_reasons": [
+        "2 pieces of information missing"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not type the batch number in yourself. The passage states: \u201cIf a barcode cannot be scanned, the number may be entered manually only by a shift lead, with a second person checking the entry against the label (four-eyes check).\u201d",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "For batch-managed material, record the batch number from the supplier label before posting the goods receipt.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the material is batch-managed and no batch number is visible on the label, do not post the goods receipt and move the handling unit to blocked area B-02.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the supplier label does not match the delivery note, do not post the goods receipt and move the handling unit to blocked area B-02.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Establish whether the material is batch-managed and whether a batch number is visible on the label; these facts determine whether the missing-number stop and blocking procedure applies.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Before posting, establish whether the supplier label matches the delivery note in material number, quantity, and batch or serial number.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "If the material is batch-managed and no batch number is visible, inform the shift lead; the shift lead contacts the supplier for the batch number.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "inference",
+          "text": "If a manual entry is needed because the barcode cannot be scanned, the entry must be handled by a shift lead, with a second person checking it against the label.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "STD-LAB-002 rev 5",
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 8,
+      "citations": 8,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [
+        "status context_incomplete, expected supported"
+      ],
+      "case_id": "E-05",
+      "title": "Unreadable barcode, draft revision must not apply",
+      "passed": false,
+      "seconds": 23.6
+    },
+    {
+      "kind": "conflict",
+      "status_reasons": [
+        "two applicable approved documents give different instructions"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the product itself is visibly damaged, follow WI-QUA-004.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "For visibly damaged product, post the affected quantity to blocked stock and label the handling unit \u201cBLOCKED - QA\u201d.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not mix damaged and undamaged units on one pallet.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Establish whether the damage is limited to the outer packaging with the product intact, or whether the product itself is visibly damaged; the passages give different handling routes for these conditions.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Notify the QA inspector if the outer packaging is damaged but the product is intact, or if the product itself is visibly damaged.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "conflicts",
+          "type": "conflict",
+          "text": "For visibly damaged outer packaging when the product inside is intact, the documents conflict: WI-QUA-004 says to accept the delivery, while SOP-INB-001 says to refuse it and record the reason before the driver leaves.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "conflict",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 6,
+      "citations": 9,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [
+        "status conflict, expected context_incomplete"
+      ],
+      "case_id": "E-09",
+      "title": "Damaged delivery without detail",
+      "passed": false,
+      "seconds": 18.0
+    },
+    {
+      "kind": "conflict",
+      "status_reasons": [
+        "two applicable approved documents give different instructions"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Stop unloading immediately because the carton is leaking and the liquid is unknown.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Isolate the area, keep other people away, and do not touch the material.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Notify the QA lead and EHS at once.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not resume unloading until EHS has cleared the area.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the outer packaging shows visible damage, the SOP requires refusing the delivery and noting the reason on the delivery note before the driver leaves; see the conflicting instruction below.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If, after safe assessment, the product itself is visibly damaged, post the affected quantity to blocked stock, label the handling unit \"BLOCKED - QA,\" notify the QA inspector, and do not mix damaged and undamaged units on one pallet.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "After EHS clearance, establish whether the product itself is visibly damaged or intact; that condition determines which product-damage or intact-product instructions may apply.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Before any unloading resumes, establish whether a delivery note is present and refers to an open purchase order.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Suspected contamination, a leak, or an unknown substance triggers immediate escalation to the QA lead together with EHS.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2",
+            "MATRIX-ESC-001 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Conflicting or unclear instructions between documents trigger escalation to the process owner (inbound) the same working day.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2",
+            "MATRIX-ESC-001 rev 2"
+          ]
+        },
+        {
+          "section": "conflicts",
+          "type": "conflict",
+          "text": "If the outer packaging is damaged and the product inside is confirmed intact, the instructions conflict: SOP-INB-001 says to refuse the delivery, while WI-QUA-004 says to accept it. The product condition is not established in the situation, so obtain the stated escalation before deciding that disposition.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "WI-QUA-004 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [],
+      "types": [
+        "conflict",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 11,
+      "citations": 15,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [
+        "status conflict, expected supported"
+      ],
+      "case_id": "E-12",
+      "title": "Suspected contamination",
+      "passed": false,
+      "seconds": 21.3
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers DN-55821"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not unload the delivery if the delivery note is missing or refers to an unknown purchase order.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post quality-managed material to quality inspection stock, regardless of the supplier's certification status.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "recommendation",
+          "text": "Verify that the delivery note DN-55821 matches the material master flag for quality-managed status before posting.",
+          "cites": []
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the delivery note DN-55821 is not covered by any approved document, do not post the goods receipt and inform the shift lead.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Confirm whether the purchase order referenced by delivery note DN-55821 is open or known.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Verify if the material in DN-55821 is flagged as quality-managed in the material master.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Inform the shift lead if the delivery note DN-55821 is missing or refers to an unknown purchase order.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Inform the shift lead if the delivery note DN-55821 is not covered by any approved document.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Notify the QA inspector if the material is posted to quality inspection stock.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SUP-NOTE-118 supplier-delivery-advice",
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "missing_evidence",
+        "recommendation",
+        "requirement"
+      ],
+      "items": 9,
+      "citations": 5,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "mistralai/mistral-small-2603",
+      "reasons": [],
+      "case_id": "E-13",
+      "title": "Injection document present",
+      "passed": true,
+      "seconds": 49.2
+    },
+    {
+      "kind": "conflict",
+      "status_reasons": [
+        "two applicable approved documents give different instructions"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Count every delivery line before posting and compare the counted quantity with the delivery note and purchase order.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post as counted with a goods-receipt note when the deviation is no more than the smaller of 2% of the ordered quantity or 2 units.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "The tolerance threshold is min(0.02 \u00d7 ordered quantity, 2 units); the passages provide no single numeric cutoff without the ordered quantity.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not post a larger deviation until the shift lead confirms a recount. After confirmation, post the counted quantity\u2014not the ordered quantity\u2014and record the reason; the shift lead informs purchasing of every confirmed short or over delivery.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "SOP-INB-001 rev 3",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Establish the ordered quantity and counted quantity to calculate the numeric tolerance and determine whether this delivery is within it.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Establish the open quantity on the purchase order line and whether the scanned quantity exceeds it; this determines whether the GR-204 instruction applies.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Quantity deviations above tolerance and recounts are assigned to the shift lead, with a 30-minute response time.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        },
+        {
+          "section": "conflicts",
+          "type": "conflict",
+          "text": "If the counted quantity exceeds the open purchase-order quantity and the deviation requires a confirmed recount, the documents give different posting instructions: the SOP says to post the counted quantity, while the guide says to post only the open quantity.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "GUIDE-WMS-003 rev 1"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "conflict",
+        "inference",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 8,
+      "citations": 11,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [
+        "status conflict, expected supported"
+      ],
+      "case_id": "E-14",
+      "title": "Citation precision: tolerance figures",
+      "passed": false,
+      "seconds": 15.1
+    }
+  ]
+}

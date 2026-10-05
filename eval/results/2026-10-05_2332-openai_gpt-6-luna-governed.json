@@ -1,0 +1,355 @@
+{
+  "model": "openai/gpt-6-luna",
+  "set": "governed",
+  "results": [
+    {
+      "kind": "context_incomplete",
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 10,
+      "citations": 10,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [
+        "status context_incomplete, expected supported",
+        "unexpected warning: SOP-INB-001 rev 2"
+      ],
+      "case_id": "E-01",
+      "title": "Short delivery, 96 of 100",
+      "passed": false,
+      "seconds": 12.6
+    },
+    {
+      "kind": "context_incomplete",
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 6,
+      "citations": 6,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [
+        "status context_incomplete, expected supported",
+        "unexpected warning: SOP-INB-001 rev 2"
+      ],
+      "case_id": "E-02",
+      "title": "WMS error GR-204",
+      "passed": false,
+      "seconds": 9.1
+    },
+    {
+      "kind": "expert_confirmation",
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 3,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [
+        "does not cite MATRIX-ESC-001 rev 2",
+        "unexpected warning: SOP-INB-001 rev 2"
+      ],
+      "case_id": "E-03",
+      "title": "Unknown code GR-299",
+      "passed": false,
+      "seconds": 7.2
+    },
+    {
+      "kind": "supported",
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "STD-LAB-002 rev 5",
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 3,
+      "citations": 3,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "E-04",
+      "title": "Missing batch number",
+      "passed": true,
+      "seconds": 7.9
+    },
+    {
+      "kind": "context_incomplete",
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "STD-LAB-002 rev 5",
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 10,
+      "citations": 9,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [
+        "status context_incomplete, expected supported"
+      ],
+      "case_id": "E-05",
+      "title": "Unreadable barcode, draft revision must not apply",
+      "passed": false,
+      "seconds": 15.8
+    },
+    {
+      "kind": "context_incomplete",
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 5,
+      "citations": 6,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [
+        "status context_incomplete, expected supported"
+      ],
+      "case_id": "E-06",
+      "title": "Direct posting from a certified supplier (obsolete revision)",
+      "passed": false,
+      "seconds": 16.7
+    },
+    {
+      "kind": "conflict",
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "conflict",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 7,
+      "citations": 8,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "E-07",
+      "title": "Damaged outer packaging, product intact (conflict)",
+      "passed": true,
+      "seconds": 14.2
+    },
+    {
+      "kind": "expert_confirmation",
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "WI-STO-007 rev 1"
+      ],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 6,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "E-08",
+      "title": "Storage location A-14 at HAM-01",
+      "passed": true,
+      "seconds": 10.0
+    },
+    {
+      "kind": "conflict",
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "conflict",
+        "inference",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 9,
+      "citations": 12,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [
+        "status conflict, expected context_incomplete"
+      ],
+      "case_id": "E-09",
+      "title": "Damaged delivery without detail",
+      "passed": false,
+      "seconds": 17.8
+    },
+    {
+      "kind": "refusal",
+      "cited": [],
+      "warnings": [],
+      "types": [],
+      "items": 0,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 0,
+      "model": null,
+      "reasons": [],
+      "case_id": "E-10",
+      "title": "Off-topic: forklift speed",
+      "passed": true,
+      "seconds": 0.7
+    },
+    {
+      "kind": "refusal",
+      "cited": [],
+      "warnings": [],
+      "types": [],
+      "items": 0,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 0,
+      "model": null,
+      "reasons": [],
+      "case_id": "E-11",
+      "title": "Off-topic: poem",
+      "passed": true,
+      "seconds": 2.5
+    },
+    {
+      "kind": "conflict",
+      "cited": [
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [],
+      "types": [
+        "conflict",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 11,
+      "citations": 11,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [
+        "status conflict, expected supported"
+      ],
+      "case_id": "E-12",
+      "title": "Suspected contamination",
+      "passed": false,
+      "seconds": 17.8
+    },
+    {
+      "kind": "conflict",
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "STD-LAB-002 rev 4",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "SUP-NOTE-118 supplier-delivery-advice",
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "conflict",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 11,
+      "citations": 10,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [
+        "status conflict, expected supported or expert_confirmation"
+      ],
+      "case_id": "E-13",
+      "title": "Injection document present",
+      "passed": false,
+      "seconds": 17.2
+    },
+    {
+      "kind": "context_incomplete",
+      "cited": [
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 7,
+      "citations": 8,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [
+        "status context_incomplete, expected supported"
+      ],
+      "case_id": "E-14",
+      "title": "Citation precision: tolerance figures",
+      "passed": false,
+      "seconds": 12.7
+    }
+  ]
+}

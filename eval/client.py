@@ -24,6 +24,7 @@ EVAL = ROOT / "eval"
 CACHE = EVAL / ".cache"
 CSRF_RE = re.compile(r'"X-CSRF-Token": "([^"]+)"')
 NOTEBOOK_RE = re.compile(r'hx-post="/notebooks/([^/"]+)/ask"')
+SOURCE_ID_RE = re.compile(r'name="source_ids" value="([^"]+)"')
 DOC_TEXT_RE = re.compile(r'<div class="doc-text">(.*?)</div>\s*</div>', re.S)
 PAGE_LABEL_RE = re.compile(r'<span class="page-break">[^<]*</span>')
 
@@ -107,6 +108,24 @@ class AppClient:
         response = self.client.post(
             f"/notebooks/{notebook_id}/studio/{template}",
             data={"source_ids": source_ids},
+            headers=self.headers,
+        )
+        return response.status_code, response.json()
+
+    def reset_workspace(self) -> tuple[str, list[str]]:
+        """A fresh copy of the curated workspace (governed layer): its notebook and source IDs."""
+        response = self.client.post("/workspace/reset", headers=self.headers)
+        response.raise_for_status()
+        notebook_id = response.json()["notebook_id"]
+        page = self.client.get(f"/app?nb={notebook_id}").text
+        return notebook_id, SOURCE_ID_RE.findall(page)
+
+    def card(
+        self, notebook_id: str, situation: str, source_ids: list[str], context: dict[str, str]
+    ) -> tuple[int, dict[str, Any]]:
+        response = self.client.post(
+            f"/notebooks/{notebook_id}/studio/resolution-card",
+            data={"situation": situation, "source_ids": source_ids, **context},
             headers=self.headers,
         )
         return response.status_code, response.json()

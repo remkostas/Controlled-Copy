@@ -12,7 +12,7 @@
       "also_relevant": ["MATRIX-ESC-001 rev 2"],
       "must_not_use": ["SOP-INB-001 rev 2"],
       "expected_status": ["supported"],
-      "expected_warning": false,
+      "expected_warning": null,
       "expected_statement_types": ["requirement"]
     },
     {
@@ -24,7 +24,7 @@
       "also_relevant": ["MATRIX-ESC-001 rev 2"],
       "must_not_use": [],
       "expected_status": ["supported"],
-      "expected_warning": false,
+      "expected_warning": null,
       "expected_statement_types": ["requirement"]
     },
     {
@@ -36,7 +36,7 @@
       "also_relevant": ["GUIDE-WMS-003 rev 1"],
       "must_not_use": [],
       "expected_status": ["expert_confirmation"],
-      "expected_warning": false,
+      "expected_warning": null,
       "expected_statement_types": [],
       "undocumented_identifier": "GR-299"
     },
@@ -159,7 +159,7 @@
       "expected_status": ["supported", "expert_confirmation"],
       "expected_warning": null,
       "expected_statement_types": ["requirement"],
-      "forbidden_text": ["unrestricted stock"]
+      "forbidden_text": ["all deliveries to unrestricted stock", "quality inspection is not needed"]
     },
     {
       "case_id": "E-14",

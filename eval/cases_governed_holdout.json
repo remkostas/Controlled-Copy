@@ -1,0 +1,191 @@
+{
+  "note": "Held-out paraphrases, written on 2026-10-05 after the Resolution Card prompt was tuned on E-01 to E-14 and before any run of these cases. Expectations come from the corpus text only.",
+  "corpus": "demo-data/inbound-operations",
+  "extra": "eval/corpus-extra/SUP-NOTE-118_supplier-delivery-advice.md",
+  "default_context": {
+    "site": "HAM-01",
+    "role": "warehouse_operator",
+    "as_of": "2026-10-07"
+  },
+  "cases": [
+    {
+      "case_id": "H-01",
+      "title": "Small shortage within tolerance",
+      "notebook": "demo",
+      "situation": "We counted 99 pieces, the purchase order says 100.",
+      "expected_sources": [
+        "SOP-INB-001 rev 3"
+      ],
+      "also_relevant": [],
+      "must_not_use": [
+        "SOP-INB-001 rev 2"
+      ],
+      "expected_status": [
+        "supported"
+      ],
+      "expected_warning": null,
+      "expected_statement_types": [
+        "requirement"
+      ]
+    },
+    {
+      "case_id": "H-02",
+      "title": "WMS error GR-101",
+      "notebook": "demo",
+      "situation": "Scanning the pallet gives me GR-101 in the WMS.",
+      "expected_sources": [
+        "GUIDE-WMS-003 rev 1"
+      ],
+      "also_relevant": [],
+      "must_not_use": [],
+      "expected_status": [
+        "supported"
+      ],
+      "expected_warning": null,
+      "expected_statement_types": [
+        "requirement"
+      ]
+    },
+    {
+      "case_id": "H-03",
+      "title": "Unknown code GR-512",
+      "notebook": "demo",
+      "situation": "The receiving screen shows code GR-512.",
+      "expected_sources": [
+        "MATRIX-ESC-001 rev 2"
+      ],
+      "also_relevant": [],
+      "must_not_use": [],
+      "expected_status": [
+        "expert_confirmation"
+      ],
+      "expected_warning": null,
+      "expected_statement_types": [],
+      "undocumented_identifier": "GR-512"
+    },
+    {
+      "case_id": "H-04",
+      "title": "Torn stretch wrap, parts intact (conflict)",
+      "notebook": "demo",
+      "situation": "The stretch wrap on one pallet is torn open and the boxes are dented, but the parts inside are undamaged. Can I post the receipt?",
+      "expected_sources": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "also_relevant": [],
+      "must_not_use": [],
+      "expected_status": [
+        "conflict"
+      ],
+      "expected_warning": null,
+      "expected_statement_types": [
+        "requirement"
+      ]
+    },
+    {
+      "case_id": "H-05",
+      "title": "Wet cartons",
+      "notebook": "demo",
+      "situation": "Two cartons arrived soaking wet.",
+      "expected_sources": [
+        "WI-QUA-004 rev 2"
+      ],
+      "also_relevant": [],
+      "must_not_use": [],
+      "expected_status": [
+        "supported"
+      ],
+      "expected_warning": null,
+      "expected_statement_types": [
+        "requirement"
+      ]
+    },
+    {
+      "case_id": "H-06",
+      "title": "Off-topic: football",
+      "notebook": "demo",
+      "situation": "Who won the football match yesterday?",
+      "expected_sources": [],
+      "also_relevant": [],
+      "must_not_use": [],
+      "expected_status": [
+        "refusal"
+      ],
+      "expected_warning": null,
+      "expected_statement_types": []
+    },
+    {
+      "case_id": "H-07",
+      "title": "Barcode with the draft revision in mind",
+      "notebook": "demo",
+      "situation": "The label barcode won't scan. The new labelling standard says I can type the number in myself with a photo, right?",
+      "expected_sources": [
+        "STD-LAB-002 rev 4"
+      ],
+      "also_relevant": [],
+      "must_not_use": [
+        "STD-LAB-002 rev 5"
+      ],
+      "expected_status": [
+        "supported"
+      ],
+      "expected_warning": true,
+      "expected_statement_types": [
+        "requirement"
+      ]
+    },
+    {
+      "case_id": "H-08",
+      "title": "Chemical smell",
+      "notebook": "demo",
+      "situation": "There is a strange chemical smell coming from one of the pallets in the truck.",
+      "expected_sources": [
+        "WI-QUA-004 rev 2"
+      ],
+      "also_relevant": [],
+      "must_not_use": [],
+      "expected_status": [
+        "supported"
+      ],
+      "expected_warning": null,
+      "expected_statement_types": [
+        "requirement"
+      ]
+    },
+    {
+      "case_id": "H-09",
+      "title": "Damage without detail",
+      "notebook": "demo",
+      "situation": "One handling unit looks damaged.",
+      "expected_sources": [
+        "WI-QUA-004 rev 2"
+      ],
+      "also_relevant": [],
+      "must_not_use": [],
+      "expected_status": [
+        "context_incomplete"
+      ],
+      "expected_warning": null,
+      "expected_statement_types": [
+        "missing_evidence"
+      ]
+    },
+    {
+      "case_id": "H-10",
+      "title": "Aisle A-12 at HAM-01",
+      "notebook": "demo",
+      "situation": "Can I put this material away in aisle A-12?",
+      "expected_sources": [],
+      "also_relevant": [],
+      "must_not_use": [
+        "WI-STO-007 rev 1"
+      ],
+      "expected_status": [
+        "context_incomplete",
+        "expert_confirmation"
+      ],
+      "expected_warning": true,
+      "expected_statement_types": []
+    }
+  ]
+}
