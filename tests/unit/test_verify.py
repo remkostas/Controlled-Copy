@@ -58,6 +58,14 @@ def test_tc_ans_002_quote_normalisation_accepts_equivalent_quotes(quote):
     assert find_quote(SOURCE, quote) is not None
 
 
+def test_tc_ans_002_pdf_spacing_before_punctuation_is_tolerated():
+    pdf_text = "the Core is composed of four functions: GOVERN , MAP, MEASURE ,\nand MANAGE . Each of these"
+    match = find_quote(pdf_text, "four functions: GOVERN, MAP, MEASURE, and MANAGE.")
+    assert match is not None
+    assert pdf_text[match.start : match.end] == "four functions: GOVERN , MAP, MEASURE ,\nand MANAGE"
+    assert find_quote("see ( Appendix A ) for roles", "see (Appendix A) for roles") is not None
+
+
 def test_tc_ans_002_offsets_map_back_to_the_exact_source_span():
     match = find_quote(SOURCE, "the warehouse operator then posts")
     assert SOURCE[match.start : match.end] == "the ware-\nhouse operator then posts"

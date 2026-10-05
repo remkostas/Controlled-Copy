@@ -1,7 +1,8 @@
 """Verify model quotes against the passages that were actually in the prompt.
 
 A citation survives only if its passage ID was in the prompt and its quote
-occurs in that passage. Matching ignores differences in whitespace, line-break
+occurs in that passage. Matching ignores differences in whitespace (including
+spaces before punctuation, a common PDF extraction artefact), line-break
 hyphenation, typographic quotation marks and dashes, and letter case; it is
 otherwise exact. Quotes may skip text with an ellipsis; every fragment must
 then occur in order. The verified span is mapped back to exact character
@@ -39,6 +40,8 @@ CHAR_MAP = {
 }
 ELLIPSIS = re.compile(r"\s*(?:\.\.\.|…|\[\.\.\.\]|\[…\])\s*")
 EDGE_PUNCTUATION = " \t\n\"'.,;:!?()[]"
+OPENING = "([{"
+CLOSING = ",.;:!?)]}%"
 MIN_WORDS = 3
 MIN_FRAGMENT_WORDS = 2
 
@@ -74,12 +77,16 @@ def normalise_with_map(text: str) -> tuple[str, list[int]]:
                     continue
         ch = CHAR_MAP.get(ch, ch)
         if ch.isspace():
-            if not previous_space:
+            if not previous_space and not (out and out[-1] in OPENING):
                 out.append(" ")
                 index.append(i)
                 previous_space = True
             i += 1
             continue
+        if ch in CLOSING and out and out[-1] == " ":
+            # PDF extraction often puts a space before punctuation ("MEASURE , and").
+            out.pop()
+            index.pop()
         for part in unicodedata.normalize("NFKC", ch).casefold():
             out.append(part)
             index.append(i)
