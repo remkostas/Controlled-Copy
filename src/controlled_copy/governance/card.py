@@ -21,7 +21,7 @@ from controlled_copy.governance import rules
 from controlled_copy.limits import DAILY_LIMIT_MESSAGE
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError
-from controlled_copy.retrieval.search import RetrievalResult, retrieve
+from controlled_copy.retrieval.search import Passage, RetrievalResult, embed_query, retrieve
 from controlled_copy.services import Services
 from controlled_copy.storage.repo import OwnedNotebook
 from controlled_copy.studio.actions import StoredOutput, StudioError
@@ -29,6 +29,7 @@ from controlled_copy.studio.engine import StudioTemplate, load_template, run_tem
 
 TEMPLATE_ID = "resolution-card"
 MAX_WARNINGS = 3
+MAX_REFERENCED = 2
 
 
 @cache
@@ -94,6 +95,20 @@ def _warnings(
     return warnings
 
 
+def referenced_documents(split: rules.Split, passages: list[Passage]) -> list[str]:
+    """Applicable documents that the evidence names by document ID ("follow GUIDE-WMS-003")
+    but that retrieval did not return, in the order they are named."""
+    by_document_id = {d.document_id: d.source_id for d in split.authoritative if d.document_id}
+    present = {p.source_id for p in passages}
+    found: list[str] = []
+    for passage in passages:
+        for identifier in rules.identifiers(passage.text):
+            source_id = by_document_id.get(identifier)
+            if source_id and source_id not in present and source_id not in found:
+                found.append(source_id)
+    return found[:MAX_REFERENCED]
+
+
 def _task(card: CardInput, identifiers: list[str], undocumented: list[str]) -> str:
     ctx = card.context
     lines = [
@@ -131,12 +146,16 @@ def run_card(
     texts = {row["id"]: row["text"] for row in rows}
     found = rules.identifiers(situation)
     authoritative_ids = set(split.authoritative_ids())
-    documented = {i: rules.documented_in(i, texts) for i in found}
-    not_covered = [i for i in found if not set(documented[i]) & authoritative_ids]
+    not_covered = rules.undocumented(found, texts, split)
 
     try:
-        auth = retrieve(services, split.authoritative_ids(), situation) if authoritative_ids else None
-        excl = retrieve(services, split.excluded_ids(), situation) if split.excluded else None
+        vector = embed_query(services, situation)
+
+        def search(ids: list[str], top_k: int | None = None) -> RetrievalResult:
+            return retrieve(services, ids, situation, top_k, query_vector=vector)
+
+        auth = search(split.authoritative_ids()) if authoritative_ids else None
+        excl = search(split.excluded_ids()) if split.excluded else None
         floor = settings.evidence_floor
         auth_relevant = auth is not None and auth.above_floor(floor)
         excl_relevant = excl is not None and excl.above_floor(floor)
@@ -146,11 +165,12 @@ def run_card(
         context_sources: list[str] = [w["source_id"] for w in warnings]
         if auth_relevant:
             assert auth is not None
-            result = run_template(
-                services, card_template(), auth.passages, task=_task(card, found, not_covered)
-            )
+            evidence = list(auth.passages)
+            for source_id in referenced_documents(split, evidence):
+                evidence += search([source_id], top_k=1).passages
+            result = run_template(services, card_template(), evidence, task=_task(card, found, not_covered))
             output, citations = result.output, result.citations
-            context_sources += [p.source_id for p in auth.passages]
+            context_sources += [p.source_id for p in evidence]
         else:
             output = {
                 "sections": [{"key": s.key, "title": s.title, "items": []} for s in card_template().sections]
@@ -186,8 +206,12 @@ def run_card(
                 downgraded += 1
                 continue
             downgraded += 1 if "downgraded" in shown else 0
-            evidence_items += 1 if set(cited) & authoritative_ids else 0
-            missing += 1 if shown["type"] == "missing_evidence" else 0
+            grounded = bool(set(cited) & authoritative_ids)
+            evidence_items += 1 if grounded else 0
+            # Missing information counts towards the status only when the model listed it as such
+            # and cited the passage that needs it; a downgraded requirement does not count.
+            listed = shown["type"] == "missing_evidence" and "downgraded" not in shown
+            missing += 1 if listed and grounded else 0
             kept.append(shown)
         section["items"] = kept
 

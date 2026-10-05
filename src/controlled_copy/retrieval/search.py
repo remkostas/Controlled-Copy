@@ -182,9 +182,18 @@ def extract_identifiers(text: str) -> list[str]:
     return list(dict.fromkeys(match.group(0).upper() for match in IDENTIFIER.finditer(text)))
 
 
+def embed_query(services: Services, query: str) -> np.ndarray:
+    return np.asarray(embed_texts(services, [query], kind="embed_query")[0], dtype=np.float32)
+
+
 def retrieve(
-    services: Services, source_ids: list[str], query: str, top_k: int | None = None
+    services: Services,
+    source_ids: list[str],
+    query: str,
+    top_k: int | None = None,
+    query_vector: np.ndarray | None = None,
 ) -> RetrievalResult:
+    """Hybrid search; pass `query_vector` to reuse one query embedding across several searches."""
     settings = services.settings
     top_k = top_k or settings.retrieval_top_k
     candidates = settings.retrieval_candidates
@@ -196,7 +205,8 @@ def retrieve(
     cosines: dict[int, float] = {}
     chunk_ids, matrix = repo.vectors_for_sources(source_ids, settings.model_embedding)
     if chunk_ids:
-        query_vector = np.asarray(embed_texts(services, [query], kind="embed_query")[0], dtype=np.float32)
+        if query_vector is None:
+            query_vector = embed_query(services, query)
         norms = np.linalg.norm(matrix, axis=1) * (np.linalg.norm(query_vector) or 1.0)
         norms[norms == 0] = 1.0
         scores = (matrix @ query_vector) / norms

@@ -2,35 +2,10 @@
 
 import pytest
 
-from controlled_copy.providers.fake import FakeRequest, default_responder
 from tests.governance.conftest import Workspace
+from tests.helpers.cards import card_responder, empty_card, passage_with
 
 pytestmark = [pytest.mark.integration, pytest.mark.stage2]
-
-
-def card_responder(build):
-    """Use `build(request)` for Resolution Card calls, the default responder otherwise."""
-
-    def responder(request: FakeRequest):
-        if request.schema_name == "resolution_card":
-            return build(request)
-        return default_responder(request)
-
-    return responder
-
-
-def passage_with(request: FakeRequest, needle: str) -> tuple[str, str]:
-    for pid, text in request.passages():
-        if needle.lower() in text.lower():
-            start = text.lower().index(needle.lower())
-            return pid, text[start : start + len(needle)]
-    raise AssertionError(f"no passage contains {needle!r}")
-
-
-def empty_card(**sections):
-    base = {"required_actions": [], "missing_information": [], "escalation": [], "conflicts": []}
-    base.update(sections)
-    return base
 
 
 def test_tc_gov_001_each_visitor_has_an_own_workspace_copy(make_visitor, db):

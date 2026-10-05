@@ -162,6 +162,24 @@ def documented_in(identifier: str, texts: dict[str, str]) -> list[str]:
     return [source_id for source_id, text in texts.items() if pattern.search(text)]
 
 
+def family(identifier: str) -> str:
+    """The code family: everything before the last part (GR-299 -> GR, SOP-INB-001 -> SOP-INB)."""
+    return identifier.rsplit("-", 1)[0]
+
+
+def undocumented(found: Sequence[str], texts: dict[str, str], result: Split) -> list[str]:
+    """Identifiers that no applicable approved document covers, from a family that the
+    controlled documents define. GR-299 counts when the documents list other GR- codes; a
+    reference that only an uncontrolled upload uses (a delivery note number such as
+    DN-55821) is not a code the documents are expected to define."""
+    controlled = [d.source_id for d in result.authoritative] + [
+        d.source_id for d, _ in result.excluded.values() if d.origin != "none"
+    ]
+    families = {family(i) for sid in controlled for i in identifiers(texts.get(sid, ""))}
+    applicable = {sid: texts[sid] for sid in result.authoritative_ids() if sid in texts}
+    return [i for i in found if family(i) in families and not documented_in(i, applicable)]
+
+
 def apply_type_rules(
     item: dict[str, Any], cited_sources: Iterable[str], authoritative: set[str]
 ) -> dict[str, Any] | None:

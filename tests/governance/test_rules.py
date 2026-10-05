@@ -149,3 +149,21 @@ def test_tc_gov_008_status_follows_the_precedence(kwargs, expected):
     status, reasons = rules.result_status(**kwargs)
     assert status == expected
     assert reasons
+
+
+def test_tc_gov_005_undocumented_means_a_known_family_without_this_code():
+    guide = doc("guide", document_id="GUIDE-1")
+    storage = doc("storage", document_id="WI-STO", site="HAM-02")
+    upload = rules.document_from("upload", "Supplier note", None, "none")
+    result = rules.split([guide, storage, upload], CONTEXT)
+    texts = {
+        "guide": "GR-204 Quantity above open order quantity. Unknown codes: contact the key user.",
+        "storage": "Aisles A-10 to A-20 hold storage class 2 only.",
+        "upload": "Delivery note DN-55821 for fasteners.",
+    }
+    found = ["GR-204", "GR-299", "A-14", "DN-55821", "XY-123"]
+    # GR-299: the guide defines GR- codes but not this one. A-14: only a document for another
+    # site covers the A- family. DN-55821 appears only in an upload without document control,
+    # and no document uses XY- codes, so neither is a code the documents should define.
+    assert rules.undocumented(found, texts, result) == ["GR-299", "A-14"]
+    assert rules.family("SOP-INB-001") == "SOP-INB" and rules.family("GR-299") == "GR"

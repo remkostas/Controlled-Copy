@@ -1,0 +1,121 @@
+{
+  "model": "openai/gpt-6-luna",
+  "set": "holdout",
+  "results": [
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Stop and check the existing goods receipt with the shift lead before posting again. Do not confirm the warning without checking.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1",
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Follow the error guide and do not bypass the WMS error by posting against a different purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "For the GR-512 warning, check the existing goods receipt with the shift lead before posting again.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 3,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "H-03",
+      "title": "Code GR-512 (documented)",
+      "passed": true,
+      "seconds": 6.7
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers GR-777"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Stop and contact the WMS key user because GR-777 is not listed in the guide.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not override the error with a manual posting.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not bypass the error by posting against a different purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Contact the WMS key user for the unknown error code; the response time is 1 hour.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "H-11",
+      "title": "Unknown code GR-777",
+      "passed": true,
+      "seconds": 7.4
+    }
+  ]
+}
