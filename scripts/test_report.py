@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import re
 import sys
-import xml.etree.ElementTree as ET  # noqa: S405 - parses our own pytest output
+import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
 
@@ -63,7 +63,9 @@ def main() -> int:
     totals = defaultdict(int)
     for tc in sorted(by_tc, key=lambda t: (requirement_of.get(t, "~"), t)):
         outcomes = [o for _, o in by_tc[tc]]
-        overall = "fail" if "fail" in outcomes else "skipped" if all(o == "skipped" for o in outcomes) else "pass"
+        overall = (
+            "fail" if "fail" in outcomes else "skipped" if all(o == "skipped" for o in outcomes) else "pass"
+        )
         totals[overall] += 1
         lines.append(f"| {requirement_of.get(tc, '—')} | {tc} | {len(outcomes)} | {overall} |")
     planned = {tc for tc in requirement_of}
