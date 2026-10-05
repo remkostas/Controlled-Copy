@@ -1,0 +1,61 @@
+{
+  "document": "nist-ai-rmf",
+  "cases": [
+    {
+      "case_id": "G-01",
+      "title": "Answerable: the four Core functions",
+      "kind": "answer",
+      "question": "What are the four functions of the AI RMF Core?",
+      "expected_pages": [8, 25],
+      "keywords": ["govern", "map", "measure", "manage"],
+      "min_keywords": 4
+    },
+    {
+      "case_id": "G-02",
+      "title": "Answerable: characteristics of trustworthy AI",
+      "kind": "answer",
+      "question": "Which characteristics of trustworthy AI systems does the framework name?",
+      "expected_pages": [8, 17],
+      "keywords": ["valid and reliable", "safe", "secure and resilient", "accountable and transparent", "explainable and interpretable", "privacy", "fair"],
+      "min_keywords": 5
+    },
+    {
+      "case_id": "G-03",
+      "title": "Answerable: when the framework is reviewed",
+      "kind": "answer",
+      "question": "By when is a review of the framework with formal input from the AI community expected?",
+      "expected_pages": [3],
+      "keywords": ["2028"],
+      "min_keywords": 1
+    },
+    {
+      "case_id": "G-04",
+      "title": "Unsupported question",
+      "kind": "refusal",
+      "question": "What is the speed limit for forklifts in a warehouse yard?",
+      "expected_pages": [],
+      "keywords": [],
+      "min_keywords": 0
+    },
+    {
+      "case_id": "G-05",
+      "title": "Citation check: definition of an AI system",
+      "kind": "answer",
+      "question": "How does the AI RMF define an AI system?",
+      "expected_pages": [6],
+      "keywords": ["engineered or machine-based system"],
+      "min_keywords": 1,
+      "quote_must_contain": "engineered or machine-based system"
+    },
+    {
+      "case_id": "G-06",
+      "title": "Studio Briefing: every citation verifies",
+      "kind": "briefing",
+      "question": null,
+      "expected_pages": [],
+      "keywords": [],
+      "min_keywords": 0,
+      "min_sections_with_items": 3
+    }
+  ]
+}

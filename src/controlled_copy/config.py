@@ -45,8 +45,8 @@ class Settings(BaseSettings):
     model_provider: Literal["openrouter", "fake"] = "openrouter"
     openrouter_api_key: SecretStr | None = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    model_generation: str = "openai/gpt-5-mini"
-    model_generation_fallback: str = "google/gemini-2.5-flash"
+    model_generation: str = "openai/gpt-6-luna"
+    model_generation_fallback: str = "mistralai/mistral-small-2603"
     model_embedding: str = "baai/bge-m3"
 
     feature_governance: bool = False
@@ -72,7 +72,7 @@ class Settings(BaseSettings):
 
     retrieval_candidates: int = 20
     retrieval_top_k: int = 6
-    evidence_floor: float = 0.45
+    evidence_floor: float = 0.52
     embedding_batch_size: int = 64
 
     video_mp4: str | None = None

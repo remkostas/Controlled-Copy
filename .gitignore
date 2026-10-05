@@ -39,3 +39,6 @@ eval/runs/
 
 # Local test reports (the committed report lives in docs/)
 reports/
+
+# Evaluation downloads and raw runs
+eval/.cache/
