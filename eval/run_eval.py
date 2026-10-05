@@ -200,9 +200,12 @@ def check_card(
 
 
 def run_governed(
-    model: str | None, fallback: str | None, only: list[str] | None = None
+    model: str | None,
+    fallback: str | None,
+    only: list[str] | None = None,
+    cases_file: str = "cases_governed.json",
 ) -> tuple[str, list[dict[str, Any]]]:
-    spec = json.loads((EVAL / "cases_governed.json").read_text())
+    spec = json.loads((EVAL / cases_file).read_text())
     extra = ROOT / spec["extra"]
     settings = eval_settings(feature_governance=True, **model_overrides(model, fallback))
     app = AppClient(settings)
@@ -284,7 +287,7 @@ def write_report(
         f"Run {stamp} UTC, generation model `{model}`, embeddings `baai/bge-m3`. {passed} of {len(results)} cases pass.",
         "",
     ]
-    if set_name == "governed":
+    if set_name in ("governed", "holdout"):
         lines += [
             "| Case | Title | Result | Status | Cited documents | Warnings | Types | Seconds | Reasons |",
             "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | ---: | :--- |",
@@ -315,15 +318,16 @@ def write_report(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("set", choices=["generic", "governed"])
+    parser.add_argument("set", choices=["generic", "governed", "holdout"])
     parser.add_argument("--model")
     parser.add_argument("--fallback")
     parser.add_argument("--cases", help="comma-separated case IDs (governed set only)")
     args = parser.parse_args()
+    only = args.cases.split(",") if args.cases else None
     if args.set == "governed":
-        model, results = run_governed(
-            args.model, args.fallback, args.cases.split(",") if args.cases else None
-        )
+        model, results = run_governed(args.model, args.fallback, only)
+    elif args.set == "holdout":
+        model, results = run_governed(args.model, args.fallback, only, "cases_governed_holdout.json")
     else:
         model, results = run_generic(args.model, args.fallback)
     path = write_report(args.set, model, results, subset=bool(args.cases))

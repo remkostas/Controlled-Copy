@@ -1,5 +1,5 @@
 {
-  "note": "Held-out paraphrases, written on 2026-10-05 after the Resolution Card prompt was tuned on E-01 to E-14 and before any run of these cases. Expectations come from the corpus text only.",
+  "note": "Held-out paraphrases, written on 2026-10-05 after the Resolution Card prompt was tuned on E-01 to E-14 and before any run of these cases. Expectations come from the corpus text only. Correction after the first run (2026-10-05 23:51): H-03 assumed GR-512 is undocumented, but GUIDE-WMS-003 documents it (Duplicate receipt warning); the app answered correctly and the case was wrong. H-03 now expects that answer, and H-11 (GR-777, absent from every document, checked with grep) takes over the undocumented-code check.",
   "corpus": "demo-data/inbound-operations",
   "extra": "eval/corpus-extra/SUP-NOTE-118_supplier-delivery-advice.md",
   "default_context": {
@@ -48,20 +48,21 @@
     },
     {
       "case_id": "H-03",
-      "title": "Unknown code GR-512",
+      "title": "Code GR-512 (documented)",
       "notebook": "demo",
       "situation": "The receiving screen shows code GR-512.",
       "expected_sources": [
-        "MATRIX-ESC-001 rev 2"
+        "GUIDE-WMS-003 rev 1"
       ],
       "also_relevant": [],
       "must_not_use": [],
       "expected_status": [
-        "expert_confirmation"
+        "supported"
       ],
       "expected_warning": null,
-      "expected_statement_types": [],
-      "undocumented_identifier": "GR-512"
+      "expected_statement_types": [
+        "requirement"
+      ]
     },
     {
       "case_id": "H-04",
@@ -186,6 +187,23 @@
       ],
       "expected_warning": true,
       "expected_statement_types": []
+    },
+    {
+      "case_id": "H-11",
+      "title": "Unknown code GR-777",
+      "notebook": "demo",
+      "situation": "The receiving screen shows code GR-777.",
+      "expected_sources": [
+        "MATRIX-ESC-001 rev 2"
+      ],
+      "also_relevant": [],
+      "must_not_use": [],
+      "expected_status": [
+        "expert_confirmation"
+      ],
+      "expected_warning": null,
+      "expected_statement_types": [],
+      "undocumented_identifier": "GR-777"
     }
   ]
 }
