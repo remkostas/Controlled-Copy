@@ -43,7 +43,8 @@ def server_url(settings, fake) -> Iterator[str]:
 
 @pytest.fixture
 def page(browser, server_url):
-    context = browser.new_context(viewport={"width": 1366, "height": 768})
+    # Reduced motion makes CSS transitions instant, so style checks never sample a colour mid-transition.
+    context = browser.new_context(viewport={"width": 1366, "height": 768}, reduced_motion="reduce")
     page = context.new_page()
     page.set_default_timeout(15000)
     errors: list[str] = []
