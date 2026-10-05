@@ -103,5 +103,5 @@ def suggested_questions(services: Services, notebook: OwnedNotebook) -> list[str
         if cleaned and cleaned not in questions:
             questions.append(cleaned)
     questions = questions[:3]
-    services.repo.set_suggestions(notebook, key, questions)
+    services.repo.set_suggestions(notebook, key, questions, source_ids)
     return questions

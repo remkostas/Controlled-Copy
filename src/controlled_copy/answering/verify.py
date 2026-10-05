@@ -23,7 +23,6 @@ CHAR_MAP[chr(0xA0)] = " "  # no-break space
 ELLIPSIS = re.compile(r"\s*(?:\.\.\.|\u2026|\[\.\.\.\]|\[\u2026\])\s*")
 EDGE_PUNCTUATION = " \t\n\"'.,;:!?()[]"
 SOFT_HYPHEN = chr(0xAD)
-HYPHENS = "-" + chr(0x2010) + chr(0x2011)
 OPENING = "([{"
 CLOSING = ",.;:!?)]}%"
 MIN_WORDS = 3
@@ -48,7 +47,8 @@ def normalise_with_map(text: str) -> tuple[str, list[int]]:
         if ch == SOFT_HYPHEN:
             i += 1
             continue
-        if ch in HYPHENS and out and out[-1].isalpha():
+        ch = CHAR_MAP.get(ch, ch)
+        if ch == "-" and out and out[-1].isalpha():
             # Hyphens inside words are dropped on both sides of the comparison, so
             # "goods-receipt", "goods-<newline>receipt" (a compound broken at a line end)
             # and "ware-<newline>house" (line-break hyphenation) match their quoted forms.
@@ -65,7 +65,6 @@ def normalise_with_map(text: str) -> tuple[str, list[int]]:
             if 0 < j < n and text[j].isalpha():
                 i = j
                 continue
-        ch = CHAR_MAP.get(ch, ch)
         if ch.isspace():
             if not previous_space and not (out and out[-1] in OPENING):
                 out.append(" ")
@@ -77,7 +76,14 @@ def normalise_with_map(text: str) -> tuple[str, list[int]]:
             # PDF extraction often puts a space before punctuation ("MEASURE , and").
             out.pop()
             index.pop()
-        for part in unicodedata.normalize("NFKC", ch).casefold():
+        # NFKC would turn "10²" into "102"; characters that are numbers but not plain
+        # digits keep their own form.
+        folded = (
+            ch.casefold()
+            if unicodedata.category(ch) == "No"
+            else unicodedata.normalize("NFKC", ch).casefold()
+        )
+        for part in folded:
             out.append(part)
             index.append(i)
         previous_space = False
@@ -92,10 +98,19 @@ def normalise(text: str) -> str:
     return normalise_with_map(text)[0]
 
 
+NUMBER_SEPARATORS = ".,' /"
+SIGNS = "-+\u00b1<>\u2264\u2265"
+
+
 def _number_continues(haystack: str, at: int, step: int) -> bool:
-    """True if a separator at `at` continues a number ("3" inside "3.5", "1" inside "1,200")."""
+    """True if the character at `at` makes the quoted digits part of a longer number:
+    a separator followed by more digits ("3" in "3.5", "1" in "1,200", "1 200", "4/8"),
+    or, before the quote, a sign ("5" in "-5", "+5", "\u00b15", "<5")."""
+    char = haystack[at]
     beyond = at + step
-    return haystack[at] in ".," and 0 <= beyond < len(haystack) and haystack[beyond].isdigit()
+    if char in NUMBER_SEPARATORS and 0 <= beyond < len(haystack) and haystack[beyond].isdigit():
+        return True
+    return step < 0 and char in SIGNS
 
 
 def _find_whole_words(haystack: str, needle: str, start: int) -> int:

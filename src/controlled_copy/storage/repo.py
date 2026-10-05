@@ -169,11 +169,23 @@ class Repo:
             self.conn.execute("DELETE FROM notebook WHERE id = ?", (notebook_id,))
         return files
 
-    def set_suggestions(self, notebook: OwnedNotebook, key: str, questions: list[str]) -> None:
-        self.conn.execute(
-            "UPDATE notebook SET suggestions_key = ?, suggestions_json = ? WHERE id = ?",
-            (key, json.dumps(questions), _owned(notebook)),
-        )
+    def set_suggestions(
+        self, notebook: OwnedNotebook, key: str, questions: list[str], source_ids: Sequence[str]
+    ) -> bool:
+        """Store suggestions unless the notebook's sources changed while they were generated."""
+        notebook_id = _owned(notebook)
+        with transaction(self.conn):
+            current = sorted(
+                row["id"]
+                for row in self.conn.execute("SELECT id FROM source WHERE notebook_id = ?", (notebook_id,))
+            )
+            if current != sorted(source_ids):
+                return False
+            self.conn.execute(
+                "UPDATE notebook SET suggestions_key = ?, suggestions_json = ? WHERE id = ?",
+                (key, json.dumps(questions), notebook_id),
+            )
+        return True
 
     # Sources ------------------------------------------------------------------
     def list_sources(self, notebook: OwnedNotebook) -> list[sqlite3.Row]:
@@ -293,6 +305,35 @@ class Repo:
             )
         return [row["file_path"]] if row["file_path"] else []
 
+    def _tombstone_turn(self, assistant_id: str) -> None:
+        """Clear a turn: the answer, its search query, and the question (which may be a
+        suggested question generated from source text)."""
+        self.conn.execute(
+            "UPDATE chat_message SET content = '{}', search_query = NULL, citations_json = '[]', status = ? "
+            "WHERE id = ?",
+            (TOMBSTONE, assistant_id),
+        )
+        self.conn.execute(
+            "UPDATE chat_message SET content = '', status = ? WHERE role = 'user' AND turn_id = "
+            "(SELECT turn_id FROM chat_message WHERE id = ?)",
+            (TOMBSTONE, assistant_id),
+        )
+
+    def _all_sources_exist(self, notebook_id: str, references: list[dict[str, Any]]) -> bool:
+        wanted = {r["source_id"] for r in references if r.get("source_id")}
+        if not wanted:
+            return True
+        marks = ",".join("?" * len(wanted))
+        row = self.conn.execute(
+            f"SELECT COUNT(*) AS n FROM source WHERE notebook_id = ? AND id IN ({marks})",  # noqa: S608
+            (notebook_id, *wanted),
+        ).fetchone()
+        return int(row["n"]) == len(wanted)
+
+    def checkpoint(self) -> None:
+        """Fold the write-ahead log into the database so deleted pages do not linger in it."""
+        self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+
     def _tombstone_citing(self, notebook_id: str, source_id: str) -> None:
         for table in ("chat_message", "studio_output"):
             rows = self.conn.execute(
@@ -304,11 +345,7 @@ class Repo:
                 if source_id not in cited:
                     continue
                 if table == "chat_message":
-                    self.conn.execute(
-                        "UPDATE chat_message SET content = '{}', search_query = NULL, citations_json = '[]', "
-                        "status = ? WHERE id = ?",
-                        (TOMBSTONE, row["id"]),
-                    )
+                    self._tombstone_turn(row["id"])
                 else:
                     self.conn.execute(
                         "UPDATE studio_output SET output_json = '{}', input = NULL, citations_json = '[]', "
@@ -381,10 +418,13 @@ class Repo:
         turn_id = new_id()
         now = utcnow()
         with transaction(self.conn):
+            if not self._all_sources_exist(notebook_id, citations):
+                # A source was deleted while the model was answering: keep no derived text.
+                question, answer, search_query, citations, status = "", {}, None, [], TOMBSTONE
             self.conn.execute(
-                "INSERT INTO chat_message (id, notebook_id, turn_id, role, content, created_at) "
-                "VALUES (?, ?, ?, 'user', ?, ?)",
-                (new_id(), notebook_id, turn_id, question, now),
+                "INSERT INTO chat_message (id, notebook_id, turn_id, role, content, status, created_at) "
+                "VALUES (?, ?, ?, 'user', ?, ?, ?)",
+                (new_id(), notebook_id, turn_id, question, status, now),
             )
             self.conn.execute(
                 "INSERT INTO chat_message (id, notebook_id, turn_id, role, content, search_query, "
@@ -419,20 +459,24 @@ class Repo:
         status: str,
     ) -> str:
         output_id = new_id()
-        self.conn.execute(
-            "INSERT INTO studio_output (id, notebook_id, template, input, output_json, citations_json, "
-            "status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                output_id,
-                _owned(notebook),
-                template,
-                input_text,
-                json.dumps(output),
-                json.dumps(citations),
-                status,
-                utcnow(),
-            ),
-        )
+        notebook_id = _owned(notebook)
+        with transaction(self.conn):
+            if not self._all_sources_exist(notebook_id, citations):
+                input_text, output, citations, status = None, {}, [], TOMBSTONE
+            self.conn.execute(
+                "INSERT INTO studio_output (id, notebook_id, template, input, output_json, citations_json, "
+                "status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    output_id,
+                    notebook_id,
+                    template,
+                    input_text,
+                    json.dumps(output),
+                    json.dumps(citations),
+                    status,
+                    utcnow(),
+                ),
+            )
         return output_id
 
     def list_outputs(self, notebook: OwnedNotebook) -> list[sqlite3.Row]:

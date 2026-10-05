@@ -93,3 +93,29 @@ def test_tc_idx_003_error_in_a_200_body_is_retried_when_transient(monkeypatch):
         base_url="https://example.invalid/api/v1",
     )
     assert provider.embed(["x"], model="baai/bge-m3").vectors == [[1.0]]
+
+
+def test_tc_idx_003_retries_stop_at_the_time_limit(monkeypatch):
+    import time
+
+    import httpx
+
+    from controlled_copy.providers import openrouter
+    from controlled_copy.providers.base import ProviderError
+
+    monkeypatch.setattr(openrouter, "RETRY_BACKOFF", (2.0, 2.0))
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        return httpx.Response(503, json={"error": {"code": 503}})
+
+    provider = openrouter.OpenRouterProvider("key", "https://example.invalid/api/v1", 1.5)
+    provider._client = httpx.Client(
+        transport=httpx.MockTransport(handler), base_url="https://example.invalid/api/v1"
+    )
+    started = time.monotonic()
+    with pytest.raises(ProviderError):
+        provider.embed(["x"], model="baai/bge-m3")
+    assert len(calls) == 1, "a retry that cannot finish in time is not started"
+    assert time.monotonic() - started < 1.0

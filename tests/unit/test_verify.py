@@ -143,3 +143,24 @@ def test_tc_ans_003_a_number_cannot_verify_inside_a_longer_number():
     assert find_quote(text, "the order has 1") is None
     assert find_quote(text, "units in rev 1") is None
     assert find_quote(text, "units in rev 1.2") is not None
+
+
+@pytest.mark.parametrize(
+    ("text", "quote"),
+    [
+        ("Store at -5 degrees Celsius or colder.", "5 degrees Celsius or colder"),
+        ("Store at −5 degrees Celsius or colder.", "5 degrees Celsius or colder"),
+        ("Gap ±5 mm on every side.", "5 mm on every side"),
+        ("Maximum load is 1 200 kg per pallet.", "Maximum load is 1"),
+        ("Maximum load is 1'200 kg per pallet.", "Maximum load is 1"),
+        ("Recheck after 4/8 hours have passed.", "Recheck after 4"),
+        ("Maximum load is 10² kg per pallet.", "Maximum load is 102 kg"),
+    ],
+)
+def test_tc_ans_003_signed_grouped_or_superscript_numbers_cannot_be_cut(text, quote):
+    assert find_quote(text, quote) is None
+
+
+def test_tc_ans_002_en_dash_inside_a_word_matches_a_hyphen():
+    assert find_quote("The pre–approved supplier list applies.", "The pre-approved supplier list") is not None
+    assert find_quote("Store at -5 degrees Celsius or colder.", "-5 degrees Celsius or colder") is not None

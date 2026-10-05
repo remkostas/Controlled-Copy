@@ -8,6 +8,7 @@ changes state also depends on the CSRF check.
 
 from __future__ import annotations
 
+import contextlib
 import json
 from typing import Annotated, Any
 
@@ -235,7 +236,8 @@ def workspace(
         hook(services, sid)
     notebooks = services.repo.list_notebooks(sid)
     if not notebooks:
-        services.repo.create_notebook(sid, DEFAULT_NOTEBOOK_TITLE)
+        with contextlib.suppress(CapacityReached):  # a parallel request created it first
+            services.repo.create_notebook(sid, DEFAULT_NOTEBOOK_TITLE, limit=1)
         notebooks = services.repo.list_notebooks(sid)
     current = next((n for n in notebooks if n["id"] == nb), None)
     if current is None:
@@ -278,6 +280,7 @@ def delete_notebook(request: Request, notebook_id: str, services: WriteDep) -> R
     if notebook["kind"] != "personal":
         return notice(request, "This workspace cannot be deleted; use Reset instead.", 409, "#toast")
     files = services.repo.delete_notebook(sid, notebook_id) or []
+    services.repo.checkpoint()
     for name in files:
         (services.settings.uploads_dir / name).unlink(missing_ok=True)
     log_event("notebook_deleted", session=sid, notebook=notebook_id, files=len(files))
@@ -387,6 +390,7 @@ def delete_source(request: Request, source_id: str, services: WriteDep) -> Respo
     if source is None:
         return notice(request, "Source not found.", 404, "#toast")
     files = services.repo.delete_source(sid, source_id) or []
+    services.repo.checkpoint()
     for name in files:
         (services.settings.uploads_dir / name).unlink(missing_ok=True)
     log_event("source_deleted", session=sid, source=source_id, notebook=source["notebook_id"])

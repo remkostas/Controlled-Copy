@@ -72,8 +72,9 @@ def same_origin(request: Request) -> bool:
     origin = request.headers.get("origin")
     if not origin:
         return True
+    parts = urlsplit(origin)
     host = request.headers.get("host", "")
-    return urlsplit(origin).netloc == host
+    return parts.netloc == host and parts.scheme == request.url.scheme
 
 
 async def require_csrf(request: Request, services: SessionDep) -> Services:
