@@ -4,16 +4,13 @@ from __future__ import annotations
 
 from pathlib import PurePath
 
+from controlled_copy.errors import UserFacingError
+
 ALLOWED_EXTENSIONS = {".pdf": "pdf", ".txt": "txt", ".md": "md", ".markdown": "md"}
 
 
-class IngestError(Exception):
-    """A user-facing rejection. `message` is safe to show; it never contains file content."""
-
-    def __init__(self, message: str, status: int = 422) -> None:
-        super().__init__(message)
-        self.message = message
-        self.status = status
+class IngestError(UserFacingError):
+    """A rejected upload or paste."""
 
 
 def decode_text(data: bytes) -> str:

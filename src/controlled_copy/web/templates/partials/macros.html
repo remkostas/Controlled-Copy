@@ -1,10 +1,6 @@
 {% macro cites(items) -%}
 {%- for c in items -%}
-{%- if c.deleted -%}
-<span class="cite cite--deleted" title="Cited source was deleted">{{ c.n }}</span>
-{%- else -%}
 <button type="button" class="cite" hx-get="{{ c.url }}" hx-target="#viewer-slot" hx-swap="innerHTML" title="{{ c.label }}" aria-label="Citation {{ c.n }}: {{ c.label }}">{{ c.n }}</button>
-{%- endif -%}
 {%- endfor -%}
 {%- endmacro %}
 

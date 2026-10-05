@@ -15,7 +15,7 @@ def test_tc_acc_005_notebook_methods_refuse_a_raw_id(visitor, services):
     with pytest.raises(TypeError, match="OwnedNotebook"):
         services.repo.list_sources(visitor.notebook_id)
     with pytest.raises(TypeError):
-        services.repo.list_messages(visitor.notebook_id)
+        services.repo.list_turns(visitor.notebook_id)
     other_session = "not-the-owner"
     assert services.repo.get_notebook(other_session, visitor.notebook_id) is None
 

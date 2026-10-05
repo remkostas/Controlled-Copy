@@ -16,15 +16,19 @@ from fastapi import APIRouter, File, Form, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from markupsafe import Markup
 
-from controlled_copy.answering.answer import AskError, ask
+from controlled_copy.answering.answer import ask
+from controlled_copy.config import Settings
+from controlled_copy.errors import UserFacingError
 from controlled_copy.ingestion import pipeline
 from controlled_copy.ingestion.validate import IngestError
-from controlled_copy.limits import DAILY_LIMIT_MESSAGE, LimitExceeded
+from controlled_copy.limits import DAILY_LIMIT_MESSAGE
 from controlled_copy.logs import log_event
+from controlled_copy.plugins import StudioAction
 from controlled_copy.providers.base import ProviderError
+from controlled_copy.purge import remove_uploads
 from controlled_copy.services import Services
-from controlled_copy.storage.repo import CapacityReached, OwnedNotebook
-from controlled_copy.studio.actions import StudioError, run_overview_template, suggested_questions
+from controlled_copy.storage.repo import CapacityReached, OwnedNotebook, sources_full
+from controlled_copy.studio.actions import run_overview_template, suggested_questions, suggestions_key
 from controlled_copy.studio.engine import core_templates
 from controlled_copy.web import views
 from controlled_copy.web.deps import (
@@ -33,6 +37,7 @@ from controlled_copy.web.deps import (
     SettingsDep,
     WriteDep,
     is_htmx,
+    json_error,
     same_origin,
     wants_json,
 )
@@ -48,6 +53,7 @@ from controlled_copy.web.segments import build_segments
 router = APIRouter()
 
 DEFAULT_NOTEBOOK_TITLE = "Untitled notebook"
+EMBEDDING_UNAVAILABLE = "Indexing failed because the embedding provider is not available. Please try again."
 
 
 # Rendering helpers -------------------------------------------------------------
@@ -58,26 +64,20 @@ def render(
     status: int = 200,
     headers: dict[str, str] | None = None,
 ) -> HTMLResponse:
-    settings = request.app.state.settings
-    base = {"product_name": settings.product_name, "tagline": settings.product_tagline}
     return request.app.state.templates.TemplateResponse(
-        request, name, {**base, **context}, status_code=status, headers=headers
+        request, name, context, status_code=status, headers=headers
     )
 
 
 def fragment(request: Request, name: str, context: dict[str, Any]) -> str:
-    template = request.app.state.templates.get_template(name)
-    settings = request.app.state.settings
-    return template.render(product_name=settings.product_name, tagline=settings.product_tagline, **context)
+    return request.app.state.templates.get_template(name).render(**context)
 
 
-def notice(
-    request: Request, message: str, status: int, target: str | None = None, kind: str = "error"
-) -> Response:
+def notice(request: Request, message: str, status: int, target: str | None = None) -> Response:
     if wants_json(request):
-        return JSONResponse({"error": message}, status_code=status)
+        return json_error(message, status)
     headers = {"HX-Retarget": target, "HX-Reswap": "innerHTML"} if target and is_htmx(request) else None
-    return render(request, "partials/notice.html", {"message": message, "kind": kind}, status, headers)
+    return render(request, "partials/notice.html", {"message": message}, status, headers)
 
 
 def hx_redirect(request: Request, url: str) -> Response:
@@ -86,61 +86,79 @@ def hx_redirect(request: Request, url: str) -> Response:
     return RedirectResponse(url, status_code=303)
 
 
-def limits_view(settings: Any) -> dict[str, Any]:
+def json_or_redirect(request: Request, payload: dict[str, Any], url: str, status: int = 200) -> Response:
+    return JSONResponse(payload, status_code=status) if wants_json(request) else hx_redirect(request, url)
+
+
+def landing_page(
+    request: Request, settings: Settings, error: str | None = None, status: int = 200
+) -> Response:
+    return render(
+        request, "landing.html", {"retention_days": settings.retention_days, "error": error}, status
+    )
+
+
+def limits_view(settings: Settings) -> dict[str, Any]:
     return {
         "max_sources": settings.max_sources_per_notebook,
-        "max_file_mb": settings.max_file_bytes // (1024 * 1024),
+        "max_file_mb": settings.max_file_mb,
         "max_pdf_pages": settings.max_pdf_pages,
         "question_chars": settings.max_question_chars,
         "situation_chars": settings.max_situation_chars,
     }
 
 
-def studio_actions(request: Request) -> list[dict[str, Any]]:
-    actions = [
-        {"id": t.id, "title": t.title, "description": t.description, "icon": t.icon, "partial": None}
-        for t in core_templates().values()
-    ]
-    actions += [vars(a) for a in request.app.state.registry.studio_actions]
-    return actions
+def studio_actions(request: Request) -> list[StudioAction]:
+    core = [StudioAction(t.id, t.title, t.description, t.icon) for t in core_templates().values()]
+    return core + list(request.app.state.registry.studio_actions)
+
+
+def _suggestions_state(
+    notebook: OwnedNotebook, sources: list[dict[str, Any]], read_only: bool
+) -> tuple[bool, list]:
+    """(pending, questions): cached questions render at once; otherwise the page loads them."""
+    if not sources or read_only:
+        return False, []
+    if notebook.suggestions_json and notebook.suggestions_key == suggestions_key([s["id"] for s in sources]):
+        return False, json.loads(notebook.suggestions_json)
+    return True, []
 
 
 def workspace_context(
     request: Request,
     services: Services,
-    notebook: Any,
-    selected_ids: set[str] | None = None,
+    notebook: OwnedNotebook,
     initial_viewer: Markup | None = None,
 ) -> dict[str, Any]:
     repo = services.repo
-    assert services.session_id is not None
     sources = [views.source_view(row) for row in repo.list_sources(notebook)]
-    selected = {s["id"] for s in sources} if selected_ids is None else selected_ids
     read_only = services.budget.read_only()
     settings = services.settings
+    notebooks = repo.list_notebooks(services.sid)
+    pending, questions = _suggestions_state(notebook, sources, read_only)
+    partials = request.app.state.registry.output_partials
     context: dict[str, Any] = {
-        "csrf_token": csrf_token(request.app.state.secret, services.session_id),
-        "notebooks": [
-            {"id": n["id"], "title": n["title"], "kind": n["kind"]}
-            for n in repo.list_notebooks(services.session_id)
-        ],
-        "nb": {"id": notebook["id"], "title": notebook["title"], "kind": notebook["kind"]},
+        "csrf_token": csrf_token(request.app.state.secret, services.sid),
+        "notebooks": notebooks,
+        "nb": notebook,
         "sources": sources,
-        "selected_ids": selected,
-        "turns": views.turn_views(repo.list_messages(notebook)),
+        "selected_ids": {s["id"] for s in sources},
+        "turns": views.turn_views(repo.list_turns(notebook)),
         "outputs": [
-            views.output_view(row, open_=i == 0) for i, row in enumerate(repo.list_outputs(notebook))
+            views.output_view(row, open_=i == 0, partials=partials)
+            for i, row in enumerate(repo.list_outputs(notebook))
         ],
         "notice": DAILY_LIMIT_MESSAGE if read_only else None,
         "read_only": read_only,
-        "can_create_notebook": repo.count_notebooks(services.session_id) < settings.max_notebooks_per_visitor,
+        "can_create_notebook": sum(n.kind == "personal" for n in notebooks)
+        < settings.max_notebooks_per_visitor,
         "limits": limits_view(settings),
         "ui": {
             "topbar_partials": list(request.app.state.registry.topbar_partials),
             "studio_actions": studio_actions(request),
         },
-        "pending": bool(sources) and not read_only,
-        "questions": [],
+        "pending": pending,
+        "questions": questions,
         "initial_viewer": initial_viewer,
         "extra": {},
     }
@@ -149,12 +167,14 @@ def workspace_context(
     return context
 
 
-def owned_notebook_or_404(services: Services, notebook_id: str) -> OwnedNotebook:
-    assert services.session_id is not None
-    notebook = services.repo.get_notebook(services.session_id, notebook_id)
-    if notebook is None:
-        raise LookupError
-    return notebook
+def owned_notebook(services: Services, notebook_id: str) -> OwnedNotebook | None:
+    return services.repo.get_notebook(services.sid, notebook_id)
+
+
+def _discard(services: Services, files: list[str]) -> None:
+    """After a delete: fold the write-ahead log and remove the uploaded files."""
+    services.repo.checkpoint()
+    remove_uploads(services.settings, files)
 
 
 # Public pages ------------------------------------------------------------------
@@ -163,9 +183,7 @@ def landing(request: Request, services: ServicesDep) -> Response:
     sid = verify_session(request.app.state.secret, request.cookies.get(SESSION_COOKIE))
     if sid and services.repo.session_last_seen(sid):
         return RedirectResponse("/app", status_code=303)
-    return render(
-        request, "landing.html", {"retention_days": services.settings.retention_hours // 24, "error": None}
-    )
+    return landing_page(request, services.settings)
 
 
 @router.post("/access", response_class=HTMLResponse)
@@ -177,22 +195,17 @@ def access(
     settings = services.settings
     if not same_origin(request):
         # Login CSRF: another site must not be able to replace a visitor's session.
-        return render(
-            request, "landing.html", {"retention_days": settings.retention_hours // 24, "error": None}, 403
-        )
+        return landing_page(request, settings, status=403)
     limiter = request.app.state.access_limiter
     client = request.client.host if request.client else "unknown"
-    context = {"retention_days": settings.retention_hours // 24}
     if limiter.blocked(client):
         log_event("access", outcome="rate_limited")
-        return render(
-            request, "landing.html", {**context, "error": "Too many attempts. Try again in an hour."}, 429
-        )
+        return landing_page(request, settings, "Too many attempts. Try again in an hour.", 429)
     expected = settings.app_access_code.get_secret_value() if settings.app_access_code else ""
     if not expected or not code_matches(code, expected):
         limiter.record_failure(client)
         log_event("access", outcome="wrong_code")
-        return render(request, "landing.html", {**context, "error": "That access code is not valid."}, 401)
+        return landing_page(request, settings, "That access code is not valid.", 401)
     existing = verify_session(request.app.state.secret, request.cookies.get(SESSION_COOKIE))
     sid = (
         existing if existing and services.repo.session_last_seen(existing) else services.repo.create_session()
@@ -230,19 +243,16 @@ def healthz() -> dict[str, str]:
 def workspace(
     request: Request, services: SessionDep, nb: Annotated[str | None, Query(max_length=64)] = None
 ) -> Response:
-    sid = services.session_id
-    assert sid is not None
+    sid = services.sid
     for hook in request.app.state.registry.workspace_hooks:
         hook(services, sid)
     notebooks = services.repo.list_notebooks(sid)
-    if not notebooks:
+    if not any(n.kind == "personal" for n in notebooks):
         with contextlib.suppress(CapacityReached):  # a parallel request created it first
             services.repo.create_notebook(sid, DEFAULT_NOTEBOOK_TITLE, limit=1)
         notebooks = services.repo.list_notebooks(sid)
-    current = next((n for n in notebooks if n["id"] == nb), None)
-    if current is None:
-        personal = [n for n in notebooks if n["kind"] == "personal"]
-        current = personal[0] if personal else notebooks[0]
+    personal = [n for n in notebooks if n.kind == "personal"]
+    current = next((n for n in notebooks if n.id == nb), personal[0])
     return render(request, "workspace.html", workspace_context(request, services, current))
 
 
@@ -250,43 +260,28 @@ def workspace(
 def create_notebook(
     request: Request, services: WriteDep, title: Annotated[str, Form(max_length=120)] = ""
 ) -> Response:
-    sid = services.session_id
-    assert sid is not None
-    limit = services.settings.max_notebooks_per_visitor
-    if services.repo.count_notebooks(sid) >= limit:
-        return notice(
-            request, f"You can have at most {limit} notebooks. Delete one to create another.", 409, "#toast"
-        )
     cleaned = " ".join(title.split()) or DEFAULT_NOTEBOOK_TITLE
     try:
-        notebook_id = services.repo.create_notebook(sid, cleaned, limit=limit)
-    except CapacityReached:
-        return notice(
-            request, f"You can have at most {limit} notebooks. Delete one to create another.", 409, "#toast"
+        notebook_id = services.repo.create_notebook(
+            services.sid, cleaned, limit=services.settings.max_notebooks_per_visitor
         )
-    log_event("notebook_created", session=sid, notebook=notebook_id)
-    if wants_json(request):
-        return JSONResponse({"notebook_id": notebook_id}, status_code=201)
-    return hx_redirect(request, f"/app?nb={notebook_id}")
+    except CapacityReached as exc:
+        return notice(request, exc.message, exc.status, "#toast")
+    log_event("notebook_created", session=services.sid, notebook=notebook_id)
+    return json_or_redirect(request, {"notebook_id": notebook_id}, f"/app?nb={notebook_id}", 201)
 
 
 @router.delete("/notebooks/{notebook_id}")
 def delete_notebook(request: Request, notebook_id: str, services: WriteDep) -> Response:
-    sid = services.session_id
-    assert sid is not None
-    notebook = services.repo.get_notebook(sid, notebook_id)
+    notebook = owned_notebook(services, notebook_id)
     if notebook is None:
         return notice(request, "Notebook not found.", 404, "#toast")
-    if notebook["kind"] != "personal":
+    if notebook.kind != "personal":
         return notice(request, "This workspace cannot be deleted; use Reset instead.", 409, "#toast")
-    files = services.repo.delete_notebook(sid, notebook_id) or []
-    services.repo.checkpoint()
-    for name in files:
-        (services.settings.uploads_dir / name).unlink(missing_ok=True)
-    log_event("notebook_deleted", session=sid, notebook=notebook_id, files=len(files))
-    if wants_json(request):
-        return JSONResponse({"deleted": notebook_id})
-    return hx_redirect(request, "/app")
+    files = services.repo.delete_notebook(services.sid, notebook_id) or []
+    _discard(services, files)
+    log_event("notebook_deleted", session=services.sid, notebook=notebook_id, files=len(files))
+    return json_or_redirect(request, {"deleted": notebook_id}, "/app")
 
 
 # Sources -------------------------------------------------------------------------
@@ -296,20 +291,41 @@ def _source_list_response(
     if wants_json(request):
         return JSONResponse({"source_id": new_id}, status_code=201)
     sources = [views.source_view(row) for row in services.repo.list_sources(notebook)]
+    limits = limits_view(services.settings)
     html = fragment(
         request, "partials/source_list.html", {"sources": sources, "selected_ids": selected | {new_id}}
     )
-    count = fragment(
-        request,
-        "partials/source_count.html",
-        {"count": len(sources), "limits": limits_view(services.settings)},
-    )
+    count = fragment(request, "partials/source_count.html", {"count": len(sources), "limits": limits})
     intro = fragment(
         request,
         "partials/chat_intro.html",
-        {"nb": dict(notebook), "sources": sources, "pending": True, "questions": [], "oob": True},
+        {"nb": notebook, "sources": sources, "pending": True, "questions": [], "oob": True},
     )
     return HTMLResponse(html + count + intro, status_code=201)
+
+
+def _extract(
+    settings: Settings, file: UploadFile | None, title: str | None, text: str | None
+) -> pipeline.Extracted:
+    if file is not None and file.filename:
+        data = file.file.read(settings.max_file_bytes + 1)
+        if len(data) > settings.max_file_bytes:
+            raise IngestError(f"The file is larger than {settings.max_file_mb} MB.", 413)
+        extracted = pipeline.extract_upload(
+            file.filename,
+            data,
+            max_pages=settings.max_pdf_pages,
+            timeout=settings.pdf_parse_timeout_seconds,
+            memory_mb=settings.pdf_parse_memory_mb,
+            title_limit=settings.max_title_chars,
+        )
+        extracted.raw = data
+        return extracted
+    if text is not None:
+        if len(text) > settings.max_paste_chars:
+            raise IngestError(f"Pasted text is limited to {settings.max_paste_chars:,} characters.", 413)
+        return pipeline.extract_paste(title or "Pasted text", text, title_limit=settings.max_title_chars)
+    raise IngestError("Choose a file or paste some text.", 422)
 
 
 @router.post("/notebooks/{notebook_id}/sources")
@@ -324,79 +340,34 @@ def add_source(
 ) -> Response:
     settings = services.settings
     target = "#add-source-status"
-    try:
-        notebook = owned_notebook_or_404(services, notebook_id)
-    except LookupError:
+    notebook = owned_notebook(services, notebook_id)
+    if notebook is None:
         return notice(request, "Notebook not found.", 404, target)
     if services.repo.count_sources(notebook) >= settings.max_sources_per_notebook:
-        return notice(
-            request, f"A notebook holds at most {settings.max_sources_per_notebook} sources.", 409, target
-        )
+        full = sources_full(settings.max_sources_per_notebook)  # checked again inside the write
+        return notice(request, full.message, full.status, target)
     if services.budget.read_only():
         return notice(request, DAILY_LIMIT_MESSAGE, 503, target)
     try:
-        if file is not None and file.filename:
-            data = file.file.read(settings.max_file_bytes + 1)
-            if len(data) > settings.max_file_bytes:
-                raise IngestError(
-                    f"The file is larger than {settings.max_file_bytes // (1024 * 1024)} MB.", 413
-                )
-            extracted = pipeline.extract_upload(
-                file.filename,
-                data,
-                max_pages=settings.max_pdf_pages,
-                timeout=settings.pdf_parse_timeout_seconds,
-                memory_mb=settings.pdf_parse_memory_mb,
-                title_limit=settings.max_title_chars,
-            )
-            raw: bytes | None = data
-        elif text is not None:
-            if len(text) > settings.max_paste_chars:
-                raise IngestError(f"Pasted text is limited to {settings.max_paste_chars:,} characters.", 413)
-            extracted = pipeline.extract_paste(
-                title or "Pasted text", text, title_limit=settings.max_title_chars
-            )
-            raw = None
-        else:
-            raise IngestError("Choose a file or paste some text.", 422)
-        source_id = pipeline.store(services, notebook, extracted, raw)
-    except IngestError as exc:
-        log_event(
-            "source_rejected", session=services.session_id, notebook=notebook_id, status=str(exc.status)
-        )
+        extracted = _extract(settings, file, title, text)
+        source_id = pipeline.store(services, notebook, extracted, extracted.raw)
+    except UserFacingError as exc:
+        log_event("source_rejected", session=services.sid, notebook=notebook_id, status=str(exc.status))
         return notice(request, exc.message, exc.status, target)
-    except LimitExceeded as exc:
-        return notice(request, exc.message, exc.status, target)
-    except CapacityReached:
-        return notice(
-            request, f"A notebook holds at most {settings.max_sources_per_notebook} sources.", 409, target
-        )
     except ProviderError:
-        return notice(
-            request,
-            "Indexing failed because the embedding provider is not available. Please try again.",
-            502,
-            target,
-        )
-    selected = set(source_ids or [])
-    return _source_list_response(request, services, notebook, selected, source_id)
+        return notice(request, EMBEDDING_UNAVAILABLE, 502, target)
+    return _source_list_response(request, services, notebook, set(source_ids or []), source_id)
 
 
 @router.delete("/sources/{source_id}")
 def delete_source(request: Request, source_id: str, services: WriteDep) -> Response:
-    sid = services.session_id
-    assert sid is not None
-    source = services.repo.owned_source(sid, source_id)
+    source = services.repo.owned_source(services.sid, source_id)
     if source is None:
         return notice(request, "Source not found.", 404, "#toast")
-    files = services.repo.delete_source(sid, source_id) or []
-    services.repo.checkpoint()
-    for name in files:
-        (services.settings.uploads_dir / name).unlink(missing_ok=True)
-    log_event("source_deleted", session=sid, source=source_id, notebook=source["notebook_id"])
-    if wants_json(request):
-        return JSONResponse({"deleted": source_id})
-    return hx_redirect(request, f"/app?nb={source['notebook_id']}")
+    files = services.repo.delete_source(services.sid, source_id) or []
+    _discard(services, files)
+    log_event("source_deleted", session=services.sid, source=source_id, notebook=source["notebook_id"])
+    return json_or_redirect(request, {"deleted": source_id}, f"/app?nb={source['notebook_id']}")
 
 
 @router.get("/sources/{source_id}", response_class=HTMLResponse)
@@ -407,19 +378,17 @@ def view_source(
     start: Annotated[int | None, Query(ge=0)] = None,
     end: Annotated[int | None, Query(ge=0)] = None,
 ) -> Response:
-    sid = services.session_id
-    assert sid is not None
-    row = services.repo.owned_source(sid, source_id)
+    row = services.repo.owned_source(services.sid, source_id, with_text=True)
     if row is None:
         return notice(request, "Source not found.", 404, "#toast")
     text = row["text"]
     highlight = (start, end) if start is not None and end is not None and start < end <= len(text) else None
     page_starts = json.loads(row["page_starts_json"]) if row["page_starts_json"] else None
     source = views.source_view(row)
-    chunks = services.repo.chunks_for_sources([source_id])
-    focus = (
-        views.focus_label_for(chunks, highlight[0], row["title"], source["metadata"]) if highlight else None
-    )
+    focus = None
+    if highlight:
+        locator = services.repo.locator_at(source_id, highlight[0])
+        focus = views.focus_label(row["title"], source["meta"], locator) if locator else None
     context = {
         "s": source,
         "segments": build_segments(text, highlight, page_starts, markdown=row["kind"] == "md"),
@@ -430,7 +399,8 @@ def view_source(
     html = fragment(request, "partials/viewer.html", context)
     if is_htmx(request):
         return HTMLResponse(html)
-    notebook = services.repo.get_notebook(sid, row["notebook_id"])
+    notebook = owned_notebook(services, row["notebook_id"])
+    assert notebook is not None  # owned_source already checked the session
     return render(
         request,
         "workspace.html",
@@ -447,15 +417,14 @@ def ask_question(
     question: Annotated[str, Form(max_length=20000)] = "",
     source_ids: Annotated[list[str] | None, Form()] = None,
 ) -> Response:
-    try:
-        notebook = owned_notebook_or_404(services, notebook_id)
-    except LookupError:
+    notebook = owned_notebook(services, notebook_id)
+    if notebook is None:
         return notice(request, "Notebook not found.", 404, "#toast")
     try:
         result = ask(services, notebook, question, list(source_ids or []))
-    except AskError as exc:
+    except UserFacingError as exc:
         if wants_json(request):
-            return JSONResponse({"error": exc.message}, status_code=exc.status)
+            return json_error(exc.message, exc.status)
         turn = views.error_turn(question.strip()[: services.settings.max_question_chars], exc.message)
         return render(request, "partials/turn.html", {"t": turn}, exc.status)
     if wants_json(request):
@@ -473,16 +442,11 @@ def ask_question(
 
 @router.get("/notebooks/{notebook_id}/suggestions", response_class=HTMLResponse)
 def suggestions(request: Request, notebook_id: str, services: SessionDep) -> Response:
-    try:
-        notebook = owned_notebook_or_404(services, notebook_id)
-    except LookupError:
+    notebook = owned_notebook(services, notebook_id)
+    if notebook is None:
         return HTMLResponse('<div id="suggestions"></div>', status_code=404)
     questions = suggested_questions(services, notebook)
-    return render(
-        request,
-        "partials/suggestions.html",
-        {"pending": False, "questions": questions, "nb": {"id": notebook_id}},
-    )
+    return render(request, "partials/suggestions.html", {"pending": False, "questions": questions})
 
 
 # Studio ----------------------------------------------------------------------------
@@ -497,14 +461,21 @@ def run_studio(
     template = core_templates().get(template_id)
     if template is None:
         return notice(request, "Unknown Studio action.", 404, "#studio-status")
-    try:
-        notebook = owned_notebook_or_404(services, notebook_id)
-        stored = run_overview_template(services, notebook, template, list(source_ids or []))
-    except LookupError:
+    notebook = owned_notebook(services, notebook_id)
+    if notebook is None:
         return notice(request, "Notebook not found.", 404, "#studio-status")
-    except StudioError as exc:
+    try:
+        stored = run_overview_template(services, notebook, template, list(source_ids or []))
+    except UserFacingError as exc:
         return notice(request, exc.message, exc.status, "#studio-status")
     if wants_json(request):
         return JSONResponse({"output_id": stored.output_id, "output": stored.output})
-    row = services.repo.get_output(notebook, stored.output_id)
-    return render(request, "partials/output.html", {"o": views.output_view(row, open_=True)})
+    return render_output(request, services, notebook, stored.output_id)
+
+
+def render_output(request: Request, services: Services, notebook: OwnedNotebook, output_id: str) -> Response:
+    row = services.repo.get_output(notebook, output_id)
+    partials = request.app.state.registry.output_partials
+    return render(
+        request, "partials/output.html", {"o": views.output_view(row, open_=True, partials=partials)}
+    )

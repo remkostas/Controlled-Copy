@@ -14,7 +14,6 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
 
-import jinja2
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -33,17 +32,19 @@ from controlled_copy.purge import purge
 from controlled_copy.storage.db import CORE_MIGRATIONS, apply_migrations, connect
 from controlled_copy.storage.repo import Repo
 from controlled_copy.web.deps import CsrfFailed, NotAuthenticated, is_htmx, wants_json
-from controlled_copy.web.render import STATIC_DIR, TEMPLATE_DIR, make_environment
+from controlled_copy.web.render import STATIC_DIR, make_environment
 from controlled_copy.web.routes import router
 from controlled_copy.web.security import SecurityHeadersMiddleware
 
 BODY_OVERHEAD = 1024 * 1024
-BODY_TOO_LARGE = "controlled_copy.body_too_large"
 TOO_LARGE_MESSAGE = "The request is too large. Files may be up to {mb} MB."
 
 
-class BodyTooLarge(Exception):
-    pass
+class BodyTooLarge(StarletteHTTPException):
+    """Raised while the body is read; FastAPI passes an HTTPException through body parsing."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=413)
 
 
 class BodySizeLimitMiddleware:
@@ -71,8 +72,6 @@ class BodySizeLimitMiddleware:
             if message["type"] == "http.request":
                 received += len(message.get("body", b""))
                 if received > self.limit:
-                    # FastAPI wraps body-parsing errors in a 400; the flag lets the handler answer 413.
-                    scope[BODY_TOO_LARGE] = True
                     raise BodyTooLarge
             return message
 
@@ -178,14 +177,11 @@ def create_app(
     )
     app.state.secret = secret.encode()
 
-    env = make_environment()
-    if registry.template_dirs:
-        env.loader = jinja2.ChoiceLoader(
-            [
-                jinja2.FileSystemLoader(TEMPLATE_DIR),
-                *(jinja2.FileSystemLoader(d) for d in registry.template_dirs),
-            ]
-        )
+    env = make_environment(
+        extra_dirs=registry.template_dirs,
+        product_name=settings.product_name,
+        tagline=settings.product_tagline,
+    )
     app.state.templates = Jinja2Templates(env=env)
 
     # Added last = outermost: every response, including a 413 from the size guard, gets the headers.
@@ -223,7 +219,7 @@ def create_app(
 
     @app.exception_handler(StarletteHTTPException)
     async def http_error(request: Request, exc: StarletteHTTPException) -> Response:
-        status = 413 if request.scope.get(BODY_TOO_LARGE) else exc.status_code
+        status = exc.status_code
         message = {404: "Not found.", 405: "Method not allowed.", 413: too_large}.get(
             status, "The request failed."
         )

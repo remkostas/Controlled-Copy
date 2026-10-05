@@ -5,7 +5,9 @@
     <span class="output__meta">{{ o.meta_label }}</span>
   </summary>
   <div class="output__body">
-    {% if o.kind == 'ok' %}
+    {% if o.kind == 'ok' and o.partial %}
+    {% include o.partial %}
+    {% elif o.kind == 'ok' %}
     {% for sec in o.sections %}
     <section class="output__section">
       <h3>{{ sec.title }}</h3>
@@ -21,10 +23,8 @@
     </section>
     {% endfor %}
     {% if o.removed %}<p class="muted">{{ o.removed }} statement{{ '' if o.removed == 1 else 's' }} removed because the quote could not be verified.</p>{% endif %}
-    {% elif o.kind == 'tombstone' %}
-    <p class="muted">This output cited a source that was deleted, so its content was deleted too.</p>
     {% else %}
-    <p class="notice notice--error" role="alert">{{ icon('triangle-alert') }}<span>{{ o.message }}</span></p>
+    <p class="muted">This output cited a source that was deleted, so its content was deleted too.</p>
     {% endif %}
   </div>
 </details>

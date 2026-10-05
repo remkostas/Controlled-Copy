@@ -7,7 +7,8 @@ import sqlite3
 from datetime import datetime
 from typing import Any
 
-from controlled_copy.answering.citations import short_locator
+from controlled_copy.answering.citations import located_label
+from controlled_copy.answering.prompts import document_label
 from controlled_copy.storage.repo import TOMBSTONE
 
 KIND_LABELS = {"pdf": "PDF", "md": "Markdown", "txt": "Text", "paste": "Pasted text"}
@@ -21,6 +22,7 @@ TYPE_LABELS = {
     "inference": "Inference",
     "recommendation": "Recommendation",
     "missing_evidence": "Missing evidence",
+    "conflict": "Conflict",
 }
 
 
@@ -32,7 +34,7 @@ def _plural(count: int, noun: str) -> str:
     return f"{count:,} {noun}" + ("" if count == 1 else "s")
 
 
-def source_view(row: sqlite3.Row, selected: bool = True) -> dict[str, Any]:
+def source_view(row: sqlite3.Row) -> dict[str, Any]:
     kind = row["kind"]
     keys = row.keys()
     if kind == "pdf":
@@ -62,12 +64,10 @@ def source_view(row: sqlite3.Row, selected: bool = True) -> dict[str, Any]:
         "size_label": size,
         "warnings": json.loads(row["warnings_json"] or "[]"),
         "meta": meta,
-        "metadata": metadata or {},
         "origin_label": origin_label,
         "origin_short": origin_short,
         "created_label": time_label(row["created_at"]),
-        "superseded_by": None,
-        "selected": selected,
+        "superseded_by": None,  # filled in by the governed layer's view hook
     }
 
 
@@ -82,7 +82,6 @@ def _cite_views(numbers: list[dict[str, Any]], citations: dict[int, dict[str, An
                 "n": c["n"],
                 "url": f"/sources/{c['source_id']}?start={c['start']}&end={c['end']}",
                 "label": c["label"],
-                "deleted": False,
             }
         )
     return views
@@ -106,7 +105,6 @@ def answer_view(answer: dict[str, Any], status: str = "ok") -> dict[str, Any]:
         "searched_sources": int(answer.get("searched_sources", 0)),
         "search_query": answer.get("search_query"),
         "reason": answer.get("reason"),
-        "message": answer.get("message", ""),
     }
 
 
@@ -130,31 +128,26 @@ def turn_view(
     }
 
 
-def turn_views(messages: list[sqlite3.Row]) -> list[dict[str, Any]]:
-    turns: dict[str, dict[str, sqlite3.Row]] = {}
-    for row in messages:
-        turns.setdefault(row["turn_id"], {})[row["role"]] = row
-    views = []
-    for turn_id, pair in turns.items():
-        user, assistant = pair.get("user"), pair.get("assistant")
-        if not user or not assistant:
-            continue
-        views.append(
-            turn_view(
-                turn_id,
-                user["content"],
-                assistant["search_query"],
-                json.loads(assistant["content"] or "{}"),
-                assistant["status"],
-            )
+def turn_views(turns: list[sqlite3.Row]) -> list[dict[str, Any]]:
+    """View models for Repo.list_turns rows."""
+    return [
+        turn_view(
+            turn["turn_id"],
+            turn["question"],
+            turn["search_query"],
+            json.loads(turn["answer_json"] or "{}"),
+            turn["status"],
         )
-    return views
+        for turn in turns
+    ]
 
 
-def output_view(row: sqlite3.Row, open_: bool = False) -> dict[str, Any]:
+def output_view(
+    row: sqlite3.Row, open_: bool = False, partials: dict[str, str] | None = None
+) -> dict[str, Any]:
     created = time_label(row["created_at"])
     output = json.loads(row["output_json"] or "{}")
-    base = {"id": row["id"], "open": open_, "removed": 0, "sections": [], "message": ""}
+    base = {"id": row["id"], "open": open_, "removed": 0, "sections": [], "partial": None}
     if row["status"] == TOMBSTONE:
         return {**base, "kind": "tombstone", "title": "Studio output removed", "meta_label": created}
     citations = {int(c["n"]): c for c in output.get("citations", [])}
@@ -162,6 +155,7 @@ def output_view(row: sqlite3.Row, open_: bool = False) -> dict[str, Any]:
     for section in output.get("sections", []):
         entries = [
             {
+                "type": item.get("type"),
                 "text": item["text"],
                 "type_label": TYPE_LABELS.get(item.get("type") or ""),
                 "cites": _cite_views(item.get("cites", []), citations),
@@ -178,18 +172,10 @@ def output_view(row: sqlite3.Row, open_: bool = False) -> dict[str, Any]:
         "sections": sections,
         "removed": int(output.get("removed", 0)),
         "extra": output,
+        "partial": (partials or {}).get(row["template"]),
     }
 
 
-def focus_label_for(
-    chunks: list[sqlite3.Row], start: int, title: str, metadata: dict[str, Any] | None
-) -> str | None:
-    for chunk in chunks:
-        if chunk["char_start"] <= start < chunk["char_end"]:
-            name = title
-            if metadata and metadata.get("document_id"):
-                name = metadata["document_id"] + (
-                    f" rev {metadata['revision']}" if metadata.get("revision") else ""
-                )
-            return f"{name} · {short_locator(chunk['locator'])}"
-    return None
+def focus_label(title: str, meta: dict[str, Any] | None, locator: str) -> str:
+    """The viewer's 'cited passage' label, identical to the citation chip's tooltip."""
+    return located_label(document_label(title, meta), locator)

@@ -9,8 +9,9 @@ from dataclasses import dataclass
 from pydantic import BaseModel, Field
 
 from controlled_copy.answering import prompts
-from controlled_copy.answering.generate import GenerationError, generate
-from controlled_copy.limits import DAILY_LIMIT_MESSAGE, LimitExceeded
+from controlled_copy.answering.generate import generate
+from controlled_copy.errors import UserFacingError
+from controlled_copy.limits import DAILY_LIMIT_MESSAGE
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError
 from controlled_copy.services import Services
@@ -18,11 +19,8 @@ from controlled_copy.storage.repo import OwnedNotebook
 from controlled_copy.studio.engine import StudioTemplate, run_template, select_overview_passages
 
 
-class StudioError(Exception):
-    def __init__(self, message: str, status: int) -> None:
-        super().__init__(message)
-        self.message = message
-        self.status = status
+class StudioError(UserFacingError):
+    """A Studio action that cannot run as requested."""
 
 
 @dataclass
@@ -41,19 +39,11 @@ def run_overview_template(
         raise StudioError(DAILY_LIMIT_MESSAGE, 503)
     source_ids = [row["id"] for row in sources]
     passages = select_overview_passages(services, source_ids, template.passage_budget_chars)
-    try:
-        result = run_template(services, template, passages)
-    except (GenerationError, LimitExceeded) as exc:
-        raise StudioError(exc.message, exc.status) from exc
-    except ProviderError as exc:
-        raise StudioError(
-            "The model provider is not available right now. Please try again in a minute.", 502
-        ) from exc
+    result = run_template(services, template, passages)  # raises user-facing errors only
     output = result.output
     output["source_count"] = len(source_ids)
     # Every selected source fed the prompt, so deleting any of them removes this output.
-    flat = [{"source_id": source_id} for source_id in source_ids]
-    output_id = services.repo.add_output(notebook, template.id, None, output, flat, "ok")
+    output_id = services.repo.add_output(notebook, template.id, None, output, source_ids, "ok")
     log_event(
         "studio_output",
         session=services.session_id,
@@ -82,8 +72,8 @@ def suggested_questions(services: Services, notebook: OwnedNotebook) -> list[str
         return []
     source_ids = [row["id"] for row in sources]
     key = suggestions_key(source_ids)
-    if notebook["suggestions_key"] == key and notebook["suggestions_json"]:
-        return json.loads(notebook["suggestions_json"])
+    if notebook.suggestions_key == key and notebook.suggestions_json:
+        return json.loads(notebook.suggestions_json)
     if services.budget.read_only():
         return []
     passages = select_overview_passages(services, source_ids, 6000)
@@ -95,7 +85,7 @@ def suggested_questions(services: Services, notebook: OwnedNotebook) -> list[str
             schema_name="suggestions",
             model_cls=SuggestOut,
         )
-    except (GenerationError, LimitExceeded, ProviderError):
+    except (UserFacingError, ProviderError):
         return []
     questions = []
     for question in payload.questions:

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import math
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
@@ -85,43 +85,23 @@ def select_overview_passages(
     services: Services, source_ids: Sequence[str], budget_chars: int
 ) -> list[Passage]:
     """Spread the passage budget evenly over the selected sources, in document order."""
-    rows = services.repo.chunks_for_sources(list(source_ids))
-    if not rows:
-        return []
     by_source: dict[str, list[Any]] = {}
-    for row in rows:
+    for row in services.repo.chunks_for_sources(list(source_ids)):
         by_source.setdefault(row["source_id"], []).append(row)
-    sources = services.repo.source_rows(list(by_source))
+    if not by_source:
+        return []
     share = max(1500, budget_chars // len(by_source))
     chosen: list[Passage] = []
-    for source_id, chunks in by_source.items():
+    for chunks in by_source.values():
         used = 0
         # Take every step-th chunk so the selection reaches the end of the document.
         average = max(1, sum(len(row["text"]) for row in chunks) // len(chunks))
-        fits = max(1, share // average)
-        step = max(1, math.ceil(len(chunks) / fits))
+        step = max(1, math.ceil(len(chunks) / max(1, share // average)))
         for row in chunks[::step]:
             if used + len(row["text"]) > share and used:
                 break
             used += len(row["text"])
-            source = sources[source_id]
-            chosen.append(
-                Passage(
-                    chunk_id=int(row["id"]),
-                    source_id=source_id,
-                    source_title=source["title"],
-                    source_kind=source["kind"],
-                    locator=row["locator"],
-                    page=row["page"],
-                    char_start=row["char_start"],
-                    char_end=row["char_end"],
-                    text=row["text"],
-                    metadata=json.loads(source["metadata_json"]) if source["metadata_json"] else None,
-                    metadata_origin=source["metadata_origin"],
-                    cosine=0.0,
-                    fused=0.0,
-                )
-            )
+            chosen.append(Passage.from_row(row))
     return chosen
 
 
@@ -130,9 +110,6 @@ class StudioResult:
     output: dict[str, Any]
     citations: list[dict[str, Any]]
     model: str
-
-
-Postprocess = Callable[[dict[str, Any]], dict[str, Any]]
 
 
 def run_template(

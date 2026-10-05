@@ -17,3 +17,10 @@ class Services:
     repo: Repo
     budget: Budget
     session_id: str | None = None
+
+    @property
+    def sid(self) -> str:
+        """The session ID of a request that passed the session check."""
+        if self.session_id is None:
+            raise RuntimeError("no session on this request")
+        return self.session_id

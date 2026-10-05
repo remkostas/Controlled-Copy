@@ -13,7 +13,8 @@ highlighted in the viewer at the right place.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+
+from controlled_copy.storage.repo import ChunkRecord as Chunk
 
 TARGET_CHARS = 900
 MAX_CHARS = 1400
@@ -21,16 +22,6 @@ MAX_CHARS = 1400
 _HEADING = re.compile(r"^(#{1,6})[ \t]+(.+?)[ \t#]*$", re.M)
 _BLANK_LINE = re.compile(r"\n[ \t]*\n")
 _SENTENCE_END = re.compile(r"(?<=[.!?;:])\s+")
-
-
-@dataclass(frozen=True)
-class Chunk:
-    ordinal: int
-    locator: str
-    page: int | None
-    char_start: int
-    char_end: int
-    text: str
 
 
 def _trim(text: str, start: int, end: int) -> tuple[int, int]:

@@ -25,8 +25,8 @@ def body_of(name: str) -> str:
     return text.split("---\n", 2)[2].lstrip("\n")
 
 
-def cite(n, sid, label, deleted=False):
-    return NS(n=n, url=f"/sources/{sid}?start=0&end=10", label=label, deleted=deleted)
+def cite(n, sid, label):
+    return NS(n=n, url=f"/sources/{sid}?start=0&end=10", label=label)
 
 
 def main() -> None:
@@ -164,6 +164,7 @@ def main() -> None:
             meta_label="4 sources · 07:21",
             open=True,
             kind="ok",
+            partial=None,
             removed=0,
             sections=[
                 NS(

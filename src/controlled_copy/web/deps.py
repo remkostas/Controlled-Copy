@@ -8,6 +8,7 @@ from typing import Annotated
 from urllib.parse import urlsplit
 
 from fastapi import Depends, Request
+from fastapi.responses import JSONResponse
 
 from controlled_copy.config import Settings
 from controlled_copy.limits import Budget
@@ -94,6 +95,10 @@ async def require_csrf(request: Request, services: SessionDep) -> Services:
 
 
 WriteDep = Annotated[Services, Depends(require_csrf)]
+
+
+def json_error(message: str, status: int) -> JSONResponse:
+    return JSONResponse({"error": message}, status_code=status)
 
 
 def is_htmx(request: Request) -> bool:
