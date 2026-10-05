@@ -1,0 +1,72 @@
+[project]
+name = "controlled-copy"
+version = "0.1.0"
+description = "A NotebookLM-style notebook for controlled documents"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.118",
+    "uvicorn>=0.37",
+    "jinja2>=3.1.6",
+    "python-multipart>=0.0.20",
+    "pydantic>=2.11",
+    "pydantic-settings>=2.10",
+    "httpx>=0.28",
+    "pypdf>=6.0",
+    "pyyaml>=6.0.2",
+    "numpy>=2.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.4",
+    "ruff>=0.13",
+    "playwright>=1.55",
+]
+
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+controlled_copy = [
+    "web/templates/**/*.html",
+    "web/static/**/*",
+    "studio/templates/*.json",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "unit: pure functions, no I/O beyond memory",
+    "integration: several components with a temporary database and the fake model",
+    "api: HTTP-level tests through the FastAPI test client",
+    "e2e: real browser against a running server with the fake model",
+    "security: security behaviour",
+    "eval: real model calls on evaluation cases (manual)",
+    "smoke_live: checks against a deployed URL (manual)",
+    "stage1: core NotebookLM clone",
+    "stage2: governed-documents layer",
+    "stage3: extension",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "eval"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF"]
+ignore = [
+    "S101",  # assert is how pytest works
+    "RUF001", "RUF002", "RUF003",  # typographic characters are intended in UI text
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S108", "S311", "S603", "S607"]
+"eval/**" = ["S311"]
