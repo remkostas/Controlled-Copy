@@ -1,0 +1,13 @@
+{
+  "workspace_title": "Inbound Operations",
+  "company": "Kestrova Components GmbH (fictional)",
+  "default_context": {"site": "HAM-01", "role": "warehouse_operator"},
+  "scenarios": [
+    {"id": "short-delivery", "title": "Short delivery", "situation": "The delivery contains 96 units, but the purchase order expects 100. What should I do?"},
+    {"id": "damaged-packaging", "title": "Damaged outer packaging", "situation": "The outer packaging is damaged, but the product looks fine. Can I complete the goods receipt?"},
+    {"id": "missing-batch", "title": "Missing batch number", "situation": "The material requires batch management, but no batch number is visible on the label."},
+    {"id": "wms-gr-204", "title": "WMS error GR-204", "situation": "The WMS shows error GR-204 after I scan the delivery."},
+    {"id": "revision-question", "title": "Which revision applies?", "situation": "Revision 2 allows direct posting, but revision 3 requires a quality check. Which one applies?"},
+    {"id": "storage-a14", "title": "Storage location A-14", "situation": "Can I store this material in location A-14?"}
+  ]
+}
