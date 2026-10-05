@@ -22,7 +22,10 @@ def test_tc_stu_001_briefing_has_all_sections_and_only_verified_citations(visito
         "Important terms",
         "Open questions",
     ]
-    texts = {r["id"]: r["text"] for r in db.execute("SELECT id, text FROM source")}
+    texts = {
+        r["id"]: r["text"]
+        for r in db.execute("SELECT id, text FROM source WHERE notebook_id = ?", (visitor.notebook_id,))
+    }
     assert output["citations"]
     for citation in output["citations"]:
         assert texts[citation["source_id"]][citation["start"] : citation["end"]] == citation["quote"]

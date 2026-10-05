@@ -25,13 +25,17 @@ class PurgeResult:
     orphans: int
 
 
+def remove_uploads(settings: Settings, names: list[str]) -> None:
+    for name in names:
+        (settings.uploads_dir / name).unlink(missing_ok=True)
+
+
 def purge(settings: Settings, repo: Repo, now: datetime | None = None) -> PurgeResult:
     sessions, files = repo.purge_expired(settings.retention_hours, now)
     if sessions:
         repo.checkpoint()
+    remove_uploads(settings, files)
     uploads = settings.uploads_dir
-    for name in files:
-        (uploads / name).unlink(missing_ok=True)
     orphans = 0
     if uploads.is_dir():
         referenced = repo.referenced_files()

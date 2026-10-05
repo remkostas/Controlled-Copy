@@ -18,6 +18,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+from controlled_copy.answering import prompts
 from controlled_copy.providers.base import ChatResult, EmbedResult, ProviderError
 
 DIM = 1024
@@ -76,7 +77,6 @@ STOPWORDS = frozenset(
         "your",
     ]
 )
-PASSAGE = re.compile(r'<passage id="(P\d+)"[^>]*>\n(.*?)\n</passage>', re.S)
 
 
 def _stem(word: str) -> str:
@@ -111,7 +111,7 @@ class FakeRequest:
         return self.messages[-1]["content"]
 
     def passages(self) -> list[tuple[str, str]]:
-        return PASSAGE.findall(self.user)
+        return prompts.parse_passages(self.user)
 
 
 def first_sentence(text: str, max_words: int = 18) -> str:
@@ -126,8 +126,7 @@ def first_sentence(text: str, max_words: int = 18) -> str:
 def default_responder(request: FakeRequest) -> dict[str, Any]:
     passages = request.passages()
     if request.schema_name == "rewrite":
-        earlier = re.findall(r"^Earlier question: (.*)$", request.user, re.M)
-        latest = re.findall(r"^Latest question: (.*)$", request.user, re.M)[-1]
+        earlier, latest = prompts.parse_rewrite(request.user)
         follow_up = latest.lower().startswith(("and ", "what about", "how about")) or len(latest.split()) <= 4
         return {"search_question": " ".join([*earlier, latest]) if follow_up else latest}
     if request.schema_name == "suggestions":
@@ -180,13 +179,11 @@ class FakeProvider:
     name: str = "fake"
     chat_calls: list[FakeRequest] = field(default_factory=list)
     embed_calls: int = 0
-    embedded_texts: int = 0
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
     def embed(self, texts: list[str], *, model: str) -> EmbedResult:
         with self._lock:
             self.embed_calls += 1
-            self.embedded_texts += len(texts)
         return EmbedResult(
             vectors=[hash_embed(t) for t in texts], model=model, input_tokens=sum(len(t) // 4 for t in texts)
         )

@@ -309,13 +309,6 @@ select {
   background: var(--surface-hover);
   border-color: transparent;
 }
-.btn--danger {
-  color: var(--danger);
-}
-.btn--danger:hover {
-  background: var(--danger-soft);
-  border-color: var(--danger);
-}
 .btn--sm {
   min-height: 1.875rem;
   padding: 0 var(--sp-3);
@@ -400,11 +393,6 @@ select {
   background: var(--danger-soft);
   border-color: #e7b3ad;
   color: var(--danger);
-}
-.notice--info {
-  background: var(--c-blue-100);
-  border-color: #bcd0e3;
-  color: var(--c-blue-700);
 }
 .notice strong {
   font-weight: 600;
@@ -616,10 +604,6 @@ details.paste > summary::-webkit-details-marker {
 .add-source .btn,
 details.paste > summary.btn {
   width: 100%;
-}
-.add-source__status {
-  font-size: var(--fs-xs);
-  color: var(--text-muted);
 }
 .select-all {
   display: flex;
@@ -852,20 +836,12 @@ details.paste > summary.btn {
 .doc-text .ln--h4 {
   font-weight: 600;
 }
-.doc-text .ln--fm {
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--fs-xs);
-}
 .doc-text mark {
   background: var(--highlight);
   color: inherit;
   box-shadow: 0 2px 0 var(--highlight-edge);
   border-radius: 1px;
   scroll-margin: 6rem;
-}
-.doc-text .chunk-focus {
-  background: var(--c-amber-100);
 }
 .page-break {
   display: block;
@@ -998,11 +974,6 @@ details.paste > summary.btn {
 .cite[aria-current="true"] {
   background: var(--surface-chrome-2);
   color: var(--text-on-chrome);
-}
-.cite--deleted {
-  border-style: dashed;
-  color: var(--text-muted);
-  cursor: default;
 }
 .refusal {
   display: grid;
@@ -1286,12 +1257,6 @@ details.paste > summary.btn {
   grid-template-columns: 1fr auto;
   gap: var(--sp-2);
   align-items: end;
-}
-.processors {
-  margin: 0;
-  padding-left: var(--sp-5);
-  font-size: var(--fs-sm);
-  color: var(--text-faint);
 }
 .sheet__foot {
   display: flex;

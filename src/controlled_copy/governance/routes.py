@@ -8,28 +8,33 @@ from typing import Annotated
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import JSONResponse, Response
 
+from controlled_copy.errors import UserFacingError
 from controlled_copy.governance import rules
 from controlled_copy.governance.card import CardInput, context_options, run_card
 from controlled_copy.governance.seed import reset_workspace
 from controlled_copy.logs import log_event
 from controlled_copy.studio.actions import StudioError
-from controlled_copy.web import views
 from controlled_copy.web.deps import WriteDep, wants_json
-from controlled_copy.web.routes import hx_redirect, notice, owned_notebook_or_404, render
+from controlled_copy.web.routes import json_or_redirect, notice, owned_notebook, render_output
 
 router = APIRouter()
 DEFAULT_ROLE = "warehouse_operator"
 
 
+def _pick(value: str, options: list[str], fallback: str) -> str:
+    """The submitted value if the workspace knows it, else the preferred or first option."""
+    if value in options:
+        return value
+    if fallback in options or not options:
+        return fallback
+    return options[0]
+
+
 def default_context(rows: list, site: str, role: str, as_of: str) -> rules.Context:
+    """The context bar's values, falling back to the workspace's own sites and roles."""
     options = context_options(rows)
-    chosen_site = (
-        site if site in options["sites"] else (options["sites"][0] if options["sites"] else site or "all")
-    )
-    roles = options["roles"]
-    chosen_role = (
-        role if role in roles else (DEFAULT_ROLE if DEFAULT_ROLE in roles or not roles else roles[0])
-    )
+    chosen_site = _pick(site, options["sites"], fallback=site or "all")
+    chosen_role = _pick(role, options["roles"], fallback=DEFAULT_ROLE)
     try:
         when = date.fromisoformat(as_of) if as_of else date.today()
     except ValueError as exc:
@@ -48,30 +53,23 @@ def resolution_card(
     as_of: Annotated[str, Form(max_length=10)] = "",
     source_ids: Annotated[list[str] | None, Form()] = None,
 ) -> Response:
-    try:
-        notebook = owned_notebook_or_404(services, notebook_id)
-    except LookupError:
+    notebook = owned_notebook(services, notebook_id)
+    if notebook is None:
         return notice(request, "Notebook not found.", 404, "#studio-status")
     selected = list(source_ids or [])
     try:
-        rows = services.repo.sources_by_ids(notebook, selected)
-        context = default_context(rows, site, role, as_of)
+        context = default_context(services.repo.sources_by_ids(notebook, selected), site, role, as_of)
         stored = run_card(services, notebook, CardInput(situation, context), selected)
-    except StudioError as exc:
+    except UserFacingError as exc:
         return notice(request, exc.message, exc.status, "#studio-status")
     if wants_json(request):
         return JSONResponse({"output_id": stored.output_id, "output": stored.output})
-    row = services.repo.get_output(notebook, stored.output_id)
-    partials = request.app.state.registry.output_partials
-    return render(
-        request, "partials/output.html", {"o": views.output_view(row, open_=True, partials=partials)}
-    )
+    return render_output(request, services, notebook, stored.output_id)
 
 
 @router.post("/workspace/reset")
 def reset(request: Request, services: WriteDep) -> Response:
-    sid = services.session_id
-    assert sid is not None
+    sid = services.sid
     try:
         notebook = reset_workspace(services, sid)
     except Exception as exc:
@@ -79,6 +77,4 @@ def reset(request: Request, services: WriteDep) -> Response:
         return notice(request, "The workspace could not be reset. Please try again.", 502, "#toast")
     services.repo.checkpoint()
     log_event("workspace_reset", session=sid, notebook=notebook.id)
-    if wants_json(request):
-        return JSONResponse({"notebook_id": notebook.id})
-    return hx_redirect(request, f"/app?nb={notebook.id}")
+    return json_or_redirect(request, {"notebook_id": notebook.id}, f"/app?nb={notebook.id}")

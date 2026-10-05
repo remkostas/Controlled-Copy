@@ -21,7 +21,7 @@ from controlled_copy.ingestion.frontmatter import split_front_matter
 from controlled_copy.logs import log_event
 from controlled_copy.services import Services
 from controlled_copy.storage.db import transaction
-from controlled_copy.storage.repo import CapacityReached, ChunkRecord, NewSource, OwnedNotebook
+from controlled_copy.storage.repo import CapacityReached, NewSource, OwnedNotebook
 
 WORKSPACE_TITLE = "Inbound Operations"
 WORKSPACE_KIND = "ops_workspace"
@@ -126,10 +126,7 @@ def seed_workspace(services: Services, sid: str) -> OwnedNotebook:
                 metadata=extracted.metadata,
                 metadata_origin="curated",
                 file_path=None,
-                chunks=[
-                    ChunkRecord(c.ordinal, c.locator, c.page, c.char_start, c.char_end, c.text)
-                    for c in extracted.chunks
-                ],
+                chunks=extracted.chunks,
                 vectors=[vectors[(document.key, c.ordinal)] for c in extracted.chunks],
                 vector_model=services.settings.model_embedding,
             )

@@ -14,7 +14,9 @@ def test_tc_src_001_upload_pdf_txt_and_md(visitor, db):
     visitor.upload("notes.txt", b"First paragraph about receiving.\n\nSecond paragraph about counting.")
     visitor.upload("sop.md", corpus_file("SOP-INB-001_inbound-receiving_rev3.md"))
     rows = db.execute(
-        "SELECT kind, pages, title, metadata_origin FROM source ORDER BY created_at, rowid"
+        "SELECT kind, pages, title, metadata_origin FROM source WHERE notebook_id = ? "
+        "ORDER BY created_at, rowid",
+        (visitor.notebook_id,),
     ).fetchall()
     assert [r["kind"] for r in rows] == ["pdf", "txt", "md"]
     assert rows[0]["pages"] == 2
@@ -27,7 +29,9 @@ def test_tc_src_001_upload_pdf_txt_and_md(visitor, db):
 
 def test_tc_src_002_paste_text_with_a_title(visitor, db):
     visitor.paste("Shift handover", "Dock 3 is closed for repairs until Friday.\n\nUse dock 4 instead.")
-    row = db.execute("SELECT kind, title, text FROM source").fetchone()
+    row = db.execute(
+        "SELECT kind, title, text FROM source WHERE notebook_id = ?", (visitor.notebook_id,)
+    ).fetchone()
     assert (row["kind"], row["title"]) == ("paste", "Shift handover")
     assert "Dock 3 is closed" in row["text"]
 
@@ -79,7 +83,10 @@ def test_tc_src_011_deleting_a_source_removes_everything_derived(visitor, db, se
     )
     assert list(settings.uploads_dir.iterdir()) == []
     # The citing answer is marked, and its content is gone.
-    row = db.execute("SELECT status, content FROM chat_message WHERE role = 'assistant'").fetchone()
+    row = db.execute(
+        "SELECT status, content FROM chat_message WHERE role = 'assistant' AND notebook_id = ?",
+        (visitor.notebook_id,),
+    ).fetchone()
     assert row["status"] == "source_deleted"
     assert "UNIQUEMARKER" not in row["content"]
     assert "Answer removed" in visitor.refresh().page
@@ -91,7 +98,9 @@ def test_tc_src_011_deleting_a_source_removes_everything_derived(visitor, db, se
 def test_tc_idx_004_every_chunk_has_one_vector_and_one_index_row(visitor, db):
     for path in sorted(CORPUS.glob("*.md")):
         visitor.upload(path.name, path.read_bytes())
-    chunks = db.execute("SELECT COUNT(*) FROM chunk").fetchone()[0]
+    chunks = db.execute("SELECT COUNT(*) FROM chunk").fetchone()[
+        0
+    ]  # every chunk in the database, seeded ones too
     assert chunks > 30
     assert db.execute("SELECT COUNT(*) FROM chunk_vector").fetchone()[0] == chunks
     assert db.execute("SELECT COUNT(*) FROM chunk_fts").fetchone()[0] == chunks

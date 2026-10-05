@@ -23,10 +23,8 @@
     </section>
     {% endfor %}
     {% if o.removed %}<p class="muted">{{ o.removed }} statement{{ '' if o.removed == 1 else 's' }} removed because the quote could not be verified.</p>{% endif %}
-    {% elif o.kind == 'tombstone' %}
-    <p class="muted">This output cited a source that was deleted, so its content was deleted too.</p>
     {% else %}
-    <p class="notice notice--error" role="alert">{{ icon('triangle-alert') }}<span>{{ o.message }}</span></p>
+    <p class="muted">This output cited a source that was deleted, so its content was deleted too.</p>
     {% endif %}
   </div>
 </details>

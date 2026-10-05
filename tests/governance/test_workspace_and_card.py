@@ -37,14 +37,20 @@ def test_tc_gov_001_each_visitor_has_an_own_workspace_copy(make_visitor, db):
     alice, bob = Workspace(make_visitor()), Workspace(make_visitor())
     assert alice.id != bob.id
     assert len(alice.source_ids) == len(bob.source_ids) == 8
-    response = alice.visitor.client.delete(f"/sources/{alice.source_ids[0]}", headers=alice.visitor.json_headers())
+    response = alice.visitor.client.delete(
+        f"/sources/{alice.source_ids[0]}", headers=alice.visitor.json_headers()
+    )
     assert response.status_code == 200
     alice.refresh()
     bob.refresh()
     assert len(alice.source_ids) == 7 and len(bob.source_ids) == 8
     # Bob cannot see, use or reset Alice's copy.
     assert bob.visitor.client.get(f"/sources/{alice.source_ids[0]}").status_code == 404
-    assert bob.card("GR-204", source_ids=alice.source_ids).json()["error"].startswith("Select at least one source")
+    assert (
+        bob.card("GR-204", source_ids=alice.source_ids)
+        .json()["error"]
+        .startswith("Select at least one source")
+    )
 
 
 def test_tc_gov_002_reset_reseeds_without_embedding_calls(workspace, fake, db):
@@ -59,17 +65,28 @@ def test_tc_gov_002_reset_reseeds_without_embedding_calls(workspace, fake, db):
     assert workspace.id == response.json()["notebook_id"]
     assert len(workspace.source_ids) == 8
     assert "extra" not in workspace.page
-    origins = {r[0] for r in db.execute("SELECT metadata_origin FROM source WHERE notebook_id = ?", (workspace.id,))}
+    origins = {
+        r[0] for r in db.execute("SELECT metadata_origin FROM source WHERE notebook_id = ?", (workspace.id,))
+    }
     assert origins == {"curated"}
     assert db.execute("SELECT COUNT(*) FROM notebook WHERE kind = 'ops_workspace'").fetchone()[0] == 1
 
 
 def test_tc_gov_004_excluded_documents_raise_warnings_never_requirements(workspace, fake):
     def build(request):
-        passages = request.user.split("Passages:", 1)[1].lower()
-        assert "direct posting" not in passages, "obsolete rev 2 text must not reach the model"
+        assert 'source="SOP-INB-001 rev 2"' not in request.user, (
+            "the obsolete revision must not reach the model"
+        )
         pid, quote = passage_with(request, "always posted to quality inspection stock")
-        return empty_card(required_actions=[{"type": "requirement", "text": "Post it to quality inspection stock.", "citations": [{"passage_id": pid, "quote": quote}]}])
+        return empty_card(
+            required_actions=[
+                {
+                    "type": "requirement",
+                    "text": "Post it to quality inspection stock.",
+                    "citations": [{"passage_id": pid, "quote": quote}],
+                }
+            ]
+        )
 
     fake.responder = card_responder(build)
     output = workspace.card(
@@ -85,10 +102,20 @@ def test_tc_gov_004_excluded_documents_raise_warnings_never_requirements(workspa
 def test_tc_gov_006_undocumented_code_needs_expert_confirmation(workspace, fake):
     def build(request):
         pid, quote = passage_with(request, "contact the WMS key user")
-        return empty_card(escalation=[{"type": "requirement", "text": "Contact the WMS key user.", "citations": [{"passage_id": pid, "quote": quote}]}])
+        return empty_card(
+            escalation=[
+                {
+                    "type": "requirement",
+                    "text": "Contact the WMS key user.",
+                    "citations": [{"passage_id": pid, "quote": quote}],
+                }
+            ]
+        )
 
     fake.responder = card_responder(build)
-    card = workspace.card("The WMS shows error GR-299 after I scan the delivery. What should I do?").json()["output"]["card"]
+    card = workspace.card("The WMS shows error GR-299 after I scan the delivery. What should I do?").json()[
+        "output"
+    ]["card"]
     assert card["status"] == "expert_confirmation"
     assert card["undocumented"] == ["GR-299"]
     assert any("GR-299" in reason for reason in card["reasons"])
@@ -96,8 +123,18 @@ def test_tc_gov_006_undocumented_code_needs_expert_confirmation(workspace, fake)
 
 def test_tc_gov_006_documented_code_is_supported(workspace, fake):
     def build(request):
-        pid, quote = passage_with(request, "post only the open quantity after the shift lead has confirmed the count")
-        return empty_card(required_actions=[{"type": "requirement", "text": "Post only the open quantity.", "citations": [{"passage_id": pid, "quote": quote}]}])
+        pid, quote = passage_with(
+            request, "post only the open quantity after the shift lead has confirmed the count"
+        )
+        return empty_card(
+            required_actions=[
+                {
+                    "type": "requirement",
+                    "text": "Post only the open quantity.",
+                    "citations": [{"passage_id": pid, "quote": quote}],
+                }
+            ]
+        )
 
     fake.responder = card_responder(build)
     card = workspace.card("The WMS shows error GR-204 after I scan the delivery.").json()["output"]["card"]
@@ -108,7 +145,15 @@ def test_tc_gov_006_documented_code_is_supported(workspace, fake):
 def test_tc_gov_007_a_requirement_with_a_failing_quote_is_downgraded(workspace, fake):
     def build(request):
         pid, _ = passage_with(request, "GR-204")
-        return empty_card(required_actions=[{"type": "requirement", "text": "Override the error.", "citations": [{"passage_id": pid, "quote": "you may override the error yourself"}]}])
+        return empty_card(
+            required_actions=[
+                {
+                    "type": "requirement",
+                    "text": "Override the error.",
+                    "citations": [{"passage_id": pid, "quote": "you may override the error yourself"}],
+                }
+            ]
+        )
 
     fake.responder = card_responder(build)
     output = workspace.card("The WMS shows error GR-204 after I scan the delivery.").json()["output"]
@@ -122,11 +167,22 @@ def test_tc_gov_007_conflict_needs_two_verified_documents(workspace, fake):
         sop, sop_quote = passage_with(request, "refuse the delivery")
         wi, wi_quote = passage_with(request, "accept the delivery")
         return empty_card(
-            conflicts=[{"type": "requirement", "text": "SOP-INB-001 says refuse; WI-QUA-004 says accept.", "citations": [{"passage_id": sop, "quote": sop_quote}, {"passage_id": wi, "quote": wi_quote}]}]
+            conflicts=[
+                {
+                    "type": "requirement",
+                    "text": "SOP-INB-001 says refuse; WI-QUA-004 says accept.",
+                    "citations": [
+                        {"passage_id": sop, "quote": sop_quote},
+                        {"passage_id": wi, "quote": wi_quote},
+                    ],
+                }
+            ]
         )
 
     fake.responder = card_responder(build)
-    card = workspace.card("The outer packaging is damaged, but the product looks fine. Can I complete the goods receipt?").json()["output"]["card"]
+    card = workspace.card(
+        "The outer packaging is damaged, but the product looks fine. Can I complete the goods receipt?"
+    ).json()["output"]["card"]
     assert card["status"] == "conflict"
 
 
@@ -141,14 +197,18 @@ def test_tc_gov_009_uploaded_metadata_is_marked_as_asserted(workspace, db):
 
 
 def test_tc_gov_010_context_date_before_the_effective_date_excludes_the_document(workspace, fake):
-    card = workspace.card("The WMS shows error GR-204 after I scan the delivery.", as_of="2026-01-15").json()["output"]["card"]
+    card = workspace.card("The WMS shows error GR-204 after I scan the delivery.", as_of="2026-01-15").json()[
+        "output"
+    ]["card"]
     excluded = {d["label"]: d["reason"] for d in card["excluded"]}
     assert excluded["GUIDE-WMS-003 rev 1"] == "not yet effective (from 2026-02-01)"
     assert card["status"] == "expert_confirmation"
 
 
 def test_tc_gov_010_other_site_and_role_come_from_the_context_bar(workspace):
-    card = workspace.card("Can I store this material in location A-14?", site="HAM-01").json()["output"]["card"]
+    card = workspace.card("Can I store this material in location A-14?", site="HAM-01").json()["output"][
+        "card"
+    ]
     excluded = {d["label"]: d["reason"] for d in card["excluded"]}
     assert excluded["WI-STO-007 rev 1"] == "other site (HAM-02)"
     assert "A-14" in card["undocumented"]
@@ -164,8 +224,18 @@ def test_off_topic_situation_is_refused_without_a_model_call(workspace, fake):
 
 def test_card_renders_as_html_with_status_types_and_applicability(workspace, fake):
     def build(request):
-        pid, quote = passage_with(request, "post only the open quantity after the shift lead has confirmed the count")
-        return empty_card(required_actions=[{"type": "requirement", "text": "Post only the open quantity.", "citations": [{"passage_id": pid, "quote": quote}]}])
+        pid, quote = passage_with(
+            request, "post only the open quantity after the shift lead has confirmed the count"
+        )
+        return empty_card(
+            required_actions=[
+                {
+                    "type": "requirement",
+                    "text": "Post only the open quantity.",
+                    "citations": [{"passage_id": pid, "quote": quote}],
+                }
+            ]
+        )
 
     fake.responder = card_responder(build)
     body = workspace.card("The WMS shows error GR-204 after I scan the delivery.", htmx=True).text

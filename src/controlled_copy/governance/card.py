@@ -16,9 +16,9 @@ from functools import cache
 from pathlib import Path
 from typing import Any
 
-from controlled_copy.answering.generate import GenerationError
+from controlled_copy.errors import PROVIDER_UNAVAILABLE
 from controlled_copy.governance import rules
-from controlled_copy.limits import DAILY_LIMIT_MESSAGE, LimitExceeded
+from controlled_copy.limits import DAILY_LIMIT_MESSAGE
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError
 from controlled_copy.retrieval.search import RetrievalResult, retrieve
@@ -121,7 +121,7 @@ def run_card(
         raise StudioError("Describe the situation first.", 422)
     if len(situation) > settings.max_situation_chars:
         raise StudioError(f"Situations are limited to {settings.max_situation_chars:,} characters.", 422)
-    rows = services.repo.sources_by_ids(notebook, selected_ids)
+    rows = services.repo.sources_by_ids(notebook, selected_ids, with_text=True)
     if not rows:
         raise StudioError("Select at least one source first.", 422)
     if services.budget.read_only():
@@ -157,12 +157,8 @@ def run_card(
             }
             output.update(citations=[], removed=0, model=None)
             citations = []
-    except (GenerationError, LimitExceeded) as exc:
-        raise StudioError(exc.message, exc.status) from exc
-    except ProviderError as exc:
-        raise StudioError(
-            "The model provider is not available right now. Please try again in a minute.", 502
-        ) from exc
+    except ProviderError as exc:  # from the query embeddings; generation errors are already user-facing
+        raise StudioError(PROVIDER_UNAVAILABLE, 502) from exc
 
     source_of = {c["n"]: c["source_id"] for c in citations}
     downgraded = 0
@@ -305,10 +301,9 @@ def _store(
     citations: list[dict[str, Any]],
     context_sources: list[str],
 ) -> StoredOutput:
-    sources = sorted({c["source_id"] for c in citations} | set(context_sources))
-    output_id = services.repo.add_output(
-        notebook, TEMPLATE_ID, card.situation.strip(), output, [{"source_id": s} for s in sources], "ok"
-    )
+    # Lineage: every selected source (they all fed the split, the warnings or the prompt).
+    lineage = {row["id"] for row in rows} | {c["source_id"] for c in citations} | set(context_sources)
+    output_id = services.repo.add_output(notebook, TEMPLATE_ID, card.situation.strip(), output, lineage, "ok")
     return StoredOutput(output_id, output)
 
 

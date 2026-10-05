@@ -3,15 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false, "selfRequestsOnly": true, "historyCacheSize": 0, "refreshOnHistoryMiss": true, "responseHandling": [{"code": "204", "swap": false}, {"code": "[2345]..", "swap": true}]}'>
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false, "selfRequestsOnly": true, "historyCacheSize": 0, "refreshOnHistoryMiss": true, "responseHandling": [{"code": "204", "swap": false}, {"code": "[23]..", "swap": true}, {"code": "[45]..", "swap": true, "error": true}]}'>
   <title>Inbound receiving (my notes) · Controlled Copy</title>
-  <link rel="icon" href="../../src/controlled_copy/web/static/brand/mark.svg?v=c489574710" type="image/svg+xml">
-  <link rel="stylesheet" href="../../src/controlled_copy/web/static/css/app.css?v=c489574710">
-  <script src="../../src/controlled_copy/web/static/vendor/htmx-2.0.11.min.js?v=c489574710" defer></script>
-  <script src="../../src/controlled_copy/web/static/js/app.js?v=c489574710" defer></script>
+  <link rel="icon" href="../../src/controlled_copy/web/static/brand/mark.svg?v=8ca7b816af" type="image/svg+xml">
+  <link rel="stylesheet" href="../../src/controlled_copy/web/static/css/app.css?v=8ca7b816af">
+  <script src="../../src/controlled_copy/web/static/vendor/htmx-2.0.11.min.js?v=8ca7b816af" defer></script>
+  <script src="../../src/controlled_copy/web/static/js/app.js?v=8ca7b816af" defer></script>
 </head>
 <body hx-headers='{"X-CSRF-Token": "mockup"}'>
 
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 <header class="topbar">
   <a class="brand" href="/app"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" class="brand__mark" aria-hidden="true">
   <rect x="1" y="1" width="30" height="30" rx="4" fill="#262c32" stroke="#4a535d"/>
@@ -77,7 +78,7 @@
   <section class="panel panel--sources" id="sources-panel" aria-labelledby="sources-title">
   <header class="panel__head">
     <h2 class="panel__title" id="sources-title">Sources</h2>
-    <span class="panel__count">4/20</span>
+    <span class="panel__count" id="source-count">4/20</span>
   </header>
   <div class="panel__body">
     <div id="viewer-slot" aria-live="polite"></div>
@@ -86,7 +87,7 @@
       <div class="add-source">
         <div class="add-source__row">
           <form class="file-pick" hx-post="/notebooks/nb1/sources" hx-encoding="multipart/form-data" hx-trigger="change"
-                hx-target="#source-list-wrap" hx-swap="innerHTML" hx-include="[name='source_ids']" hx-indicator="#upload-progress"
+                hx-target="#source-list-wrap" hx-swap="innerHTML" hx-include="#source-list-wrap" hx-indicator="#upload-progress"
                 hx-disabled-elt="find input">
             <span class="btn btn--block"><svg class="icon" aria-hidden="true" focusable="false"
   xmlns="http://www.w3.org/2000/svg"
@@ -120,7 +121,7 @@
 </svg> Paste text</button>
         </div>
         <form class="paste-form" id="paste-form" hidden hx-post="/notebooks/nb1/sources" hx-target="#source-list-wrap" hx-swap="innerHTML"
-              hx-include="[name='source_ids']" hx-indicator="#upload-progress" hx-disabled-elt="find button">
+              hx-include="#source-list-wrap" hx-indicator="#upload-progress" hx-disabled-elt="find button">
           <div class="field">
             <label for="paste-title">Title</label>
             <input class="input" id="paste-title" name="title" maxlength="200" required>
@@ -379,15 +380,15 @@
     <div class="chat">
       <div class="chat__log" id="chat-log">
         <div class="chat__inner" id="chat-inner">
-          <section class="chat-intro">
-            <h1>Inbound receiving (my notes)</h1>
-            
-            <p>4 sources. Ask a question; every statement in the answer links to the passage it came from.</p>
-            
+          <section class="chat-intro" id="chat-intro">
+  <h1>Inbound receiving (my notes)</h1>
+  
+  <p>4 sources. Ask a question; every statement in the answer links to the passage it came from.</p>
+  
 <div id="suggestions"></div>
 
-            
-          </section>
+  
+</section>
           
           
 <article class="turn" id="turn-t1">
@@ -497,7 +498,7 @@
       </div>
       <div class="composer">
         <form class="composer__form" id="ask-form" hx-post="/notebooks/nb1/ask" hx-target="#pending-turn" hx-swap="beforebegin"
-              hx-include="[name='source_ids']" hx-disabled-elt="find button, find textarea">
+              hx-include="#source-list-wrap" hx-disabled-elt="find button, find textarea">
           <div class="composer__box">
             <label class="visually-hidden" for="question">Question</label>
             <textarea id="question" name="question" rows="1" maxlength="1500" data-counter="question-counter"
@@ -532,7 +533,7 @@
       <div class="studio-actions">
         
         
-        <button type="button" class="studio-action" hx-post="/notebooks/nb1/studio/briefing" hx-include="[name='source_ids']"
+        <button type="button" class="studio-action" hx-post="/notebooks/nb1/studio/briefing" hx-include="#source-list-wrap"
                 hx-target="#studio-outputs" hx-swap="afterbegin" hx-disabled-elt="this" >
           <svg class="icon" aria-hidden="true" focusable="false"
   xmlns="http://www.w3.org/2000/svg"

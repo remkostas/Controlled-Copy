@@ -49,7 +49,11 @@ def test_tc_gov_003_only_applicable_approved_current_documents_are_authoritative
 
 
 def test_tc_gov_005_identifiers_are_extracted_by_pattern():
-    assert rules.identifiers("Error GR-204 while posting per SOP-INB-001 at A-14.") == ["GR-204", "SOP-INB-001", "A-14"]
+    assert rules.identifiers("Error GR-204 while posting per SOP-INB-001 at A-14.") == [
+        "GR-204",
+        "SOP-INB-001",
+        "A-14",
+    ]
     assert rules.identifiers("The delivery is damaged and wet.") == []
     texts = {"s1": "GR-204 Quantity above open order quantity", "s2": "nothing"}
     assert rules.documented_in("GR-204", texts) == ["s1"]
@@ -66,19 +70,79 @@ def test_tc_gov_007_statement_types_are_enforced():
     failed = rules.apply_type_rules(requirement, [], authoritative)
     assert failed["type"] == "missing_evidence"
     assert rules.apply_type_rules({"text": "x", "type": "inference"}, [], authoritative) is None
-    assert rules.apply_type_rules({"text": "x", "type": "recommendation"}, [], authoritative)["type"] == "recommendation"
-    assert rules.apply_type_rules({"text": "x", "type": "made_up"}, ["auth"], authoritative)["type"] == "inference"
+    assert (
+        rules.apply_type_rules({"text": "x", "type": "recommendation"}, [], authoritative)["type"]
+        == "recommendation"
+    )
+    assert (
+        rules.apply_type_rules({"text": "x", "type": "made_up"}, ["auth"], authoritative)["type"]
+        == "inference"
+    )
 
 
 @pytest.mark.parametrize(
     ("kwargs", "expected"),
     [
-        ({"conflict": True, "undocumented": ["GR-299"], "authoritative_evidence": 0, "only_unknown_sources": True, "missing": 2}, "conflict"),
-        ({"conflict": False, "undocumented": ["GR-299"], "authoritative_evidence": 3, "only_unknown_sources": False, "missing": 2}, "expert_confirmation"),
-        ({"conflict": False, "undocumented": [], "authoritative_evidence": 0, "only_unknown_sources": True, "missing": 0}, "expert_confirmation"),
-        ({"conflict": False, "undocumented": [], "authoritative_evidence": 0, "only_unknown_sources": False, "missing": 1}, "expert_confirmation"),
-        ({"conflict": False, "undocumented": [], "authoritative_evidence": 2, "only_unknown_sources": False, "missing": 1}, "context_incomplete"),
-        ({"conflict": False, "undocumented": [], "authoritative_evidence": 2, "only_unknown_sources": False, "missing": 0}, "supported"),
+        (
+            {
+                "conflict": True,
+                "undocumented": ["GR-299"],
+                "authoritative_evidence": 0,
+                "only_unknown_sources": True,
+                "missing": 2,
+            },
+            "conflict",
+        ),
+        (
+            {
+                "conflict": False,
+                "undocumented": ["GR-299"],
+                "authoritative_evidence": 3,
+                "only_unknown_sources": False,
+                "missing": 2,
+            },
+            "expert_confirmation",
+        ),
+        (
+            {
+                "conflict": False,
+                "undocumented": [],
+                "authoritative_evidence": 0,
+                "only_unknown_sources": True,
+                "missing": 0,
+            },
+            "expert_confirmation",
+        ),
+        (
+            {
+                "conflict": False,
+                "undocumented": [],
+                "authoritative_evidence": 0,
+                "only_unknown_sources": False,
+                "missing": 1,
+            },
+            "expert_confirmation",
+        ),
+        (
+            {
+                "conflict": False,
+                "undocumented": [],
+                "authoritative_evidence": 2,
+                "only_unknown_sources": False,
+                "missing": 1,
+            },
+            "context_incomplete",
+        ),
+        (
+            {
+                "conflict": False,
+                "undocumented": [],
+                "authoritative_evidence": 2,
+                "only_unknown_sources": False,
+                "missing": 0,
+            },
+            "supported",
+        ),
     ],
 )
 def test_tc_gov_008_status_follows_the_precedence(kwargs, expected):

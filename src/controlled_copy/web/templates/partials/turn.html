@@ -31,6 +31,6 @@
     <p>This answer cited a source that was deleted, so its content was deleted too.</p>
   </div>
   {% else %}
-  <p class="notice notice--error" role="alert">{{ icon('triangle-alert') }}<span>{{ a.message }}</span></p>
+  {% with message=a.message %}{% include "partials/notice.html" %}{% endwith %}
   {% endif %}
 </article>

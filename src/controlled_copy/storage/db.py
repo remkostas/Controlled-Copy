@@ -137,7 +137,7 @@ CORE_MIGRATIONS: list[Migration] = [
             role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
             content TEXT NOT NULL,
             search_query TEXT,
-            citations_json TEXT NOT NULL DEFAULT '[]',
+            lineage_json TEXT NOT NULL DEFAULT '[]',
             status TEXT NOT NULL DEFAULT 'ok',
             created_at TEXT NOT NULL
         );
@@ -149,7 +149,7 @@ CORE_MIGRATIONS: list[Migration] = [
             template TEXT NOT NULL,
             input TEXT,
             output_json TEXT NOT NULL,
-            citations_json TEXT NOT NULL DEFAULT '[]',
+            lineage_json TEXT NOT NULL DEFAULT '[]',
             status TEXT NOT NULL DEFAULT 'ok',
             created_at TEXT NOT NULL
         );

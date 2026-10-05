@@ -15,7 +15,7 @@ from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
-from controlled_copy.limits import LimitExceeded
+from controlled_copy.errors import PROVIDER_UNAVAILABLE, UserFacingError
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import (
     ChatResult,
@@ -29,11 +29,8 @@ from controlled_copy.services import Services
 _FENCE = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.S)
 
 
-class GenerationError(Exception):
-    def __init__(self, message: str, status: int) -> None:
-        super().__init__(message)
-        self.message = message
-        self.status = status
+class GenerationError(UserFacingError):
+    """The model call failed twice."""
 
 
 def parse_payload[M: BaseModel](content: str, model_cls: type[M]) -> M:
@@ -59,10 +56,7 @@ def generate[M: BaseModel](
     timeout = settings.provider_timeout_seconds
     failure: ProviderError | None = None
     for attempt, model in enumerate(models, start=1):
-        try:
-            services.budget.consume(services.session_id, schema_name)
-        except LimitExceeded as exc:
-            raise GenerationError(exc.message, exc.status) from exc
+        services.budget.consume(services.session_id, schema_name)  # LimitExceeded is user-facing
         started = time.monotonic()
         try:
             result = call_with_deadline(
@@ -107,4 +101,4 @@ def generate[M: BaseModel](
         raise GenerationError(
             "The model returned an answer in an unexpected format twice. Please try again.", 502
         )
-    raise GenerationError("The model provider is not available right now. Please try again in a minute.", 502)
+    raise GenerationError(PROVIDER_UNAVAILABLE, 502)

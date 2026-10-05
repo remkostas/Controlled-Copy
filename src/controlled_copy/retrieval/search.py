@@ -123,6 +123,25 @@ class Passage:
     cosine: float
     fused: float
 
+    @classmethod
+    def from_row(cls, row: Any, cosine: float = 0.0, fused: float = 0.0) -> Passage:
+        """From a chunk row joined with its source (Repo.chunks_by_ids / chunks_for_sources)."""
+        return cls(
+            chunk_id=int(row["id"]),
+            source_id=row["source_id"],
+            source_title=row["source_title"],
+            source_kind=row["source_kind"],
+            locator=row["locator"],
+            page=row["page"],
+            char_start=row["char_start"],
+            char_end=row["char_end"],
+            text=row["text"],
+            metadata=json.loads(row["metadata_json"]) if row["metadata_json"] else None,
+            metadata_origin=row["metadata_origin"],
+            cosine=cosine,
+            fused=fused,
+        )
+
 
 @dataclass
 class RetrievalResult:
@@ -187,28 +206,11 @@ def retrieve(
 
     fused = rrf([fts_ids, vector_ids])[:top_k]
     rows = repo.chunks_by_ids([chunk_id for chunk_id, _ in fused])
-    passages = []
-    for chunk_id, score in fused:
-        row = rows.get(chunk_id)
-        if row is None:
-            continue
-        passages.append(
-            Passage(
-                chunk_id=chunk_id,
-                source_id=row["source_id"],
-                source_title=row["source_title"],
-                source_kind=row["source_kind"],
-                locator=row["locator"],
-                page=row["page"],
-                char_start=row["char_start"],
-                char_end=row["char_end"],
-                text=row["text"],
-                metadata=json.loads(row["metadata_json"]) if row["metadata_json"] else None,
-                metadata_origin=row["metadata_origin"],
-                cosine=cosines.get(chunk_id, 0.0),
-                fused=score,
-            )
-        )
+    passages = [
+        Passage.from_row(rows[chunk_id], cosines.get(chunk_id, 0.0), score)
+        for chunk_id, score in fused
+        if chunk_id in rows
+    ]
     identifiers = extract_identifiers(query)
     exact = any(ident.lower() in p.text.lower() for ident in identifiers for p in passages)
     return RetrievalResult(

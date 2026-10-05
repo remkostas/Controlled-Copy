@@ -11,8 +11,9 @@ from pydantic import BaseModel, Field
 
 from controlled_copy.answering import prompts
 from controlled_copy.answering.citations import CitationNumbering, StatementOut, verify_statements
-from controlled_copy.answering.generate import GenerationError, generate
-from controlled_copy.limits import DAILY_LIMIT_MESSAGE, LimitExceeded
+from controlled_copy.answering.generate import generate
+from controlled_copy.errors import PROVIDER_UNAVAILABLE, UserFacingError
+from controlled_copy.limits import DAILY_LIMIT_MESSAGE
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError
 from controlled_copy.retrieval.search import retrieve
@@ -29,11 +30,8 @@ class RewriteOut(BaseModel):
     search_question: str = Field(max_length=2000)
 
 
-class AskError(Exception):
-    def __init__(self, message: str, status: int) -> None:
-        super().__init__(message)
-        self.message = message
-        self.status = status
+class AskError(UserFacingError):
+    """A question that cannot be answered as asked."""
 
 
 @dataclass
@@ -42,33 +40,20 @@ class TurnResult:
     question: str
     search_query: str | None
     answer: dict[str, Any]
-    citations: list[dict[str, Any]]
 
 
-def history_pairs(messages: list[sqlite3.Row], limit: int = 2) -> list[tuple[str, str]]:
-    """The last `limit` completed turns as (question, answer text) pairs."""
-    return [(question, text) for question, text, _ in history_turns(messages, limit)]
-
-
-def history_turns(messages: list[sqlite3.Row], limit: int = 2) -> list[tuple[str, str, set[str]]]:
-    """The last `limit` completed turns: question, answer text and the sources behind them."""
-    turns: dict[str, dict[str, Any]] = {}
-    for row in messages:
-        turns.setdefault(row["turn_id"], {})[row["role"]] = row
+def history_turns(turns: list[sqlite3.Row], limit: int = 2) -> list[tuple[str, str, set[str]]]:
+    """The last `limit` live turns: question, answer text and the sources behind them."""
     pairs: list[tuple[str, str, set[str]]] = []
-    for turn in turns.values():
-        user, assistant = turn.get("user"), turn.get("assistant")
-        if not user or not assistant or assistant["status"] == TOMBSTONE:
+    for turn in turns:
+        if turn["status"] == TOMBSTONE:
             continue
-        answer = json.loads(assistant["content"] or "{}")
+        answer = json.loads(turn["answer_json"] or "{}")
         if answer.get("kind") == "answer":
             text = " ".join(s["text"] for s in answer.get("statements", []))
         else:
             text = "(not answered from the sources)"
-        sources = {
-            c["source_id"] for c in json.loads(assistant["citations_json"] or "[]") if c.get("source_id")
-        }
-        pairs.append((user["content"], text, sources))
+        pairs.append((turn["question"], text, set(json.loads(turn["lineage_json"] or "[]"))))
     return pairs[-limit:]
 
 
@@ -104,7 +89,7 @@ def ask(services: Services, notebook: OwnedNotebook, question: str, selected_ids
     source_ids = [row["id"] for row in sources]
 
     try:
-        turns = history_turns(repo.list_messages(notebook))
+        turns = history_turns(repo.list_turns(notebook))
         history = [(q, text) for q, text, _ in turns]
         # Every source behind this turn: the selection, and the history a rewrite draws on.
         lineage = set(source_ids) | {s for _, _, sources in turns for s in sources}
@@ -125,18 +110,14 @@ def ask(services: Services, notebook: OwnedNotebook, question: str, selected_ids
                 best_cosine=round(retrieval.best_cosine, 3),
                 passages=len(retrieval.passages),
             )
-            return _store(services, notebook, question, search_query, answer, [], sorted(lineage))
+            return _store(services, notebook, question, search_query, answer, lineage)
 
         messages, mapping = prompts.answer_messages(search_query or question, retrieval.passages)
         payload, result = generate(
             services, messages, schema=prompts.ANSWER_SCHEMA, schema_name="answer", model_cls=AnswerOut
         )
-    except (GenerationError, LimitExceeded) as exc:
-        raise AskError(exc.message, exc.status) from exc
-    except ProviderError as exc:
-        raise AskError(
-            "The model provider is not available right now. Please try again in a minute.", 502
-        ) from exc
+    except ProviderError as exc:  # from the query embedding; generation errors are already user-facing
+        raise AskError(PROVIDER_UNAVAILABLE, 502) from exc
 
     numbering = CitationNumbering()
     verified = verify_statements(payload.statements, mapping, numbering)
@@ -167,7 +148,7 @@ def ask(services: Services, notebook: OwnedNotebook, question: str, selected_ids
         best_cosine=round(retrieval.best_cosine, 3),
         model=result.model,
     )
-    return _store(services, notebook, question, search_query, answer, numbering.flat, sorted(lineage))
+    return _store(services, notebook, question, search_query, answer, lineage)
 
 
 def refusal(searched_sources: int, query: str, reason: str | None) -> dict[str, Any]:
@@ -189,13 +170,9 @@ def _store(
     question: str,
     search_query: str | None,
     answer: dict[str, Any],
-    citations: list[dict[str, Any]],
-    context_source_ids: list[str],
+    lineage: set[str],
 ) -> TurnResult:
-    """Persist the turn. The stored source list covers every selected source and the sources
-    behind the history used for a rewrite, so deleting any of them removes the turn (S-05)."""
-    sources = sorted({c["source_id"] for c in citations} | set(context_source_ids))
-    turn_id = services.repo.add_turn(
-        notebook, question, answer, search_query, [{"source_id": s} for s in sources], "ok"
-    )
-    return TurnResult(turn_id, question, search_query, answer, citations)
+    """Persist the turn with its lineage: every selected source and the sources behind the
+    history used for a rewrite, so deleting any of them removes the turn (S-05)."""
+    turn_id = services.repo.add_turn(notebook, question, answer, search_query, lineage, "ok")
+    return TurnResult(turn_id, question, search_query, answer)

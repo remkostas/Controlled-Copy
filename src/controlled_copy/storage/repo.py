@@ -10,25 +10,47 @@ from __future__ import annotations
 import json
 import secrets
 import sqlite3
-from collections.abc import Iterable, Sequence
-from dataclasses import dataclass
+from collections.abc import Collection, Iterable, Sequence
+from dataclasses import dataclass, fields
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
+from controlled_copy.errors import UserFacingError
 from controlled_copy.storage.db import transaction, utcnow
 
 TOMBSTONE = "source_deleted"
 
 
-class CapacityReached(Exception):
+class CapacityReached(UserFacingError):
     """A per-notebook or per-visitor limit was reached (checked inside the write transaction)."""
+
+
+def notebooks_full(limit: int) -> CapacityReached:
+    return CapacityReached(f"You can have at most {limit} notebooks. Delete one to create another.", 409)
+
+
+def sources_full(limit: int) -> CapacityReached:
+    return CapacityReached(f"A notebook holds at most {limit} sources.", 409)
 
 
 def new_id() -> str:
     return secrets.token_urlsafe(12)
+
+
+def _marks(values: Sequence[Any]) -> str:
+    """'?,?,?' for an IN clause; only placeholders ever go into the SQL text (callers ensure non-empty)."""
+    return ",".join("?" * len(values))
+
+
+# Source columns without the full text, which can be several megabytes.
+SOURCE_COLUMNS = (
+    "s.id, s.notebook_id, s.title, s.kind, s.bytes, s.pages, s.page_starts_json, s.warnings_json, "
+    "s.metadata_json, s.metadata_origin, s.file_path, s.created_at"
+)
+CHUNK_COLUMNS = "c.*, s.title AS source_title, s.metadata_json, s.metadata_origin, s.kind AS source_kind"
 
 
 @dataclass(frozen=True)
@@ -47,12 +69,6 @@ class OwnedNotebook:
     suggestions_key: str | None = None
     suggestions_json: str | None = None
 
-    def __getitem__(self, key: str) -> Any:
-        return getattr(self, key)
-
-    def keys(self) -> list[str]:
-        return ["id", "session_id", "kind", "title", "suggestions_key", "suggestions_json"]
-
 
 def _owned(notebook: OwnedNotebook) -> str:
     if not isinstance(notebook, OwnedNotebook):
@@ -61,14 +77,7 @@ def _owned(notebook: OwnedNotebook) -> str:
 
 
 def _notebook(row: sqlite3.Row) -> OwnedNotebook:
-    return OwnedNotebook(
-        row["id"],
-        row["session_id"],
-        row["kind"],
-        row["title"],
-        row["suggestions_key"],
-        row["suggestions_json"],
-    )
+    return OwnedNotebook(**{f.name: row[f.name] for f in fields(OwnedNotebook)})
 
 
 @dataclass(frozen=True)
@@ -148,7 +157,7 @@ class Repo:
         notebook_id = new_id()
         with transaction(self.conn):
             if limit is not None and self.count_notebooks(sid, kind) >= limit:
-                raise CapacityReached
+                raise notebooks_full(limit)
             self.conn.execute(
                 "INSERT INTO notebook (id, session_id, kind, title, created_at) VALUES (?, ?, ?, ?, ?)",
                 (notebook_id, sid, kind, title, utcnow()),
@@ -191,11 +200,11 @@ class Repo:
     # Sources ------------------------------------------------------------------
     def list_sources(self, notebook: OwnedNotebook) -> list[sqlite3.Row]:
         return self.conn.execute(
-            "SELECT s.id, s.notebook_id, s.title, s.kind, s.bytes, s.pages, s.warnings_json, "
-            "s.metadata_json, s.metadata_origin, s.file_path, s.created_at, length(s.text) AS char_count, "
-            "(SELECT COUNT(DISTINCT CASE WHEN instr(c.locator, ' (part ') > 0 "
+            f"SELECT {SOURCE_COLUMNS}, "  # noqa: S608 - fixed column list
+            "CASE WHEN s.kind IN ('txt', 'paste') THEN length(s.text) END AS char_count, "
+            "CASE WHEN s.kind = 'md' THEN (SELECT COUNT(DISTINCT CASE WHEN instr(c.locator, ' (part ') > 0 "
             " THEN substr(c.locator, 1, instr(c.locator, ' (part ') - 1) ELSE c.locator END) "
-            " FROM chunk c WHERE c.source_id = s.id) AS section_count "
+            " FROM chunk c WHERE c.source_id = s.id) END AS section_count "
             "FROM source s WHERE s.notebook_id = ? ORDER BY s.created_at, s.rowid",
             (_owned(notebook),),
         ).fetchall()
@@ -206,36 +215,28 @@ class Repo:
         ).fetchone()
         return int(row["n"])
 
-    def owned_source(self, sid: str, source_id: str) -> sqlite3.Row | None:
+    def owned_source(self, sid: str, source_id: str, with_text: bool = False) -> sqlite3.Row | None:
+        columns = f"{SOURCE_COLUMNS}, s.text" if with_text else SOURCE_COLUMNS
         return self.conn.execute(
-            "SELECT s.* FROM source s JOIN notebook n ON n.id = s.notebook_id "
+            f"SELECT {columns} FROM source s JOIN notebook n ON n.id = s.notebook_id "  # noqa: S608 - fixed columns
             "WHERE s.id = ? AND n.session_id = ?",
             (source_id, sid),
         ).fetchone()
 
-    def sources_by_ids(self, notebook: OwnedNotebook, source_ids: Iterable[str]) -> list[sqlite3.Row]:
+    def sources_by_ids(
+        self, notebook: OwnedNotebook, source_ids: Iterable[str], with_text: bool = False
+    ) -> list[sqlite3.Row]:
         """The selected sources that belong to this notebook (foreign IDs are dropped)."""
         notebook_id = _owned(notebook)
         ids = list(dict.fromkeys(source_ids))
         if not ids:
             return []
-        marks = ",".join("?" * len(ids))
+        columns = f"{SOURCE_COLUMNS}, s.text" if with_text else SOURCE_COLUMNS
         return self.conn.execute(
-            f"SELECT * FROM source WHERE notebook_id = ? AND id IN ({marks}) "  # noqa: S608 - placeholders only
-            "ORDER BY created_at, rowid",
+            f"SELECT {columns} FROM source s WHERE s.notebook_id = ? AND s.id IN ({_marks(ids)}) "  # noqa: S608
+            "ORDER BY s.created_at, s.rowid",
             (notebook_id, *ids),
         ).fetchall()
-
-    def source_rows(self, source_ids: Sequence[str]) -> dict[str, sqlite3.Row]:
-        """Rows by ID. Callers pass IDs already checked against the session."""
-        if not source_ids:
-            return {}
-        marks = ",".join("?" * len(source_ids))
-        rows = self.conn.execute(
-            f"SELECT * FROM source WHERE id IN ({marks})",  # noqa: S608 - placeholders only
-            tuple(source_ids),
-        ).fetchall()
-        return {row["id"]: row for row in rows}
 
     def insert_source(self, new: NewSource, limit: int | None = None) -> str:
         if len(new.chunks) != len(new.vectors):
@@ -243,7 +244,7 @@ class Repo:
         source_id = new_id()
         with transaction(self.conn):
             if limit is not None and self.count_sources(new.notebook) >= limit:
-                raise CapacityReached
+                raise sources_full(limit)
             self.conn.execute(
                 "INSERT INTO source (id, notebook_id, title, kind, bytes, pages, page_starts_json, "
                 "warnings_json, metadata_json, metadata_origin, text, file_path, created_at) "
@@ -288,17 +289,16 @@ class Repo:
     def delete_source(self, sid: str, source_id: str) -> list[str] | None:
         """Delete a source with its chunks, vectors, index rows and dependent outputs.
 
-        Chat answers and Studio outputs generated with the source's passages in the
-        prompt keep their row but lose their content (tombstone), so the transcript
-        shows that something was removed without keeping text derived from it.
-        Returns the file paths to unlink, or None if the source does not exist
-        for this session.
+        Chat turns and Studio outputs whose lineage includes the source keep their row
+        but lose their content (tombstone), so the transcript shows that something was
+        removed without keeping text derived from it. Returns the file paths to unlink,
+        or None if the source does not exist for this session.
         """
         with transaction(self.conn):
             row = self.owned_source(sid, source_id)
             if row is None:
                 return None
-            self._tombstone_citing(row["notebook_id"], source_id)
+            self._tombstone_dependents(row["notebook_id"], source_id)
             self.conn.execute("DELETE FROM source WHERE id = ?", (source_id,))
             self.conn.execute(
                 "UPDATE notebook SET suggestions_key = NULL, suggestions_json = NULL WHERE id = ?",
@@ -306,27 +306,29 @@ class Repo:
             )
         return [row["file_path"]] if row["file_path"] else []
 
-    def _tombstone_turn(self, assistant_id: str) -> None:
-        """Clear a turn: the answer, its search query, and the question (which may be a
-        suggested question generated from source text)."""
+    def _tombstone_dependents(self, notebook_id: str, source_id: str) -> None:
+        depends = "EXISTS (SELECT 1 FROM json_each(lineage_json) WHERE value = ?)"
+        # Whole turns: the answer, its search query, and the question (which may be a
+        # suggested question generated from source text).
         self.conn.execute(
-            "UPDATE chat_message SET content = '{}', search_query = NULL, citations_json = '[]', status = ? "
-            "WHERE id = ?",
-            (TOMBSTONE, assistant_id),
+            "UPDATE chat_message SET content = CASE role WHEN 'user' THEN '' ELSE '{}' END, "  # noqa: S608 - fixed SQL
+            "search_query = NULL, lineage_json = '[]', status = ? "
+            "WHERE notebook_id = ? AND turn_id IN (SELECT turn_id FROM chat_message "
+            f"WHERE notebook_id = ? AND role = 'assistant' AND {depends})",
+            (TOMBSTONE, notebook_id, notebook_id, source_id),
         )
         self.conn.execute(
-            "UPDATE chat_message SET content = '', status = ? WHERE role = 'user' AND turn_id = "
-            "(SELECT turn_id FROM chat_message WHERE id = ?)",
-            (TOMBSTONE, assistant_id),
+            "UPDATE studio_output SET output_json = '{}', input = NULL, lineage_json = '[]', status = ? "  # noqa: S608
+            f"WHERE notebook_id = ? AND {depends}",
+            (TOMBSTONE, notebook_id, source_id),
         )
 
-    def _all_sources_exist(self, notebook_id: str, references: list[dict[str, Any]]) -> bool:
-        wanted = {r["source_id"] for r in references if r.get("source_id")}
+    def _all_sources_exist(self, notebook_id: str, lineage: Collection[str]) -> bool:
+        wanted = set(lineage)
         if not wanted:
             return True
-        marks = ",".join("?" * len(wanted))
         row = self.conn.execute(
-            f"SELECT COUNT(*) AS n FROM source WHERE notebook_id = ? AND id IN ({marks})",  # noqa: S608
+            f"SELECT COUNT(*) AS n FROM source WHERE notebook_id = ? AND id IN ({_marks(wanted)})",  # noqa: S608
             (notebook_id, *wanted),
         ).fetchone()
         return int(row["n"]) == len(wanted)
@@ -335,56 +337,44 @@ class Repo:
         """Fold the write-ahead log into the database so deleted pages do not linger in it."""
         self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
 
-    def _tombstone_citing(self, notebook_id: str, source_id: str) -> None:
-        for table in ("chat_message", "studio_output"):
-            rows = self.conn.execute(
-                f"SELECT id, citations_json FROM {table} WHERE notebook_id = ? AND status != ?",  # noqa: S608 - fixed table names
-                (notebook_id, TOMBSTONE),
-            ).fetchall()
-            for row in rows:
-                cited = {c.get("source_id") for c in json.loads(row["citations_json"] or "[]")}
-                if source_id not in cited:
-                    continue
-                if table == "chat_message":
-                    self._tombstone_turn(row["id"])
-                else:
-                    self.conn.execute(
-                        "UPDATE studio_output SET output_json = '{}', input = NULL, citations_json = '[]', "
-                        "status = ? WHERE id = ?",
-                        (TOMBSTONE, row["id"]),
-                    )
-
     # Chunks and vectors -------------------------------------------------------
     # Chunk-level helpers take source IDs that callers got from sources_by_ids or
     # owned_source, i.e. IDs already checked against the session.
     def chunks_for_sources(self, source_ids: Sequence[str]) -> list[sqlite3.Row]:
         if not source_ids:
             return []
-        marks = ",".join("?" * len(source_ids))
         return self.conn.execute(
-            f"SELECT * FROM chunk WHERE source_id IN ({marks}) ORDER BY source_id, ordinal",  # noqa: S608
+            f"SELECT {CHUNK_COLUMNS} FROM chunk c JOIN source s ON s.id = c.source_id "  # noqa: S608
+            f"WHERE c.source_id IN ({_marks(source_ids)}) ORDER BY c.source_id, c.ordinal",
             tuple(source_ids),
         ).fetchall()
 
     def chunks_by_ids(self, chunk_ids: Sequence[int]) -> dict[int, sqlite3.Row]:
         if not chunk_ids:
             return {}
-        marks = ",".join("?" * len(chunk_ids))
         rows = self.conn.execute(
-            f"SELECT c.*, s.title AS source_title, s.metadata_json, s.metadata_origin, s.kind AS source_kind "  # noqa: S608
-            f"FROM chunk c JOIN source s ON s.id = c.source_id WHERE c.id IN ({marks})",
+            f"SELECT {CHUNK_COLUMNS} FROM chunk c JOIN source s ON s.id = c.source_id "  # noqa: S608
+            f"WHERE c.id IN ({_marks(chunk_ids)})",
             tuple(chunk_ids),
         ).fetchall()
         return {int(row["id"]): row for row in rows}
+
+    def locator_at(self, source_id: str, offset: int) -> str | None:
+        """The section or page of the chunk containing a character offset."""
+        row = self.conn.execute(
+            "SELECT locator FROM chunk WHERE source_id = ? AND char_start <= ? AND char_end > ? "
+            "ORDER BY ordinal LIMIT 1",
+            (source_id, offset, offset),
+        ).fetchone()
+        return row["locator"] if row else None
 
     def vectors_for_sources(self, source_ids: Sequence[str], model: str) -> tuple[list[int], np.ndarray]:
         """Vectors of the selected sources made by `model` (vectors of other models are not comparable)."""
         if not source_ids:
             return [], np.zeros((0, 0), dtype=np.float32)
-        marks = ",".join("?" * len(source_ids))
         rows = self.conn.execute(
             f"SELECT v.chunk_id, v.vector FROM chunk_vector v JOIN chunk c ON c.id = v.chunk_id "  # noqa: S608
-            f"WHERE c.source_id IN ({marks}) AND v.model = ? ORDER BY v.chunk_id",
+            f"WHERE c.source_id IN ({_marks(source_ids)}) AND v.model = ? ORDER BY v.chunk_id",
             (*source_ids, model),
         ).fetchall()
         if not rows:
@@ -396,10 +386,9 @@ class Repo:
     def fts_search(self, source_ids: Sequence[str], match: str, limit: int) -> list[int]:
         if not source_ids or not match:
             return []
-        marks = ",".join("?" * len(source_ids))
         rows = self.conn.execute(
             "SELECT c.id FROM chunk_fts JOIN chunk c ON c.id = chunk_fts.rowid "  # noqa: S608 - placeholders only
-            f"WHERE chunk_fts MATCH ? AND c.source_id IN ({marks}) "
+            f"WHERE chunk_fts MATCH ? AND c.source_id IN ({_marks(source_ids)}) "
             "ORDER BY bm25(chunk_fts) LIMIT ?",
             (match, *source_ids, limit),
         ).fetchall()
@@ -412,16 +401,17 @@ class Repo:
         question: str,
         answer: dict[str, Any],
         search_query: str | None,
-        citations: list[dict[str, Any]],
+        lineage: Collection[str],
         status: str,
     ) -> str:
+        """Store a turn. `lineage` names every source the turn's text depends on."""
         notebook_id = _owned(notebook)
         turn_id = new_id()
         now = utcnow()
         with transaction(self.conn):
-            if not self._all_sources_exist(notebook_id, citations):
+            if not self._all_sources_exist(notebook_id, lineage):
                 # A source was deleted while the model was answering: keep no derived text.
-                question, answer, search_query, citations, status = "", {}, None, [], TOMBSTONE
+                question, answer, search_query, lineage, status = "", {}, None, [], TOMBSTONE
             self.conn.execute(
                 "INSERT INTO chat_message (id, notebook_id, turn_id, role, content, status, created_at) "
                 "VALUES (?, ?, ?, 'user', ?, ?, ?)",
@@ -429,23 +419,27 @@ class Repo:
             )
             self.conn.execute(
                 "INSERT INTO chat_message (id, notebook_id, turn_id, role, content, search_query, "
-                "citations_json, status, created_at) VALUES (?, ?, ?, 'assistant', ?, ?, ?, ?, ?)",
+                "lineage_json, status, created_at) VALUES (?, ?, ?, 'assistant', ?, ?, ?, ?, ?)",
                 (
                     new_id(),
                     notebook_id,
                     turn_id,
                     json.dumps(answer),
                     search_query,
-                    json.dumps(citations),
+                    json.dumps(sorted(lineage)),
                     status,
                     now,
                 ),
             )
         return turn_id
 
-    def list_messages(self, notebook: OwnedNotebook) -> list[sqlite3.Row]:
+    def list_turns(self, notebook: OwnedNotebook) -> list[sqlite3.Row]:
+        """One row per turn: question, answer JSON, search query, lineage and status."""
         return self.conn.execute(
-            "SELECT * FROM chat_message WHERE notebook_id = ? ORDER BY created_at, rowid",
+            "SELECT a.turn_id, u.content AS question, a.content AS answer_json, a.search_query, "
+            "a.lineage_json, a.status FROM chat_message a "
+            "JOIN chat_message u ON u.turn_id = a.turn_id AND u.role = 'user' "
+            "WHERE a.notebook_id = ? AND a.role = 'assistant' ORDER BY a.created_at, a.rowid",
             (_owned(notebook),),
         ).fetchall()
 
@@ -456,16 +450,17 @@ class Repo:
         template: str,
         input_text: str | None,
         output: dict[str, Any],
-        citations: list[dict[str, Any]],
+        lineage: Collection[str],
         status: str,
     ) -> str:
+        """Store a Studio output. `lineage` names every source its text depends on."""
         output_id = new_id()
         notebook_id = _owned(notebook)
         with transaction(self.conn):
-            if not self._all_sources_exist(notebook_id, citations):
-                input_text, output, citations, status = None, {}, [], TOMBSTONE
+            if not self._all_sources_exist(notebook_id, lineage):
+                input_text, output, lineage, status = None, {}, [], TOMBSTONE
             self.conn.execute(
-                "INSERT INTO studio_output (id, notebook_id, template, input, output_json, citations_json, "
+                "INSERT INTO studio_output (id, notebook_id, template, input, output_json, lineage_json, "
                 "status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     output_id,
@@ -473,7 +468,7 @@ class Repo:
                     template,
                     input_text,
                     json.dumps(output),
-                    json.dumps(citations),
+                    json.dumps(sorted(lineage)),
                     status,
                     utcnow(),
                 ),
@@ -512,26 +507,21 @@ class Repo:
         now = now or datetime.now(UTC)
         cutoff = (now - timedelta(hours=retention_hours)).isoformat(timespec="seconds")
         with transaction(self.conn):
-            expired = [
-                row["id"]
+            files = [
+                row["file_path"]
                 for row in self.conn.execute(
-                    "SELECT id FROM visitor_session WHERE last_seen_at < ?", (cutoff,)
+                    "SELECT s.file_path FROM source s JOIN notebook n ON n.id = s.notebook_id "
+                    "JOIN visitor_session v ON v.id = n.session_id "
+                    "WHERE v.last_seen_at < ? AND s.file_path IS NOT NULL",
+                    (cutoff,),
                 )
             ]
-            files: list[str] = []
-            for sid in expired:
-                files.extend(
-                    row["file_path"]
-                    for row in self.conn.execute(
-                        "SELECT s.file_path FROM source s JOIN notebook n ON n.id = s.notebook_id "
-                        "WHERE n.session_id = ? AND s.file_path IS NOT NULL",
-                        (sid,),
-                    )
-                )
-                self.conn.execute("DELETE FROM visitor_session WHERE id = ?", (sid,))
+            expired = self.conn.execute(
+                "DELETE FROM visitor_session WHERE last_seen_at < ?", (cutoff,)
+            ).rowcount
             old_calls = (now - timedelta(days=2)).isoformat(timespec="seconds")
             self.conn.execute("DELETE FROM model_call WHERE at < ?", (old_calls,))
-        return len(expired), files
+        return expired, files
 
     def referenced_files(self) -> set[str]:
         return {

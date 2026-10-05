@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections.abc import Sequence
 from functools import cache
 from pathlib import Path
+from typing import Any
 
 import jinja2
 from markupsafe import Markup
@@ -45,18 +47,19 @@ def icon(name: str, extra_class: str = "") -> Markup:
     return Markup(svg.replace("{extra}", extra))  # noqa: S704 - static, trusted SVG files
 
 
-def make_environment(static_prefix: str = "/static/") -> jinja2.Environment:
+def make_environment(
+    static_prefix: str = "/static/", extra_dirs: Sequence[Path] = (), **globals_: Any
+) -> jinja2.Environment:
+    """Core templates first, then layer template folders; `globals_` are available everywhere."""
     env = jinja2.Environment(
-        loader=jinja2.FileSystemLoader(TEMPLATE_DIR),
+        loader=jinja2.FileSystemLoader([TEMPLATE_DIR, *extra_dirs]),
         autoescape=True,
         undefined=jinja2.StrictUndefined,
-        trim_blocks=False,
-        lstrip_blocks=False,
     )
     version = asset_version()
 
     def static(path: str) -> str:
         return f"{static_prefix}{path}?v={version}"
 
-    env.globals.update(icon=icon, static=static)
+    env.globals.update(icon=icon, static=static, **globals_)
     return env

@@ -82,6 +82,14 @@ class Settings(BaseSettings):
     video_date: str | None = None
 
     @property
+    def retention_days(self) -> int:
+        return self.retention_hours // 24
+
+    @property
+    def max_file_mb(self) -> int:
+        return self.max_file_bytes // (1024 * 1024)
+
+    @property
     def uploads_dir(self) -> Path:
         return self.data_dir / "uploads"
 

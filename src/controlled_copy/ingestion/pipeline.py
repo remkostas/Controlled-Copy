@@ -25,7 +25,7 @@ from controlled_copy.ingestion.validate import IngestError, decode_text, detect_
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError, call_with_deadline
 from controlled_copy.services import Services
-from controlled_copy.storage.repo import ChunkRecord, NewSource, OwnedNotebook
+from controlled_copy.storage.repo import NewSource, OwnedNotebook
 
 MIN_PAGE_CHARS = 20
 KIND_EXTENSION = {"pdf": ".pdf", "md": ".md", "txt": ".txt"}
@@ -43,6 +43,7 @@ class Extracted:
     warnings: list[str] = field(default_factory=list)
     metadata: dict[str, Any] | None = None
     metadata_origin: str = "none"
+    raw: bytes | None = None  # the uploaded file, kept for the record; None for pasted text
 
 
 def _clean_title(title: str, limit: int) -> str:
@@ -150,10 +151,7 @@ def store(services: Services, notebook: OwnedNotebook, extracted: Extracted, raw
                 metadata=extracted.metadata,
                 metadata_origin=extracted.metadata_origin,
                 file_path=file_name,
-                chunks=[
-                    ChunkRecord(c.ordinal, c.locator, c.page, c.char_start, c.char_end, c.text)
-                    for c in extracted.chunks
-                ],
+                chunks=extracted.chunks,
                 vectors=vectors,
                 vector_model=services.settings.model_embedding,
             ),

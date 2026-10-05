@@ -28,8 +28,13 @@ def short_locator(locator: str) -> str:
     return locator.split(" › ")[-1]
 
 
+def located_label(document: str, locator: str) -> str:
+    """'SOP-INB-001 rev 3 · 4.2 Quantity check': the label on chips and in the viewer."""
+    return f"{document} · {short_locator(locator)}"
+
+
 def citation_label(passage: Passage) -> str:
-    return f"{passage_label(passage)} · {short_locator(passage.locator)}"
+    return located_label(passage_label(passage), passage.locator)
 
 
 @dataclass

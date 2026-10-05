@@ -18,13 +18,16 @@ def test_tc_src_003_binary_renamed_to_pdf_is_rejected_and_nothing_stored(visitor
     response = visitor.upload("invoice.pdf", PNG, expect=415)
     assert "not a valid PDF" in response.json()["error"]
     response = visitor.upload("notes.txt", PNG, expect=415)
-    assert db.execute("SELECT COUNT(*) FROM source").fetchone()[0] == 0
+    assert (
+        db.execute("SELECT COUNT(*) FROM source WHERE notebook_id = ?", (visitor.notebook_id,)).fetchone()[0]
+        == 0
+    )
     assert list(settings.uploads_dir.iterdir()) == []
 
 
 def test_tc_src_003_pdf_renamed_to_txt_is_handled_as_pdf(visitor, db):
     visitor.upload("disguised.txt", make_pdf(["Real PDF content about pallet labels."]))
-    row = db.execute("SELECT kind, text FROM source").fetchone()
+    row = db.execute("SELECT kind, text FROM source WHERE notebook_id = ?", (visitor.notebook_id,)).fetchone()
     assert row["kind"] == "pdf"
     assert "pallet labels" in row["text"]
 
@@ -38,7 +41,10 @@ def test_tc_src_004_text_that_is_not_utf8_is_rejected_with_an_encoding_message(v
     latin1 = "Größe der Paletten: maximal 1,2 m Höhe. Prüfung durch QA.".encode("latin-1")
     response = visitor.upload("legacy.txt", latin1, expect=415)
     assert "not UTF-8 encoded" in response.json()["error"]
-    assert db.execute("SELECT COUNT(*) FROM source").fetchone()[0] == 0
+    assert (
+        db.execute("SELECT COUNT(*) FROM source WHERE notebook_id = ?", (visitor.notebook_id,)).fetchone()[0]
+        == 0
+    )
 
 
 def test_tc_src_013_pathological_pdf_gives_a_clear_error_and_does_not_hang(visitor, db):

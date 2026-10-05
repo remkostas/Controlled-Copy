@@ -33,7 +33,7 @@ def test_tc_nb_002_at_most_five_notebooks(visitor, db):
     response = visitor.client.post("/notebooks", data={"title": "Sixth"}, headers=visitor.json_headers())
     assert response.status_code == 409
     assert "at most 5 notebooks" in response.json()["error"]
-    assert db.execute("SELECT COUNT(*) FROM notebook").fetchone()[0] == 5
+    assert db.execute("SELECT COUNT(*) FROM notebook WHERE kind = 'personal'").fetchone()[0] == 5
     assert "New notebook" not in visitor.refresh().page
 
 
@@ -43,7 +43,10 @@ def test_tc_src_005_size_and_page_limits(visitor, db):
     assert "larger than 10 MB" in response.json()["error"]
     response = visitor.upload("long.pdf", make_pdf([f"Page {i}" for i in range(151)]), expect=413)
     assert "151 pages; the limit is 150" in response.json()["error"]
-    assert db.execute("SELECT COUNT(*) FROM source").fetchone()[0] == 0
+    assert (
+        db.execute("SELECT COUNT(*) FROM source WHERE notebook_id = ?", (visitor.notebook_id,)).fetchone()[0]
+        == 0
+    )
 
 
 def test_tc_src_005_body_far_over_the_limit_is_cut_off_before_parsing(visitor):
@@ -61,7 +64,10 @@ def test_tc_src_006_empty_inputs_are_rejected(visitor, db):
     assert "empty" in response.json()["error"]
     response = visitor.paste("Blank", "   \n\t  ", expect=422)
     assert "empty" in response.json()["error"]
-    assert db.execute("SELECT COUNT(*) FROM source").fetchone()[0] == 0
+    assert (
+        db.execute("SELECT COUNT(*) FROM source WHERE notebook_id = ?", (visitor.notebook_id,)).fetchone()[0]
+        == 0
+    )
 
 
 def test_tc_src_012_viewer_shows_exact_text_marks_the_passage_and_shows_metadata(visitor, db):

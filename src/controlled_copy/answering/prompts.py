@@ -44,12 +44,17 @@ SUGGEST_SYSTEM = f"""You suggest three short questions a reader could ask about 
 Each question must be answerable from the passages, at most 15 words, and different from the others."""
 
 
-def passage_label(passage: Passage) -> str:
-    meta = passage.metadata or {}
+def document_label(title: str, metadata: dict[str, Any] | None) -> str:
+    """'SOP-INB-001 rev 3' for documents with document-control metadata, else the title."""
+    meta = metadata or {}
     if meta.get("document_id"):
         revision = f" rev {meta['revision']}" if meta.get("revision") else ""
         return f"{meta['document_id']}{revision}"
-    return passage.source_title
+    return title
+
+
+def passage_label(passage: Passage) -> str:
+    return document_label(passage.source_title, passage.metadata)
 
 
 def _escape(text: str) -> str:
@@ -81,12 +86,34 @@ def answer_messages(
     return [{"role": "system", "content": ANSWER_SYSTEM}, {"role": "user", "content": user}], mapping
 
 
+EARLIER_QUESTION = "Earlier question: "
+EARLIER_ANSWER = "Earlier answer: "
+LATEST_QUESTION = "Latest question: "
+_PASSAGE = re.compile(r'<passage id="(P\d+)"[^>]*>\n(.*?)\n</passage>', re.S)
+
+
+def parse_passages(user_text: str) -> list[tuple[str, str]]:
+    """(passage id, text) pairs from a prompt built by passages_block (used by the fake provider)."""
+    return _PASSAGE.findall(user_text)
+
+
+def parse_rewrite(user_text: str) -> tuple[list[str], str]:
+    """(earlier questions, latest question) from a prompt built by rewrite_messages."""
+    earlier = [
+        line[len(EARLIER_QUESTION) :] for line in user_text.splitlines() if line.startswith(EARLIER_QUESTION)
+    ]
+    latest = [
+        line[len(LATEST_QUESTION) :] for line in user_text.splitlines() if line.startswith(LATEST_QUESTION)
+    ]
+    return earlier, latest[-1] if latest else ""
+
+
 def rewrite_messages(history: Sequence[tuple[str, str]], question: str) -> list[dict[str, str]]:
     lines = []
     for earlier_question, earlier_answer in history:
-        lines.append(f"Earlier question: {earlier_question}")
-        lines.append(f"Earlier answer: {earlier_answer[:600]}")
-    lines.append(f"Latest question: {question}")
+        lines.append(f"{EARLIER_QUESTION}{earlier_question}")
+        lines.append(f"{EARLIER_ANSWER}{earlier_answer[:600]}")
+    lines.append(f"{LATEST_QUESTION}{question}")
     return [{"role": "system", "content": REWRITE_SYSTEM}, {"role": "user", "content": "\n".join(lines)}]
 
 

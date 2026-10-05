@@ -15,15 +15,13 @@ from collections import defaultdict, deque
 from datetime import UTC, datetime, timedelta
 
 from controlled_copy.config import Settings
+from controlled_copy.errors import UserFacingError
 from controlled_copy.storage.db import transaction
 from controlled_copy.storage.repo import Repo
 
 
-class LimitExceeded(Exception):
-    def __init__(self, message: str, status: int) -> None:
-        super().__init__(message)
-        self.message = message
-        self.status = status
+class LimitExceeded(UserFacingError):
+    """A model-call budget is used up."""
 
 
 VISITOR_LIMIT_MESSAGE = (

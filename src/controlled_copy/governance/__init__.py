@@ -48,7 +48,7 @@ def _view_hook(services: Services, notebook: Any, context: dict[str, Any]) -> No
         if "warehouse_operator" in roles
         else (roles[0] if roles else ""),
         "today": date.today().isoformat(),
-        "scenarios": scenarios() if notebook["kind"] == WORKSPACE_KIND else [],
+        "scenarios": scenarios() if notebook.kind == WORKSPACE_KIND else [],
         "has_metadata": any(d.origin != "none" for d in documents_of(rows)),
     }
 
