@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Demo video · {{ product_name }}{% endblock %}
+{% block content %}
+<main class="cover">
+  <article class="sheet">
+    <div class="sheet__brand">
+      {{ icon('brand') }}
+      <span class="brand__name">{{ product_name }}</span>
+    </div>
+    <h1>Demo video</h1>
+    {% if video %}
+    <video class="video-frame" controls preload="metadata" src="{{ static(video.mp4) }}">
+      {% if video.vtt %}<track kind="captions" srclang="en" label="English" src="{{ static(video.vtt) }}" default>{% endif %}
+    </video>
+    <p class="sheet__foot">
+      <a href="{{ static(video.mp4) }}" download>Download the MP4</a>
+      <span class="muted">Recorded {{ video.date }}</span>
+    </p>
+    {% else %}
+    <p class="empty"><strong>The video is not published yet.</strong> It is recorded after the product is finished.</p>
+    {% endif %}
+    <p><a href="/">Back to the start page</a></p>
+  </article>
+</main>
+{% endblock %}

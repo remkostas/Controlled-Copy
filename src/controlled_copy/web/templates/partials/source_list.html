@@ -1,0 +1,33 @@
+{% from "partials/macros.html" import source_badges %}
+{% if sources %}
+<label class="select-all">
+  <input type="checkbox" data-select-all {% if selected_ids|length == sources|length %}checked{% endif %}>
+  <span>Select all sources <span class="mono">({{ selected_ids|length }}/{{ sources|length }})</span></span>
+</label>
+<ul class="source-list" id="source-list">
+  {% for s in sources %}
+  <li class="source" id="source-{{ s.id }}">
+    <input type="checkbox" name="source_ids" value="{{ s.id }}" aria-label="Use {{ s.title }} for questions" {% if s.id in selected_ids %}checked{% endif %}>
+    <div class="source__main">
+      <button type="button" class="source__title" hx-get="/sources/{{ s.id }}" hx-target="#viewer-slot" hx-swap="innerHTML">
+        {{ icon('file-text' if s.kind != 'paste' else 'clipboard-paste') }}<span>{{ s.title }}</span>
+      </button>
+      <p class="source__meta">{{ s.kind_label }} · {{ s.size_label }}</p>
+      {{ source_badges(s) }}
+      {% for w in s.warnings %}
+      <p class="source__warn">{{ icon('triangle-alert') }}<span>{{ w }}</span></p>
+      {% endfor %}
+    </div>
+    <button type="button" class="btn btn--ghost btn--icon source__delete" title="Delete {{ s.title }}" aria-label="Delete {{ s.title }}"
+      hx-delete="/sources/{{ s.id }}" hx-confirm="Delete “{{ s.title }}” and everything derived from it? This cannot be undone.">
+      {{ icon('trash-2') }}
+    </button>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<div class="empty">
+  <strong>No sources yet</strong>
+  <span>Upload a PDF, TXT or Markdown file, or paste text. Answers only use the sources you add here.</span>
+</div>
+{% endif %}

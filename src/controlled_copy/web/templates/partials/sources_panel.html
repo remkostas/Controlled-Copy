@@ -1,0 +1,42 @@
+<section class="panel panel--sources" id="sources-panel" aria-labelledby="sources-title">
+  <header class="panel__head">
+    <h2 class="panel__title" id="sources-title">Sources</h2>
+    <span class="panel__count">{{ sources|length }}/{{ limits.max_sources }}</span>
+  </header>
+  <div class="panel__body">
+    <div id="viewer-slot" aria-live="polite">{% if initial_viewer %}{{ initial_viewer }}{% endif %}</div>
+    <div id="source-browser"{% if initial_viewer %} hidden{% endif %}>
+      {% if not read_only %}
+      <div class="add-source">
+        <div class="add-source__row">
+          <form class="file-pick" hx-post="/notebooks/{{ nb.id }}/sources" hx-encoding="multipart/form-data" hx-trigger="change"
+                hx-target="#source-list-wrap" hx-swap="innerHTML" hx-include="[name='source_ids']" hx-indicator="#upload-progress"
+                hx-disabled-elt="find input">
+            <span class="btn btn--block">{{ icon('upload') }} Upload</span>
+            <input type="file" name="file" accept=".pdf,.txt,.md,.markdown,application/pdf,text/plain,text/markdown" aria-label="Upload a PDF, TXT or Markdown file">
+          </form>
+          <button type="button" class="btn" data-toggle="paste-form" aria-controls="paste-form" aria-expanded="false">{{ icon('clipboard-paste') }} Paste text</button>
+        </div>
+        <form class="paste-form" id="paste-form" hidden hx-post="/notebooks/{{ nb.id }}/sources" hx-target="#source-list-wrap" hx-swap="innerHTML"
+              hx-include="[name='source_ids']" hx-indicator="#upload-progress" hx-disabled-elt="find button">
+          <div class="field">
+            <label for="paste-title">Title</label>
+            <input class="input" id="paste-title" name="title" maxlength="200" required>
+          </div>
+          <div class="field">
+            <label for="paste-text">Text</label>
+            <textarea class="textarea" id="paste-text" name="text" required></textarea>
+          </div>
+          <button class="btn btn--primary" type="submit">Add source</button>
+        </form>
+        <p class="add-source__hint">PDF, TXT or Markdown up to {{ limits.max_file_mb }} MB and {{ limits.max_pdf_pages }} pages.</p>
+        <p class="thinking htmx-indicator" id="upload-progress">{{ icon('loader-circle', 'icon--spin') }} Reading, chunking and indexing…</p>
+        <div id="add-source-status" aria-live="polite"></div>
+      </div>
+      {% endif %}
+      <div id="source-list-wrap">
+        {% include "partials/source_list.html" %}
+      </div>
+    </div>
+  </div>
+</section>

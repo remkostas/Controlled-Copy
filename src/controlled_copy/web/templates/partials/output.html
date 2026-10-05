@@ -1,0 +1,30 @@
+{% from "partials/macros.html" import cites %}
+<details class="output" id="output-{{ o.id }}" {% if o.open %}open{% endif %}>
+  <summary>
+    <span class="output__name">{{ o.title }}</span>
+    <span class="output__meta">{{ o.meta_label }}</span>
+  </summary>
+  <div class="output__body">
+    {% if o.kind == 'ok' %}
+    {% for sec in o.sections %}
+    <section class="output__section">
+      <h3>{{ sec.title }}</h3>
+      {% if sec.items %}
+      <ul>
+        {% for it in sec.items %}
+        <li>{% if it.type_label %}<span class="badge">{{ it.type_label }}</span> {% endif %}{{ it.text }} {{ cites(it.cites) }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">Nothing in the selected sources supports this section.</p>
+      {% endif %}
+    </section>
+    {% endfor %}
+    {% if o.removed %}<p class="muted">{{ o.removed }} statement{{ '' if o.removed == 1 else 's' }} removed because the quote could not be verified.</p>{% endif %}
+    {% elif o.kind == 'tombstone' %}
+    <p class="muted">This output cited a source that was deleted, so its content was deleted too.</p>
+    {% else %}
+    <p class="notice notice--error" role="alert">{{ icon('triangle-alert') }}<span>{{ o.message }}</span></p>
+    {% endif %}
+  </div>
+</details>

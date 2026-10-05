@@ -1,0 +1,26 @@
+{% macro cites(items) -%}
+{%- for c in items -%}
+{%- if c.deleted -%}
+<span class="cite cite--deleted" title="Cited source was deleted">{{ c.n }}</span>
+{%- else -%}
+<button type="button" class="cite" hx-get="{{ c.url }}" hx-target="#viewer-slot" hx-swap="innerHTML" title="{{ c.label }}" aria-label="Citation {{ c.n }}: {{ c.label }}">{{ c.n }}</button>
+{%- endif -%}
+{%- endfor -%}
+{%- endmacro %}
+
+{% macro status_chip(status) -%}
+<span class="status status--{{ status }}">{{ status }}</span>
+{%- endmacro %}
+
+{% macro source_badges(s) -%}
+{%- if s.meta -%}
+<div class="badges">
+  {%- if s.meta.document_id %}<span class="badge">{{ s.meta.document_id }}</span>{% endif -%}
+  {%- if s.meta.revision %}<span class="badge">Rev {{ s.meta.revision }}</span>{% endif -%}
+  {{ status_chip(s.meta.status or 'unknown') }}
+  {%- if s.meta.site %}<span class="badge">{{ s.meta.site }}</span>{% endif -%}
+  {%- if s.meta.effective_from %}<span class="badge">eff. {{ s.meta.effective_from }}</span>{% endif -%}
+</div>
+{%- if s.origin_label %}<p class="origin">{{ s.origin_label }}</p>{% endif -%}
+{%- endif -%}
+{%- endmacro %}
