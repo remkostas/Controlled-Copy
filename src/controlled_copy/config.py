@@ -11,8 +11,9 @@ from __future__ import annotations
 from enum import StrEnum
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -52,28 +53,29 @@ class Settings(BaseSettings):
     feature_governance: bool = False
     feature_personas: bool = False
 
-    retention_hours: int = 168
-    purge_interval_seconds: int = 3600
+    retention_hours: int = Field(default=168, gt=0)
+    purge_interval_seconds: int = Field(default=3600, gt=0)
 
-    max_file_bytes: int = 10 * 1024 * 1024
-    max_pdf_pages: int = 150
-    max_paste_chars: int = 200_000
-    max_title_chars: int = 200
-    max_sources_per_notebook: int = 20
-    max_notebooks_per_visitor: int = 5
-    max_question_chars: int = 1500
-    max_situation_chars: int = 2000
+    max_file_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
+    max_pdf_pages: int = Field(default=150, gt=0)
+    max_paste_chars: int = Field(default=200_000, gt=0)
+    max_title_chars: int = Field(default=200, gt=0)
+    max_sources_per_notebook: int = Field(default=20, gt=0)
+    max_notebooks_per_visitor: int = Field(default=5, gt=0)
+    max_question_chars: int = Field(default=1500, gt=0)
+    max_situation_chars: int = Field(default=2000, gt=0)
     model_calls_per_visitor_hour: int = 120
     model_calls_per_day: int = 3000
     access_attempts_per_hour: int = 10
-    provider_timeout_seconds: float = 45.0
-    pdf_parse_timeout_seconds: float = 20.0
-    pdf_parse_memory_mb: int = 1024
+    provider_timeout_seconds: float = Field(default=45.0, gt=0)
+    pdf_parse_timeout_seconds: float = Field(default=20.0, gt=0)
+    pdf_parse_memory_mb: int = Field(default=1024, gt=0)
 
-    retrieval_candidates: int = 20
-    retrieval_top_k: int = 6
-    evidence_floor: float = 0.52
-    embedding_batch_size: int = 64
+    retrieval_candidates: int = Field(default=20, gt=0)
+    retrieval_top_k: int = Field(default=6, gt=0)
+    # 0 would silently switch refusals off and 1 would refuse everything.
+    evidence_floor: float = Field(default=0.52, gt=0, lt=1)
+    embedding_batch_size: int = Field(default=64, gt=0)
 
     video_mp4: str | None = None
     video_vtt: str | None = None
@@ -99,6 +101,9 @@ class Settings(BaseSettings):
             problems.append("APP_ACCESS_CODE is not set")
         if self.model_provider == "openrouter" and not self.openrouter_api_key:
             problems.append("OPENROUTER_API_KEY is not set")
+        base = urlsplit(self.openrouter_base_url)
+        if base.scheme != "https" and base.hostname not in ("localhost", "127.0.0.1"):
+            problems.append("OPENROUTER_BASE_URL must use https (the API key is sent with every request)")
         for name in ("model_calls_per_visitor_hour", "model_calls_per_day", "access_attempts_per_hour"):
             if getattr(self, name) <= 0:
                 problems.append(f"{name.upper()} must be positive")

@@ -17,7 +17,7 @@ from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError
 from controlled_copy.retrieval.search import retrieve
 from controlled_copy.services import Services
-from controlled_copy.storage.repo import TOMBSTONE
+from controlled_copy.storage.repo import TOMBSTONE, OwnedNotebook
 
 
 class AnswerOut(BaseModel):
@@ -76,7 +76,7 @@ def rewrite_question(services: Services, history: list[tuple[str, str]], questio
     return rewritten[: services.settings.max_question_chars] or question
 
 
-def ask(services: Services, notebook_id: str, question: str, selected_ids: list[str]) -> TurnResult:
+def ask(services: Services, notebook: OwnedNotebook, question: str, selected_ids: list[str]) -> TurnResult:
     settings = services.settings
     repo = services.repo
     question = question.strip()
@@ -84,7 +84,7 @@ def ask(services: Services, notebook_id: str, question: str, selected_ids: list[
         raise AskError("Type a question first.", 422)
     if len(question) > settings.max_question_chars:
         raise AskError(f"Questions are limited to {settings.max_question_chars:,} characters.", 422)
-    sources = repo.sources_by_ids(notebook_id, selected_ids)
+    sources = repo.sources_by_ids(notebook, selected_ids)
     if not sources:
         raise AskError("Select at least one source to ask about.", 422)
     if services.budget.read_only():
@@ -92,7 +92,7 @@ def ask(services: Services, notebook_id: str, question: str, selected_ids: list[
     source_ids = [row["id"] for row in sources]
 
     try:
-        history = history_pairs(repo.list_messages(notebook_id))
+        history = history_pairs(repo.list_messages(notebook))
         search_query: str | None = None
         if history:
             search_query = rewrite_question(services, history, question)
@@ -103,12 +103,12 @@ def ask(services: Services, notebook_id: str, question: str, selected_ids: list[
             log_event(
                 "answer",
                 session=services.session_id,
-                notebook=notebook_id,
+                notebook=notebook.id,
                 outcome="refused_floor",
                 best_cosine=round(retrieval.best_cosine, 3),
                 passages=len(retrieval.passages),
             )
-            return _store(services, notebook_id, question, search_query, answer, [], [])
+            return _store(services, notebook, question, search_query, answer, [], [])
 
         messages, mapping = prompts.answer_messages(search_query or question, retrieval.passages)
         payload, result = generate(
@@ -142,7 +142,7 @@ def ask(services: Services, notebook_id: str, question: str, selected_ids: list[
     log_event(
         "answer",
         session=services.session_id,
-        notebook=notebook_id,
+        notebook=notebook.id,
         outcome=answer["kind"],
         statements=len(verified.statements),
         removed=verified.removed,
@@ -151,7 +151,7 @@ def ask(services: Services, notebook_id: str, question: str, selected_ids: list[
         model=result.model,
     )
     context = [p.source_id for p in retrieval.passages]
-    return _store(services, notebook_id, question, search_query, answer, numbering.flat, context)
+    return _store(services, notebook, question, search_query, answer, numbering.flat, context)
 
 
 def refusal(searched_sources: int, query: str, reason: str | None) -> dict[str, Any]:
@@ -169,7 +169,7 @@ def refusal(searched_sources: int, query: str, reason: str | None) -> dict[str, 
 
 def _store(
     services: Services,
-    notebook_id: str,
+    notebook: OwnedNotebook,
     question: str,
     search_query: str | None,
     answer: dict[str, Any],
@@ -180,6 +180,6 @@ def _store(
     the prompt, cited or not, so deleting any of them removes the generated text (S-05)."""
     sources = sorted({c["source_id"] for c in citations} | set(context_source_ids))
     turn_id = services.repo.add_turn(
-        notebook_id, question, answer, search_query, [{"source_id": s} for s in sources], "ok"
+        notebook, question, answer, search_query, [{"source_id": s} for s in sources], "ok"
     )
     return TurnResult(turn_id, question, search_query, answer, citations)

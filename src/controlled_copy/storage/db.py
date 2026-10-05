@@ -8,6 +8,7 @@ add tables or nullable columns (D-032).
 
 from __future__ import annotations
 
+import secrets
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -39,6 +40,19 @@ def connect(path: Path | str) -> sqlite3.Connection:
 
 @contextmanager
 def transaction(conn: sqlite3.Connection) -> Iterator[sqlite3.Connection]:
+    """A write transaction; nested use becomes a savepoint instead of an error."""
+    if conn.in_transaction:
+        name = f"sp_{secrets.token_hex(4)}"
+        conn.execute(f"SAVEPOINT {name}")
+        try:
+            yield conn
+        except BaseException:
+            conn.execute(f"ROLLBACK TO {name}")
+            conn.execute(f"RELEASE {name}")
+            raise
+        else:
+            conn.execute(f"RELEASE {name}")
+        return
     conn.execute("BEGIN IMMEDIATE")
     try:
         yield conn

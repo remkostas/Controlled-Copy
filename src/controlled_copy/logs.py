@@ -34,7 +34,6 @@ STRING_KEYS = frozenset(
         "method",
         "template",
         "outcome",
-        "reason",
         "mode",
     }
 )

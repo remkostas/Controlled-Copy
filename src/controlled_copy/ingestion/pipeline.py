@@ -25,7 +25,7 @@ from controlled_copy.ingestion.validate import IngestError, decode_text, detect_
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError, call_with_deadline
 from controlled_copy.services import Services
-from controlled_copy.storage.repo import ChunkRecord, NewSource
+from controlled_copy.storage.repo import ChunkRecord, NewSource, OwnedNotebook
 
 MIN_PAGE_CHARS = 20
 KIND_EXTENSION = {"pdf": ".pdf", "md": ".md", "txt": ".txt"}
@@ -124,7 +124,7 @@ def embed_texts(services: Services, texts: list[str], kind: str = "embed") -> li
     return vectors
 
 
-def store(services: Services, notebook_id: str, extracted: Extracted, raw: bytes | None) -> str:
+def store(services: Services, notebook: OwnedNotebook, extracted: Extracted, raw: bytes | None) -> str:
     started = time.monotonic()
     vectors = embed_texts(services, [embedding_input(extracted.title, c) for c in extracted.chunks])
     file_name: str | None = None
@@ -139,7 +139,7 @@ def store(services: Services, notebook_id: str, extracted: Extracted, raw: bytes
     try:
         source_id = services.repo.insert_source(
             NewSource(
-                notebook_id=notebook_id,
+                notebook=notebook,
                 title=extracted.title,
                 kind=extracted.kind,
                 bytes=extracted.bytes,
@@ -166,7 +166,7 @@ def store(services: Services, notebook_id: str, extracted: Extracted, raw: bytes
     log_event(
         "source_ingested",
         session=services.session_id,
-        notebook=notebook_id,
+        notebook=notebook.id,
         source=source_id,
         kind=extracted.kind,
         bytes=extracted.bytes,

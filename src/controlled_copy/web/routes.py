@@ -22,7 +22,7 @@ from controlled_copy.limits import DAILY_LIMIT_MESSAGE, LimitExceeded
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError
 from controlled_copy.services import Services
-from controlled_copy.storage.repo import CapacityReached
+from controlled_copy.storage.repo import CapacityReached, OwnedNotebook
 from controlled_copy.studio.actions import StudioError, run_overview_template, suggested_questions
 from controlled_copy.studio.engine import core_templates
 from controlled_copy.web import views
@@ -113,7 +113,7 @@ def workspace_context(
 ) -> dict[str, Any]:
     repo = services.repo
     assert services.session_id is not None
-    sources = [views.source_view(row) for row in repo.list_sources(notebook["id"])]
+    sources = [views.source_view(row) for row in repo.list_sources(notebook)]
     selected = {s["id"] for s in sources} if selected_ids is None else selected_ids
     read_only = services.budget.read_only()
     settings = services.settings
@@ -126,9 +126,9 @@ def workspace_context(
         "nb": {"id": notebook["id"], "title": notebook["title"], "kind": notebook["kind"]},
         "sources": sources,
         "selected_ids": selected,
-        "turns": views.turn_views(repo.list_messages(notebook["id"])),
+        "turns": views.turn_views(repo.list_messages(notebook)),
         "outputs": [
-            views.output_view(row, open_=i == 0) for i, row in enumerate(repo.list_outputs(notebook["id"]))
+            views.output_view(row, open_=i == 0) for i, row in enumerate(repo.list_outputs(notebook))
         ],
         "notice": DAILY_LIMIT_MESSAGE if read_only else None,
         "read_only": read_only,
@@ -148,7 +148,7 @@ def workspace_context(
     return context
 
 
-def owned_notebook_or_404(services: Services, notebook_id: str) -> Any:
+def owned_notebook_or_404(services: Services, notebook_id: str) -> OwnedNotebook:
     assert services.session_id is not None
     notebook = services.repo.get_notebook(services.session_id, notebook_id)
     if notebook is None:
@@ -288,11 +288,11 @@ def delete_notebook(request: Request, notebook_id: str, services: WriteDep) -> R
 
 # Sources -------------------------------------------------------------------------
 def _source_list_response(
-    request: Request, services: Services, notebook_id: str, selected: set[str], new_id: str
+    request: Request, services: Services, notebook: OwnedNotebook, selected: set[str], new_id: str
 ) -> Response:
     if wants_json(request):
         return JSONResponse({"source_id": new_id}, status_code=201)
-    sources = [views.source_view(row) for row in services.repo.list_sources(notebook_id)]
+    sources = [views.source_view(row) for row in services.repo.list_sources(notebook)]
     html = fragment(
         request, "partials/source_list.html", {"sources": sources, "selected_ids": selected | {new_id}}
     )
@@ -301,7 +301,6 @@ def _source_list_response(
         "partials/source_count.html",
         {"count": len(sources), "limits": limits_view(services.settings)},
     )
-    notebook = services.repo.get_notebook(services.session_id or "", notebook_id)
     intro = fragment(
         request,
         "partials/chat_intro.html",
@@ -326,7 +325,7 @@ def add_source(
         notebook = owned_notebook_or_404(services, notebook_id)
     except LookupError:
         return notice(request, "Notebook not found.", 404, target)
-    if services.repo.count_sources(notebook["id"]) >= settings.max_sources_per_notebook:
+    if services.repo.count_sources(notebook) >= settings.max_sources_per_notebook:
         return notice(
             request, f"A notebook holds at most {settings.max_sources_per_notebook} sources.", 409, target
         )
@@ -357,7 +356,7 @@ def add_source(
             raw = None
         else:
             raise IngestError("Choose a file or paste some text.", 422)
-        source_id = pipeline.store(services, notebook["id"], extracted, raw)
+        source_id = pipeline.store(services, notebook, extracted, raw)
     except IngestError as exc:
         log_event(
             "source_rejected", session=services.session_id, notebook=notebook_id, status=str(exc.status)
@@ -377,7 +376,7 @@ def add_source(
             target,
         )
     selected = set(source_ids or [])
-    return _source_list_response(request, services, notebook["id"], selected, source_id)
+    return _source_list_response(request, services, notebook, selected, source_id)
 
 
 @router.delete("/sources/{source_id}")
@@ -449,7 +448,7 @@ def ask_question(
     except LookupError:
         return notice(request, "Notebook not found.", 404, "#toast")
     try:
-        result = ask(services, notebook["id"], question, list(source_ids or []))
+        result = ask(services, notebook, question, list(source_ids or []))
     except AskError as exc:
         if wants_json(request):
             return JSONResponse({"error": exc.message}, status_code=exc.status)
@@ -474,7 +473,7 @@ def suggestions(request: Request, notebook_id: str, services: SessionDep) -> Res
         notebook = owned_notebook_or_404(services, notebook_id)
     except LookupError:
         return HTMLResponse('<div id="suggestions"></div>', status_code=404)
-    questions = suggested_questions(services, dict(notebook))
+    questions = suggested_questions(services, notebook)
     return render(
         request,
         "partials/suggestions.html",
@@ -496,12 +495,12 @@ def run_studio(
         return notice(request, "Unknown Studio action.", 404, "#studio-status")
     try:
         notebook = owned_notebook_or_404(services, notebook_id)
-        stored = run_overview_template(services, notebook["id"], template, list(source_ids or []))
+        stored = run_overview_template(services, notebook, template, list(source_ids or []))
     except LookupError:
         return notice(request, "Notebook not found.", 404, "#studio-status")
     except StudioError as exc:
         return notice(request, exc.message, exc.status, "#studio-status")
     if wants_json(request):
         return JSONResponse({"output_id": stored.output_id, "output": stored.output})
-    row = services.repo.get_output(notebook["id"], stored.output_id)
+    row = services.repo.get_output(notebook, stored.output_id)
     return render(request, "partials/output.html", {"o": views.output_view(row, open_=True)})

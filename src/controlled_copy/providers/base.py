@@ -68,6 +68,8 @@ def call_with_deadline[T](fn: Callable[[], T], timeout: float) -> T:
     total. A call that overruns keeps running in its worker thread until the
     client's own timeout ends it, but the request is answered on time.
     """
+    if not timeout or timeout <= 0:
+        raise ValueError("a positive timeout is required")  # None would wait forever
     future = _EXECUTOR.submit(fn)
     try:
         return future.result(timeout=timeout)

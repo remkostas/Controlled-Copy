@@ -32,6 +32,46 @@ def new_id() -> str:
 
 
 @dataclass(frozen=True)
+class OwnedNotebook:
+    """Proof that a notebook belongs to the current session.
+
+    Only `Repo.get_notebook` and `Repo.list_notebooks` create it, after checking the
+    session. Every notebook-level method takes it instead of a bare ID, so code that
+    forgets the ownership check fails at once instead of leaking another visitor's data.
+    """
+
+    id: str
+    session_id: str
+    kind: str
+    title: str
+    suggestions_key: str | None = None
+    suggestions_json: str | None = None
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
+    def keys(self) -> list[str]:
+        return ["id", "session_id", "kind", "title", "suggestions_key", "suggestions_json"]
+
+
+def _owned(notebook: OwnedNotebook) -> str:
+    if not isinstance(notebook, OwnedNotebook):
+        raise TypeError("pass the OwnedNotebook from Repo.get_notebook, not a raw notebook ID")
+    return notebook.id
+
+
+def _notebook(row: sqlite3.Row) -> OwnedNotebook:
+    return OwnedNotebook(
+        row["id"],
+        row["session_id"],
+        row["kind"],
+        row["title"],
+        row["suggestions_key"],
+        row["suggestions_json"],
+    )
+
+
+@dataclass(frozen=True)
 class ChunkRecord:
     ordinal: int
     locator: str
@@ -43,7 +83,7 @@ class ChunkRecord:
 
 @dataclass(frozen=True)
 class NewSource:
-    notebook_id: str
+    notebook: OwnedNotebook
     title: str
     kind: str
     bytes: int
@@ -81,11 +121,12 @@ class Repo:
         self.conn.execute("UPDATE visitor_session SET last_seen_at = ? WHERE id = ?", (utcnow(), sid))
 
     # Notebooks ----------------------------------------------------------------
-    def list_notebooks(self, sid: str) -> list[sqlite3.Row]:
-        return self.conn.execute(
+    def list_notebooks(self, sid: str) -> list[OwnedNotebook]:
+        rows = self.conn.execute(
             "SELECT * FROM notebook WHERE session_id = ? ORDER BY kind DESC, created_at, rowid",
             (sid,),
         ).fetchall()
+        return [_notebook(row) for row in rows]
 
     def count_notebooks(self, sid: str, kind: str = "personal") -> int:
         row = self.conn.execute(
@@ -93,8 +134,9 @@ class Repo:
         ).fetchone()
         return int(row["n"])
 
-    def get_notebook(self, sid: str, notebook_id: str) -> sqlite3.Row | None:
-        return self._owned_notebook(sid, notebook_id)
+    def get_notebook(self, sid: str, notebook_id: str) -> OwnedNotebook | None:
+        row = self._owned_notebook(sid, notebook_id)
+        return _notebook(row) if row is not None else None
 
     def _owned_notebook(self, sid: str, notebook_id: str) -> sqlite3.Row | None:
         return self.conn.execute(
@@ -127,14 +169,14 @@ class Repo:
             self.conn.execute("DELETE FROM notebook WHERE id = ?", (notebook_id,))
         return files
 
-    def set_suggestions(self, notebook_id: str, key: str, questions: list[str]) -> None:
+    def set_suggestions(self, notebook: OwnedNotebook, key: str, questions: list[str]) -> None:
         self.conn.execute(
             "UPDATE notebook SET suggestions_key = ?, suggestions_json = ? WHERE id = ?",
-            (key, json.dumps(questions), notebook_id),
+            (key, json.dumps(questions), _owned(notebook)),
         )
 
     # Sources ------------------------------------------------------------------
-    def list_sources(self, notebook_id: str) -> list[sqlite3.Row]:
+    def list_sources(self, notebook: OwnedNotebook) -> list[sqlite3.Row]:
         return self.conn.execute(
             "SELECT s.id, s.notebook_id, s.title, s.kind, s.bytes, s.pages, s.warnings_json, "
             "s.metadata_json, s.metadata_origin, s.file_path, s.created_at, length(s.text) AS char_count, "
@@ -142,12 +184,12 @@ class Repo:
             " THEN substr(c.locator, 1, instr(c.locator, ' (part ') - 1) ELSE c.locator END) "
             " FROM chunk c WHERE c.source_id = s.id) AS section_count "
             "FROM source s WHERE s.notebook_id = ? ORDER BY s.created_at, s.rowid",
-            (notebook_id,),
+            (_owned(notebook),),
         ).fetchall()
 
-    def count_sources(self, notebook_id: str) -> int:
+    def count_sources(self, notebook: OwnedNotebook) -> int:
         row = self.conn.execute(
-            "SELECT COUNT(*) AS n FROM source WHERE notebook_id = ?", (notebook_id,)
+            "SELECT COUNT(*) AS n FROM source WHERE notebook_id = ?", (_owned(notebook),)
         ).fetchone()
         return int(row["n"])
 
@@ -158,7 +200,9 @@ class Repo:
             (source_id, sid),
         ).fetchone()
 
-    def sources_by_ids(self, notebook_id: str, source_ids: Iterable[str]) -> list[sqlite3.Row]:
+    def sources_by_ids(self, notebook: OwnedNotebook, source_ids: Iterable[str]) -> list[sqlite3.Row]:
+        """The selected sources that belong to this notebook (foreign IDs are dropped)."""
+        notebook_id = _owned(notebook)
         ids = list(dict.fromkeys(source_ids))
         if not ids:
             return []
@@ -185,7 +229,7 @@ class Repo:
             raise ValueError("every chunk needs exactly one vector")
         source_id = new_id()
         with transaction(self.conn):
-            if limit is not None and self.count_sources(new.notebook_id) >= limit:
+            if limit is not None and self.count_sources(new.notebook) >= limit:
                 raise CapacityReached
             self.conn.execute(
                 "INSERT INTO source (id, notebook_id, title, kind, bytes, pages, page_starts_json, "
@@ -193,7 +237,7 @@ class Repo:
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     source_id,
-                    new.notebook_id,
+                    _owned(new.notebook),
                     new.title,
                     new.kind,
                     new.bytes,
@@ -273,6 +317,8 @@ class Repo:
                     )
 
     # Chunks and vectors -------------------------------------------------------
+    # Chunk-level helpers take source IDs that callers got from sources_by_ids or
+    # owned_source, i.e. IDs already checked against the session.
     def chunks_for_sources(self, source_ids: Sequence[str]) -> list[sqlite3.Row]:
         if not source_ids:
             return []
@@ -324,13 +370,14 @@ class Repo:
     # Chat ---------------------------------------------------------------------
     def add_turn(
         self,
-        notebook_id: str,
+        notebook: OwnedNotebook,
         question: str,
         answer: dict[str, Any],
         search_query: str | None,
         citations: list[dict[str, Any]],
         status: str,
     ) -> str:
+        notebook_id = _owned(notebook)
         turn_id = new_id()
         now = utcnow()
         with transaction(self.conn):
@@ -355,16 +402,16 @@ class Repo:
             )
         return turn_id
 
-    def list_messages(self, notebook_id: str) -> list[sqlite3.Row]:
+    def list_messages(self, notebook: OwnedNotebook) -> list[sqlite3.Row]:
         return self.conn.execute(
             "SELECT * FROM chat_message WHERE notebook_id = ? ORDER BY created_at, rowid",
-            (notebook_id,),
+            (_owned(notebook),),
         ).fetchall()
 
     # Studio -------------------------------------------------------------------
     def add_output(
         self,
-        notebook_id: str,
+        notebook: OwnedNotebook,
         template: str,
         input_text: str | None,
         output: dict[str, Any],
@@ -377,7 +424,7 @@ class Repo:
             "status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 output_id,
-                notebook_id,
+                _owned(notebook),
                 template,
                 input_text,
                 json.dumps(output),
@@ -388,15 +435,15 @@ class Repo:
         )
         return output_id
 
-    def list_outputs(self, notebook_id: str) -> list[sqlite3.Row]:
+    def list_outputs(self, notebook: OwnedNotebook) -> list[sqlite3.Row]:
         return self.conn.execute(
             "SELECT * FROM studio_output WHERE notebook_id = ? ORDER BY created_at DESC, rowid DESC",
-            (notebook_id,),
+            (_owned(notebook),),
         ).fetchall()
 
-    def get_output(self, notebook_id: str, output_id: str) -> sqlite3.Row | None:
+    def get_output(self, notebook: OwnedNotebook, output_id: str) -> sqlite3.Row | None:
         return self.conn.execute(
-            "SELECT * FROM studio_output WHERE id = ? AND notebook_id = ?", (output_id, notebook_id)
+            "SELECT * FROM studio_output WHERE id = ? AND notebook_id = ?", (output_id, _owned(notebook))
         ).fetchone()
 
     # Model-call accounting ------------------------------------------------------
