@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import os
 import secrets
 import time
 from dataclasses import dataclass, field
@@ -129,9 +130,12 @@ def store(services: Services, notebook_id: str, extracted: Extracted, raw: bytes
     file_name: str | None = None
     uploads = services.settings.uploads_dir
     if raw is not None:
-        uploads.mkdir(parents=True, exist_ok=True)
+        uploads.mkdir(mode=0o700, parents=True, exist_ok=True)
         file_name = secrets.token_hex(16) + KIND_EXTENSION.get(extracted.kind, ".bin")
-        (uploads / file_name).write_bytes(raw)
+        # Owner-only permissions; O_EXCL refuses to follow or overwrite an existing path.
+        descriptor = os.open(uploads / file_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(raw)
     try:
         source_id = services.repo.insert_source(
             NewSource(

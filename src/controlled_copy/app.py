@@ -137,8 +137,8 @@ def create_app(
     configure_logging(settings.app_debug)
 
     registry = load_layers(settings, Registry())
-    settings.data_dir.mkdir(parents=True, exist_ok=True)
-    settings.uploads_dir.mkdir(parents=True, exist_ok=True)
+    settings.data_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+    settings.uploads_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
     conn = connect(settings.db_path)
     try:
         apply_migrations(conn, CORE_MIGRATIONS + registry.migrations)

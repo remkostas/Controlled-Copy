@@ -203,7 +203,8 @@ def access(
         sign_session(request.app.state.secret, sid),
         max_age=settings.retention_hours * 3600,
         httponly=True,
-        secure=settings.secure_cookies,
+        # Fail secure: Secure in deploy mode and whenever the request came in over HTTPS.
+        secure=settings.secure_cookies or request.url.scheme == "https",
         samesite="lax",
         path="/",
     )

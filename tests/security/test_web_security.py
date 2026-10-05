@@ -171,3 +171,23 @@ def test_tc_sec_002_non_ascii_tokens_are_rejected_cleanly(visitor):
     cookie = "cc_session=abc.\u00e9\u00e9".encode("latin-1")
     fresh = visitor.client.__class__(visitor.client.app)
     assert fresh.get("/app", headers={"Cookie": cookie}, follow_redirects=False).status_code == 303
+
+
+def test_tc_sec_004_cookie_is_secure_over_https_even_in_local_mode(app):
+    from fastapi.testclient import TestClient
+
+    from tests.conftest import ACCESS_CODE
+
+    with TestClient(app, base_url="https://testserver") as client:
+        response = client.post("/access", data={"code": ACCESS_CODE}, follow_redirects=False)
+    assert "secure" in response.headers["set-cookie"].lower()
+
+
+def test_tc_sec_004_data_and_uploads_are_private(visitor, settings):
+    import stat
+
+    visitor.upload("note.txt", b"Private text about docks.")
+    for path in (settings.data_dir, settings.uploads_dir):
+        assert stat.S_IMODE(path.stat().st_mode) & 0o077 == 0, path
+    stored = next(settings.uploads_dir.iterdir())
+    assert stat.S_IMODE(stored.stat().st_mode) == 0o600
