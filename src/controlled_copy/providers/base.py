@@ -12,7 +12,11 @@ class ProviderError(Exception):
     """The provider failed (network, HTTP error, no endpoint). Message has no content."""
 
 
-class ProviderTimeout(ProviderError):
+class ProviderTransient(ProviderError):
+    """A failure worth retrying: rate limit, server error, network error or timeout."""
+
+
+class ProviderTimeout(ProviderTransient):
     """The provider did not answer within the time limit."""
 
 

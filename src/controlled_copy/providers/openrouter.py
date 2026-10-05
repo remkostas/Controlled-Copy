@@ -3,7 +3,9 @@
 Privacy routing on every request: `provider.zdr = true` (zero-data-retention
 endpoints only) and `provider.data_collection = "deny"`. Generation requests
 also set `require_parameters`, so they only reach providers that honour the
-JSON schema (structured outputs).
+JSON schema (structured outputs). No sampling parameters are sent: several
+current models reject `temperature`, and with `require_parameters` an unsupported
+parameter would rule out every endpoint.
 """
 
 from __future__ import annotations
@@ -20,9 +22,12 @@ from controlled_copy.providers.base import (
     ProviderBadOutput,
     ProviderError,
     ProviderTimeout,
+    ProviderTransient,
 )
 
 PRIVACY = {"zdr": True, "data_collection": "deny"}
+TRANSIENT_STATUS = frozenset({408, 429, 500, 502, 503, 504})
+RETRY_BACKOFF = (1.0, 3.0)
 
 
 def build_embedding_request(texts: list[str], model: str) -> dict[str, Any]:
@@ -40,7 +45,6 @@ def build_chat_request(
             "json_schema": {"name": schema_name, "strict": True, "schema": schema},
         },
         "provider": {**PRIVACY, "require_parameters": True},
-        "temperature": 0,
         "max_tokens": 4000,
         "usage": {"include": True},
     }
@@ -59,6 +63,18 @@ class OpenRouterProvider:
     def close(self) -> None:
         self._client.close()
 
+    def _post_with_retry(self, path: str, body: dict[str, Any], retries: int) -> dict[str, Any]:
+        """Retry transient failures (rate limits, 5xx, network) with a short backoff."""
+        for attempt in range(retries + 1):
+            try:
+                return self._post(path, body)
+            except ProviderError as exc:
+                if not isinstance(exc, ProviderTransient) or attempt == retries:
+                    raise
+                log_event("provider_retry", path=path, attempt=attempt + 1, model=str(body.get("model")))
+                time.sleep(RETRY_BACKOFF[attempt])
+        raise AssertionError("unreachable")
+
     def _post(self, path: str, body: dict[str, Any], timeout: float | None = None) -> dict[str, Any]:
         started = time.monotonic()
         try:
@@ -69,7 +85,7 @@ class OpenRouterProvider:
         except httpx.TimeoutException as exc:
             raise ProviderTimeout("provider timed out") from exc
         except httpx.HTTPError as exc:
-            raise ProviderError(f"provider request failed: {type(exc).__name__}") from exc
+            raise ProviderTransient(f"provider request failed: {type(exc).__name__}") from exc
         duration_ms = int((time.monotonic() - started) * 1000)
         if response.status_code >= 400:
             log_event(
@@ -79,7 +95,8 @@ class OpenRouterProvider:
                 model=str(body.get("model")),
                 duration_ms=duration_ms,
             )
-            raise ProviderError(f"provider returned HTTP {response.status_code}")
+            kind = ProviderTransient if response.status_code in TRANSIENT_STATUS else ProviderError
+            raise kind(f"provider returned HTTP {response.status_code}")
         try:
             data = response.json()
         except ValueError as exc:
@@ -91,7 +108,7 @@ class OpenRouterProvider:
         return data
 
     def embed(self, texts: list[str], *, model: str) -> EmbedResult:
-        data = self._post("/embeddings", build_embedding_request(texts, model))
+        data = self._post_with_retry("/embeddings", build_embedding_request(texts, model), retries=2)
         items = data.get("data")
         if not isinstance(items, list) or len(items) != len(texts):
             raise ProviderBadOutput("embedding response has the wrong number of vectors")
