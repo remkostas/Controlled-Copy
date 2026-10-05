@@ -146,3 +146,28 @@ def test_tc_sec_007_no_secrets_in_the_repository(tmp_path):
         check=False,
     )
     assert result.returncode == 0, report.read_text() if report.exists() else result.stderr
+
+
+def test_tc_sec_002_access_form_rejects_foreign_origins(app):
+    from fastapi.testclient import TestClient
+
+    from tests.conftest import ACCESS_CODE
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/access",
+            data={"code": ACCESS_CODE},
+            headers={"Origin": "https://evil.example"},
+            follow_redirects=False,
+        )
+        assert response.status_code == 403
+        assert "cc_session" not in response.headers.get("set-cookie", "")
+
+
+def test_tc_sec_002_non_ascii_tokens_are_rejected_cleanly(visitor):
+    token = "t\u00f6ken".encode("latin-1")
+    response = visitor.client.post("/notebooks", data={"title": "x"}, headers={"X-CSRF-Token": token})
+    assert response.status_code == 403
+    cookie = "cc_session=abc.\u00e9\u00e9".encode("latin-1")
+    fresh = visitor.client.__class__(visitor.client.app)
+    assert fresh.get("/app", headers={"Cookie": cookie}, follow_redirects=False).status_code == 303

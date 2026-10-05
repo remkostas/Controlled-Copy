@@ -50,7 +50,7 @@ def test_tc_sec_003_security_headers_on_every_page(visitor):
         assert "frame-ancestors 'none'" in csp
         assert "http" not in csp, "no third-party origins"
         assert headers["x-content-type-options"] == "nosniff"
-        assert headers["referrer-policy"] == "no-referrer"
+        assert headers["referrer-policy"] == "same-origin"
 
 
 def test_tc_sec_003_pages_have_no_inline_scripts_or_styles(visitor):

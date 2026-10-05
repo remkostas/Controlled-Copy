@@ -41,7 +41,7 @@ def verify_session(secret: bytes, cookie: str | None) -> str | None:
     if not cookie or cookie.count(".") != 1:
         return None
     sid, signature = cookie.split(".", 1)
-    if not sid or not hmac.compare_digest(signature, _mac(secret, "session", sid)):
+    if not sid or not hmac.compare_digest(signature.encode(), _mac(secret, "session", sid).encode()):
         return None
     return sid
 
@@ -51,7 +51,7 @@ def csrf_token(secret: bytes, sid: str) -> str:
 
 
 def csrf_valid(secret: bytes, sid: str, token: str | None) -> bool:
-    return bool(token) and hmac.compare_digest(str(token), csrf_token(secret, sid))
+    return bool(token) and hmac.compare_digest(str(token).encode(), csrf_token(secret, sid).encode())
 
 
 def code_matches(given: str, expected: str) -> bool:
@@ -93,7 +93,7 @@ class SecurityHeadersMiddleware:
                 add("content-security-policy", CSP)
                 add("x-content-type-options", "nosniff")
                 add("x-frame-options", "DENY")
-                add("referrer-policy", "no-referrer")
+                add("referrer-policy", "same-origin")  # "no-referrer" makes browsers send Origin: null
                 add("permissions-policy", "camera=(), microphone=(), geolocation=(), payment=()")
                 add("cross-origin-opener-policy", "same-origin")
                 add("cross-origin-resource-policy", "same-origin")

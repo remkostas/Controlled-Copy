@@ -32,6 +32,7 @@ from controlled_copy.web.deps import (
     SettingsDep,
     WriteDep,
     is_htmx,
+    same_origin,
     wants_json,
 )
 from controlled_copy.web.security import (
@@ -173,6 +174,11 @@ def access(
     code: Annotated[str, Form(max_length=200)] = "",
 ) -> Response:
     settings = services.settings
+    if not same_origin(request):
+        # Login CSRF: another site must not be able to replace a visitor's session.
+        return render(
+            request, "landing.html", {"retention_days": settings.retention_hours // 24, "error": None}, 403
+        )
     limiter = request.app.state.access_limiter
     client = request.client.host if request.client else "unknown"
     context = {"retention_days": settings.retention_hours // 24}
