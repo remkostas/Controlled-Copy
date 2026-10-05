@@ -1,0 +1,47 @@
+# Local and server deployment: the app on an internal network, Caddy in front with TLS.
+# Copy .env.example to .env first. On a public server set SITE_ADDRESS to the domain
+# and PUBLISH_ADDRESS to 0.0.0.0; locally the defaults serve https://localhost.
+services:
+  app:
+    build: .
+    env_file: .env
+    environment:
+      APP_MODE: ${APP_MODE:-deploy}
+      DATA_DIR: /app/data
+    volumes:
+      - app-data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2.10
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    ports:
+      - "${PUBLISH_ADDRESS:-127.0.0.1}:${HTTP_PORT:-80}:80"
+      - "${PUBLISH_ADDRESS:-127.0.0.1}:${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks:
+      - internal
+
+networks:
+  internal:
+
+volumes:
+  app-data:
+  caddy-data:
+  caddy-config:
