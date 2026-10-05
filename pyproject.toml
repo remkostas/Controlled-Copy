@@ -25,6 +25,9 @@ dev = [
     "playwright>=1.55",
 ]
 
+[tool.fastapi]
+entrypoint = "controlled_copy.app:app"
+
 [build-system]
 requires = ["setuptools>=80"]
 build-backend = "setuptools.build_meta"
@@ -41,7 +44,8 @@ controlled_copy = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --strict-markers"
+addopts = "-ra --strict-markers -p no:cacheprovider"
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient` is deprecated:DeprecationWarning"]
 markers = [
     "unit: pure functions, no I/O beyond memory",
     "integration: several components with a temporary database and the fake model",
@@ -56,7 +60,7 @@ markers = [
 ]
 
 [tool.ruff]
-line-length = 100
+line-length = 110
 target-version = "py312"
 src = ["src", "tests", "eval"]
 
@@ -68,5 +72,6 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S105", "S106", "S108", "S311", "S603", "S607"]
+"tests/**" = ["S105", "S106", "S108", "S311", "S603", "S607", "S608"]
+"scripts/render_mockup.py" = ["E501", "S106"]
 "eval/**" = ["S311"]

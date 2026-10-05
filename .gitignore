@@ -36,3 +36,6 @@ eval/runs/
 .idea/
 .vscode/
 .DS_Store
+
+# Local test reports (the committed report lives in docs/)
+reports/
