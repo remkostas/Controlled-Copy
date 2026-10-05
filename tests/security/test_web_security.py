@@ -68,8 +68,11 @@ def test_tc_sec_002_state_changing_requests_need_the_csrf_token(visitor, db):
         ):
             response = getattr(visitor.client, method)(path, headers=headers, **kwargs)
             assert response.status_code == 403, f"{method} {path} {headers} -> {response.status_code}"
-    assert db.execute("SELECT COUNT(*) FROM source").fetchone()[0] == 1
-    assert db.execute("SELECT COUNT(*) FROM notebook").fetchone()[0] == 1
+    assert (
+        db.execute("SELECT COUNT(*) FROM source WHERE notebook_id = ?", (visitor.notebook_id,)).fetchone()[0]
+        == 1
+    )
+    assert db.execute("SELECT COUNT(*) FROM notebook WHERE kind = 'personal'").fetchone()[0] == 1
     assert db.execute("SELECT COUNT(*) FROM chat_message").fetchone()[0] == 0
 
 

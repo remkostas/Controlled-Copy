@@ -35,6 +35,13 @@ def test_tc_acc_005_data_is_scoped_to_the_session(make_visitor):
 
 def test_tc_nb_003_deleting_a_notebook_removes_everything_in_it(visitor, db, settings):
     visitor.upload("guide.pdf", make_pdf(["Receiving guide page one about docks and pallets."]))
+    chunk_ids_before = [
+        r[0]
+        for r in db.execute(
+            "SELECT c.id FROM chunk c JOIN source s ON s.id = c.source_id WHERE s.notebook_id = ?",
+            (visitor.notebook_id,),
+        )
+    ]
     visitor.paste("Notes", "Pallets are counted at the dock before posting the goods receipt.")
     assert visitor.ask("How are pallets counted at the dock?").status_code == 200
     assert visitor.briefing().status_code == 200
@@ -58,7 +65,20 @@ def test_tc_nb_003_deleting_a_notebook_removes_everything_in_it(visitor, db, set
                 ).fetchone()[0]
                 == 0
             )
-    assert db.execute("SELECT COUNT(*) FROM chunk").fetchone()[0] == 0
-    assert db.execute("SELECT COUNT(*) FROM chunk_vector").fetchone()[0] == 0
-    assert db.execute("SELECT COUNT(*) FROM chunk_fts").fetchone()[0] == 0
+    chunk_ids = [
+        r[0]
+        for r in db.execute(
+            "SELECT c.id FROM chunk c JOIN source s ON s.id = c.source_id WHERE s.notebook_id = ?",
+            (visitor.notebook_id,),
+        )
+    ]
+    assert chunk_ids == []
+    marks = ",".join("?" * len(chunk_ids_before))
+    for table, column in (("chunk", "id"), ("chunk_vector", "chunk_id"), ("chunk_fts", "rowid")):
+        assert (
+            db.execute(
+                f"SELECT COUNT(*) FROM {table} WHERE {column} IN ({marks})", chunk_ids_before
+            ).fetchone()[0]
+            == 0
+        )
     assert list(settings.uploads_dir.iterdir()) == []
