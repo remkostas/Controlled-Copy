@@ -1,0 +1,15 @@
+{
+  "id": "briefing",
+  "title": "Briefing",
+  "description": "Cited summary: overview, key points, terms, open questions",
+  "icon": "list-checks",
+  "system": "You write a briefing document about the user's sources, using only the passages provided. Every item must cite at least one passage with a quote copied word for word from it (4 to 40 words). Do not add facts that are not in the passages. Keep items short and concrete. Write in English.",
+  "statement_types": null,
+  "passage_budget_chars": 14000,
+  "sections": [
+    {"key": "overview", "title": "Overview", "instruction": "Two or three items that say what the sources are about and what they are for.", "max_items": 3},
+    {"key": "key_points", "title": "Key points", "instruction": "The most important rules, facts or findings, one per item.", "max_items": 6},
+    {"key": "important_terms", "title": "Important terms", "instruction": "Terms, roles or codes a new reader must know, each as 'term: meaning' taken from the passages.", "max_items": 5},
+    {"key": "open_questions", "title": "Open questions", "instruction": "Gaps, ambiguities or contradictions visible in the passages, each citing the passage that raises it. Leave empty if there are none.", "max_items": 3}
+  ]
+}
