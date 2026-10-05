@@ -191,3 +191,18 @@ def test_tc_sec_004_data_and_uploads_are_private(visitor, settings):
         assert stat.S_IMODE(path.stat().st_mode) & 0o077 == 0, path
     stored = next(settings.uploads_dir.iterdir())
     assert stat.S_IMODE(stored.stat().st_mode) == 0o600
+
+
+def test_tc_sec_002_origin_must_match_scheme_too(app):
+    from fastapi.testclient import TestClient
+
+    from tests.conftest import ACCESS_CODE
+
+    with TestClient(app, base_url="https://testserver") as client:
+        response = client.post(
+            "/access",
+            data={"code": ACCESS_CODE},
+            headers={"Origin": "http://testserver"},
+            follow_redirects=False,
+        )
+    assert response.status_code == 403

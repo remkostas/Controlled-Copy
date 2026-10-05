@@ -54,6 +54,7 @@ class OpenRouterProvider:
     name = "openrouter"
 
     def __init__(self, api_key: str, base_url: str, timeout: float) -> None:
+        self.timeout = timeout
         self._client = httpx.Client(
             base_url=base_url.rstrip("/"),
             headers={"Authorization": f"Bearer {api_key}"},
@@ -64,12 +65,17 @@ class OpenRouterProvider:
         self._client.close()
 
     def _post_with_retry(self, path: str, body: dict[str, Any], retries: int) -> dict[str, Any]:
-        """Retry transient failures (rate limits, 5xx, network) with a short backoff."""
+        """Retry transient failures (rate limits, 5xx, network) with a short backoff, but never
+        beyond the caller's time limit: a retry that could not finish in time is not started."""
+        started = time.monotonic()
         for attempt in range(retries + 1):
+            remaining = self.timeout - (time.monotonic() - started)
             try:
-                return self._post(path, body)
+                return self._post(path, body, timeout=max(1.0, remaining))
             except ProviderError as exc:
                 if not isinstance(exc, ProviderTransient) or attempt == retries:
+                    raise
+                if time.monotonic() - started + RETRY_BACKOFF[attempt] >= self.timeout:
                     raise
                 log_event("provider_retry", path=path, attempt=attempt + 1, model=str(body.get("model")))
                 time.sleep(RETRY_BACKOFF[attempt])

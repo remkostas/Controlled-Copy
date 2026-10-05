@@ -27,6 +27,8 @@ class PurgeResult:
 
 def purge(settings: Settings, repo: Repo, now: datetime | None = None) -> PurgeResult:
     sessions, files = repo.purge_expired(settings.retention_hours, now)
+    if sessions:
+        repo.checkpoint()
     uploads = settings.uploads_dir
     for name in files:
         (uploads / name).unlink(missing_ok=True)

@@ -115,3 +115,81 @@ def test_tc_acc_003_access_limiter_memory_is_bounded():
         limiter.record_failure(f"10.0.{i // 256}.{i % 256}")
         assert not limiter.blocked(f"192.168.0.{i % 256}")
     assert len(limiter._failures) <= 50
+
+
+def test_tc_src_011_an_answer_finishing_after_its_source_was_deleted_keeps_no_text(visitor, fake, db):
+    import threading
+    import time
+
+    visitor.paste("Payroll note", "Employee example earns EUR 7,450 per month according to this note.")
+    fake.delay_seconds = 1.0
+    results = {}
+
+    def ask():
+        results["answer"] = visitor.ask("What does the employee earn per month?")
+
+    thread = threading.Thread(target=ask)
+    thread.start()
+    time.sleep(0.3)
+    deleted = visitor.client.delete(f"/sources/{visitor.sources[0]}", headers=visitor.json_headers())
+    thread.join()
+    assert deleted.status_code == 200
+    rows = db.execute("SELECT role, status, content FROM chat_message").fetchall()
+    assert rows and all(r["status"] == "source_deleted" for r in rows)
+    assert all("7,450" not in r["content"] and "earn" not in r["content"] for r in rows)
+    assert "7,450" not in visitor.refresh().page
+
+
+def test_tc_src_011_a_briefing_finishing_after_its_source_was_deleted_keeps_no_text(visitor, fake, db):
+    import threading
+    import time
+
+    visitor.paste("Payroll note", "Employee example earns EUR 7,450 per month according to this note.")
+    fake.delay_seconds = 1.0
+    thread = threading.Thread(target=visitor.briefing)
+    thread.start()
+    time.sleep(0.3)
+    visitor.client.delete(f"/sources/{visitor.sources[0]}", headers=visitor.json_headers())
+    thread.join()
+    row = db.execute("SELECT status, output_json, input FROM studio_output").fetchone()
+    assert row["status"] == "source_deleted" and "7,450" not in row["output_json"]
+
+
+def test_tc_src_011_follow_ups_built_on_a_deleted_source_are_removed(visitor, fake, db):
+    from tests.helpers.responders import quote_passage_containing
+
+    visitor.paste("Kept", "Pallets are wrapped in foil before storage at dock two.")
+    visitor.paste("Gone", "Wet cartons go to quarantine area Q-01 at once.")
+    kept, gone = visitor.sources
+    fake.responder = quote_passage_containing("Wet cartons go to quarantine area Q-01")
+    visitor.ask("Where do wet cartons go?", source_ids=[gone])
+    # A follow-up asked with only the other source selected, refused at the floor.
+    visitor.ask("and what about the rocket launch schedule?", source_ids=[kept])
+    visitor.client.delete(f"/sources/{gone}", headers=visitor.json_headers())
+    rows = db.execute("SELECT status, content, search_query FROM chat_message").fetchall()
+    assert all(r["status"] == "source_deleted" for r in rows)
+    assert all("Q-01" not in (r["content"] or "") and not r["search_query"] for r in rows)
+
+
+def test_tc_stu_002_suggestions_for_a_changed_source_set_are_not_stored(visitor, services, db):
+    visitor.paste("One", "First text about docks.")
+    notebook = services.repo.get_notebook(
+        db.execute("SELECT session_id FROM notebook").fetchone()[0], visitor.notebook_id
+    )
+    assert services.repo.set_suggestions(notebook, "stale", ["Q?"], ["not-the-current-source"]) is False
+    assert db.execute("SELECT suggestions_json FROM notebook").fetchone()[0] is None
+
+
+def test_tc_acc_004_parallel_first_visits_create_one_default_notebook(make_visitor, db):
+    import threading
+
+    visitor = make_visitor(login=False)
+    from tests.conftest import ACCESS_CODE
+
+    visitor.client.post("/access", data={"code": ACCESS_CODE}, follow_redirects=False)
+    threads = [threading.Thread(target=visitor.client.get, args=("/app",)) for _ in range(10)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert db.execute("SELECT COUNT(*) FROM notebook").fetchone()[0] == 1

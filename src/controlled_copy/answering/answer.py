@@ -47,10 +47,15 @@ class TurnResult:
 
 def history_pairs(messages: list[sqlite3.Row], limit: int = 2) -> list[tuple[str, str]]:
     """The last `limit` completed turns as (question, answer text) pairs."""
+    return [(question, text) for question, text, _ in history_turns(messages, limit)]
+
+
+def history_turns(messages: list[sqlite3.Row], limit: int = 2) -> list[tuple[str, str, set[str]]]:
+    """The last `limit` completed turns: question, answer text and the sources behind them."""
     turns: dict[str, dict[str, Any]] = {}
     for row in messages:
         turns.setdefault(row["turn_id"], {})[row["role"]] = row
-    pairs: list[tuple[str, str]] = []
+    pairs: list[tuple[str, str, set[str]]] = []
     for turn in turns.values():
         user, assistant = turn.get("user"), turn.get("assistant")
         if not user or not assistant or assistant["status"] == TOMBSTONE:
@@ -60,7 +65,10 @@ def history_pairs(messages: list[sqlite3.Row], limit: int = 2) -> list[tuple[str
             text = " ".join(s["text"] for s in answer.get("statements", []))
         else:
             text = "(not answered from the sources)"
-        pairs.append((user["content"], text))
+        sources = {
+            c["source_id"] for c in json.loads(assistant["citations_json"] or "[]") if c.get("source_id")
+        }
+        pairs.append((user["content"], text, sources))
     return pairs[-limit:]
 
 
@@ -96,7 +104,10 @@ def ask(services: Services, notebook: OwnedNotebook, question: str, selected_ids
     source_ids = [row["id"] for row in sources]
 
     try:
-        history = history_pairs(repo.list_messages(notebook))
+        turns = history_turns(repo.list_messages(notebook))
+        history = [(q, text) for q, text, _ in turns]
+        # Every source behind this turn: the selection, and the history a rewrite draws on.
+        lineage = set(source_ids) | {s for _, _, sources in turns for s in sources}
         search_query: str | None = None
         if history:
             rewritten = rewrite_question(services, history, question)
@@ -114,7 +125,7 @@ def ask(services: Services, notebook: OwnedNotebook, question: str, selected_ids
                 best_cosine=round(retrieval.best_cosine, 3),
                 passages=len(retrieval.passages),
             )
-            return _store(services, notebook, question, search_query, answer, [], [])
+            return _store(services, notebook, question, search_query, answer, [], sorted(lineage))
 
         messages, mapping = prompts.answer_messages(search_query or question, retrieval.passages)
         payload, result = generate(
@@ -156,8 +167,7 @@ def ask(services: Services, notebook: OwnedNotebook, question: str, selected_ids
         best_cosine=round(retrieval.best_cosine, 3),
         model=result.model,
     )
-    context = [p.source_id for p in retrieval.passages]
-    return _store(services, notebook, question, search_query, answer, numbering.flat, context)
+    return _store(services, notebook, question, search_query, answer, numbering.flat, sorted(lineage))
 
 
 def refusal(searched_sources: int, query: str, reason: str | None) -> dict[str, Any]:
@@ -182,8 +192,8 @@ def _store(
     citations: list[dict[str, Any]],
     context_source_ids: list[str],
 ) -> TurnResult:
-    """Persist the turn. The stored source list covers every source whose passages were in
-    the prompt, cited or not, so deleting any of them removes the generated text (S-05)."""
+    """Persist the turn. The stored source list covers every selected source and the sources
+    behind the history used for a rewrite, so deleting any of them removes the turn (S-05)."""
     sources = sorted({c["source_id"] for c in citations} | set(context_source_ids))
     turn_id = services.repo.add_turn(
         notebook, question, answer, search_query, [{"source_id": s} for s in sources], "ok"
