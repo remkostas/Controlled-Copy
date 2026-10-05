@@ -180,6 +180,9 @@
       const status = $("#add-source-status");
       if (status && event.detail.xhr && event.detail.xhr.status < 300) status.replaceChildren();
     }
+    if (target.id === "toast") {
+      window.setTimeout(() => target.replaceChildren(), 8000);
+    }
     if (target.id === "studio-outputs") {
       const empty = $("#outputs-empty");
       if (empty) empty.remove();

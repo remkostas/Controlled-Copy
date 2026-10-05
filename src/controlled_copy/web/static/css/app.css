@@ -410,6 +410,22 @@ select {
   font-weight: 600;
 }
 
+/* Toast (errors from actions without their own status area) */
+.toast {
+  position: fixed;
+  top: calc(var(--topbar-h) + var(--sp-3));
+  left: 50%;
+  z-index: 50;
+  width: min(34rem, calc(100vw - 2rem));
+  transform: translateX(-50%);
+}
+.toast:empty {
+  display: none;
+}
+.toast .notice {
+  box-shadow: var(--shadow-pop);
+}
+
 /* Top bar */
 .topbar {
   position: sticky;

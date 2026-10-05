@@ -2,6 +2,7 @@
 {% block title %}{{ nb.title }} · {{ product_name }}{% endblock %}
 {% block body_attrs %} hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'{% endblock %}
 {% block content %}
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 <header class="topbar">
   <a class="brand" href="/app">{{ icon('brand') }}<span class="brand__name">{{ product_name }}</span></a>
   <span class="topbar__divider" aria-hidden="true"></span>
@@ -47,15 +48,7 @@
     <div class="chat">
       <div class="chat__log" id="chat-log">
         <div class="chat__inner" id="chat-inner">
-          <section class="chat-intro">
-            <h1>{{ nb.title }}</h1>
-            {% if sources %}
-            <p>{{ sources|length }} source{{ '' if sources|length == 1 else 's' }}. Ask a question; every statement in the answer links to the passage it came from.</p>
-            {% include "partials/suggestions.html" %}
-            {% else %}
-            <p>Add sources on the left. Questions are answered only from the sources you select.</p>
-            {% endif %}
-          </section>
+          {% include "partials/chat_intro.html" %}
           {% if notice %}<p class="notice notice--warn" role="status">{{ icon('triangle-alert') }}<span>{{ notice }}</span></p>{% endif %}
           {% for t in turns %}{% include "partials/turn.html" %}{% endfor %}
           <article class="turn" id="pending-turn" hidden>
@@ -66,7 +59,7 @@
       </div>
       <div class="composer">
         <form class="composer__form" id="ask-form" hx-post="/notebooks/{{ nb.id }}/ask" hx-target="#pending-turn" hx-swap="beforebegin"
-              hx-include="[name='source_ids']" hx-disabled-elt="find button, find textarea">
+              hx-include="#source-list-wrap" hx-disabled-elt="find button, find textarea">
           <div class="composer__box">
             <label class="visually-hidden" for="question">Question</label>
             <textarea id="question" name="question" rows="1" maxlength="{{ limits.question_chars }}" data-counter="question-counter"
@@ -90,8 +83,8 @@
       <div class="studio-actions">
         {% for action in ui.studio_actions %}
         {% if action.partial %}{% include action.partial %}{% else %}
-        <button type="button" class="studio-action" hx-post="/notebooks/{{ nb.id }}/studio/{{ action.id }}" hx-include="[name='source_ids']"
-                hx-target="#studio-outputs" hx-swap="afterbegin" hx-disabled-elt="this" {% if read_only or not sources %}disabled{% endif %}>
+        <button type="button" class="studio-action" hx-post="/notebooks/{{ nb.id }}/studio/{{ action.id }}" hx-include="#source-list-wrap"
+                hx-target="#studio-outputs" hx-swap="afterbegin" hx-disabled-elt="this" {% if read_only %}disabled{% endif %}>
           {{ icon(action.icon) }}
           <span class="studio-action__name"><span class="btn-label--idle">{{ action.title }}</span><span class="btn-label--busy">{{ icon('loader-circle', 'icon--spin') }} Writing {{ action.title|lower }}…</span></span>
           <span class="studio-action__desc">{{ action.description }}</span>

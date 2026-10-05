@@ -40,7 +40,13 @@ def main() -> None:
         kind_label="Markdown",
         size_label="14 sections",
         warnings=[],
-        meta=NS(document_id="SOP-INB-001", revision="3", status="approved", effective_from="2026-01-01", site="HAM-01"),
+        meta=NS(
+            document_id="SOP-INB-001",
+            revision="3",
+            status="approved",
+            effective_from="2026-01-01",
+            site="HAM-01",
+        ),
         origin_label="Metadata asserted by uploader",
         origin_short="asserted by uploader",
         created_label="2026-10-06 07:12",
@@ -55,7 +61,13 @@ def main() -> None:
             kind_label="Markdown",
             size_label="8 sections",
             warnings=[],
-            meta=NS(document_id="SOP-INB-001", revision="2", status="obsolete", effective_from="2024-03-01", site="HAM-01"),
+            meta=NS(
+                document_id="SOP-INB-001",
+                revision="2",
+                status="obsolete",
+                effective_from="2024-03-01",
+                site="HAM-01",
+            ),
             origin_label="Metadata asserted by uploader",
             origin_short="asserted by uploader",
             created_label="2026-10-06 07:12",
@@ -103,7 +115,10 @@ def main() -> None:
                     ),
                     NS(
                         text="Larger deviations are not posted until the shift lead has confirmed a recount; then the counted quantity is posted, never the ordered quantity.",
-                        cites=[cite(1, "s1", sop_label), cite(2, "s1", "SOP-INB-001 rev 3 · 3 Responsibilities")],
+                        cites=[
+                            cite(1, "s1", sop_label),
+                            cite(2, "s1", "SOP-INB-001 rev 3 · 3 Responsibilities"),
+                        ],
                     ),
                 ],
                 gaps=[],
@@ -153,7 +168,7 @@ def main() -> None:
             sections=[
                 NS(
                     title="Overview",
-                    items=[
+                    entries=[
                         NS(
                             type_label=None,
                             text="The notebook describes how inbound deliveries are received at site HAM-01, from the truck to the goods receipt posting.",
@@ -163,7 +178,7 @@ def main() -> None:
                 ),
                 NS(
                     title="Key points",
-                    items=[
+                    entries=[
                         NS(
                             type_label=None,
                             text="Quality-managed material always goes to quality inspection stock.",
@@ -178,7 +193,7 @@ def main() -> None:
                 ),
                 NS(
                     title="Important terms",
-                    items=[
+                    entries=[
                         NS(
                             type_label=None,
                             text="Quality inspection stock: stock that only the QA inspector can release to unrestricted stock.",
@@ -188,7 +203,7 @@ def main() -> None:
                 ),
                 NS(
                     title="Open questions",
-                    items=[
+                    entries=[
                         NS(
                             type_label=None,
                             text="Revision 2 is still in the notebook although revision 3 supersedes it.",
@@ -203,7 +218,10 @@ def main() -> None:
         product_name="Controlled Copy",
         tagline="A NotebookLM-style notebook for controlled documents",
         csrf_token="mockup",
-        notebooks=[NS(id="nb1", title="Inbound receiving (my notes)"), NS(id="nb2", title="Supplier audit prep")],
+        notebooks=[
+            NS(id="nb1", title="Inbound receiving (my notes)"),
+            NS(id="nb2", title="Supplier audit prep"),
+        ],
         nb=NS(id="nb1", title="Inbound receiving (my notes)", kind="personal"),
         sources=sources,
         selected_ids={"s1", "s3", "s4"},
@@ -216,7 +234,13 @@ def main() -> None:
         ui=NS(
             topbar_partials=[],
             studio_actions=[
-                NS(id="briefing", title="Briefing", description="Cited summary: overview, key points, terms, open questions", icon="list-checks", partial=None)
+                NS(
+                    id="briefing",
+                    title="Briefing",
+                    description="Cited summary: overview, key points, terms, open questions",
+                    icon="list-checks",
+                    partial=None,
+                )
             ],
         ),
         pending=False,
@@ -237,12 +261,21 @@ def main() -> None:
     reading = dict(base, initial_viewer=Markup(viewer))  # noqa: S704 - rendered by our own autoescaping template
     (OUT / "workspace-viewer.html").write_text(workspace.render(**reading), encoding="utf-8")
 
-    empty = dict(base, sources=[], selected_ids=set(), turns=[], outputs=[], nb=NS(id="nb3", title="Untitled notebook", kind="personal"))
+    empty = dict(
+        base,
+        sources=[],
+        selected_ids=set(),
+        turns=[],
+        outputs=[],
+        nb=NS(id="nb3", title="Untitled notebook", kind="personal"),
+    )
     (OUT / "workspace-empty.html").write_text(workspace.render(**empty), encoding="utf-8")
 
     landing = env.get_template("landing.html")
     (OUT / "landing.html").write_text(
-        landing.render(product_name=base["product_name"], tagline=base["tagline"], retention_days=7, error=None),
+        landing.render(
+            product_name=base["product_name"], tagline=base["tagline"], retention_days=7, error=None
+        ),
         encoding="utf-8",
     )
     print(f"wrote {OUT}")

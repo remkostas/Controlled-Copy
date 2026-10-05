@@ -9,9 +9,9 @@
     {% for sec in o.sections %}
     <section class="output__section">
       <h3>{{ sec.title }}</h3>
-      {% if sec.items %}
+      {% if sec.entries %}
       <ul>
-        {% for it in sec.items %}
+        {% for it in sec.entries %}
         <li>{% if it.type_label %}<span class="badge">{{ it.type_label }}</span> {% endif %}{{ it.text }} {{ cites(it.cites) }}</li>
         {% endfor %}
       </ul>
