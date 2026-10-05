@@ -133,3 +133,32 @@ def test_tc_ui_003_text_meets_wcag_aa_contrast(page, server_url):
     page.wait_for_selector("#viewer-slot mark#cited")
     failures += page.evaluate(CONTRAST_JS)
     assert failures == [], "\n".join(failures[:20])
+
+
+def test_tc_ui_002_a_failed_paste_keeps_the_text_and_shows_the_error(page, server_url, fake):
+    from controlled_copy.providers.base import ProviderError
+
+    def broken(texts, *, model):
+        raise ProviderError("embedding down")
+
+    fake.embed = broken
+    login(page, server_url)
+    page.click("button[data-toggle='paste-form']")
+    page.fill("#paste-title", "Handover")
+    page.fill("#paste-text", "Dock 3 is closed until Friday.")
+    page.click("#paste-form button[type=submit]")
+    page.wait_for_selector("#add-source-status .notice--error")
+    assert "embedding provider is not available" in page.inner_text("#add-source-status")
+    assert page.input_value("#paste-text") == "Dock 3 is closed until Friday."
+    assert page.locator("#paste-form").is_visible()
+
+
+def test_tc_ui_002_a_failed_question_keeps_the_question(page, server_url, fake):
+    login(page, server_url)
+    upload(page, SOP)
+    page.wait_for_selector(".source")
+    fake.failing_models = {"openai/gpt-6-luna", "mistralai/mistral-small-2603"}
+    page.fill("#question", "What is the purpose of the procedure?")
+    page.press("#question", "Enter")
+    page.wait_for_selector("#chat-inner .notice--error")
+    assert page.input_value("#question") == "What is the purpose of the procedure?"

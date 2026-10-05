@@ -15,7 +15,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.stage1]
 
 SOURCE = (
     "Deviations of up to 2% of the ordered quantity or 2 units, whichever is smaller, are posted "
-    "as counted with a note in the goods receipt. Larger deviations need the shift lead's "
+    "as counted with a note in the goods\u00a0receipt. Larger deviations need the shift lead's "
     "confirmation; the ware-\nhouse operator then posts the counted quantity."
 )
 
@@ -127,3 +127,19 @@ def test_tc_fup_003_citation_to_a_passage_not_retrieved_now_is_removed():
     result = verify_statements(raw, turn_two, CitationNumbering())
     assert result.statements == []
     assert result.removed == 1
+
+
+def test_tc_ans_002_compound_word_broken_at_a_line_end_still_verifies():
+    text = "Book the goods-\nreceipt in the WMS before putaway."
+    match = find_quote(text, "Book the goods-receipt in the WMS")
+    assert match is not None and text[match.start : match.end] == "Book the goods-\nreceipt in the WMS"
+    assert find_quote("a goods - receipt split by spaces", "a goods receipt split") is None
+
+
+def test_tc_ans_003_a_number_cannot_verify_inside_a_longer_number():
+    text = "The value is 3.5 kg per pallet and the order has 1,200 units in rev 1.2."
+    assert find_quote(text, "value is 3") is None
+    assert find_quote(text, "value is 3.5 kg") is not None
+    assert find_quote(text, "the order has 1") is None
+    assert find_quote(text, "units in rev 1") is None
+    assert find_quote(text, "units in rev 1.2") is not None

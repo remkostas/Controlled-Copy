@@ -108,7 +108,7 @@ def ask(services: Services, notebook_id: str, question: str, selected_ids: list[
                 best_cosine=round(retrieval.best_cosine, 3),
                 passages=len(retrieval.passages),
             )
-            return _store(services, notebook_id, question, search_query, answer, [])
+            return _store(services, notebook_id, question, search_query, answer, [], [])
 
         messages, mapping = prompts.answer_messages(search_query or question, retrieval.passages)
         payload, result = generate(
@@ -150,7 +150,8 @@ def ask(services: Services, notebook_id: str, question: str, selected_ids: list[
         best_cosine=round(retrieval.best_cosine, 3),
         model=result.model,
     )
-    return _store(services, notebook_id, question, search_query, answer, numbering.flat)
+    context = [p.source_id for p in retrieval.passages]
+    return _store(services, notebook_id, question, search_query, answer, numbering.flat, context)
 
 
 def refusal(searched_sources: int, query: str, reason: str | None) -> dict[str, Any]:
@@ -173,7 +174,12 @@ def _store(
     search_query: str | None,
     answer: dict[str, Any],
     citations: list[dict[str, Any]],
+    context_source_ids: list[str],
 ) -> TurnResult:
-    flat = [{"source_id": c["source_id"], "chunk_id": c["chunk_id"]} for c in citations]
-    turn_id = services.repo.add_turn(notebook_id, question, answer, search_query, flat, "ok")
+    """Persist the turn. The stored source list covers every source whose passages were in
+    the prompt, cited or not, so deleting any of them removes the generated text (S-05)."""
+    sources = sorted({c["source_id"] for c in citations} | set(context_source_ids))
+    turn_id = services.repo.add_turn(
+        notebook_id, question, answer, search_query, [{"source_id": s} for s in sources], "ok"
+    )
     return TurnResult(turn_id, question, search_query, answer, citations)

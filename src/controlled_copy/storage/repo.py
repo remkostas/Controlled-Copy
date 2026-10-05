@@ -23,6 +23,10 @@ from controlled_copy.storage.db import transaction, utcnow
 TOMBSTONE = "source_deleted"
 
 
+class CapacityReached(Exception):
+    """A per-notebook or per-visitor limit was reached (checked inside the write transaction)."""
+
+
 def new_id() -> str:
     return secrets.token_urlsafe(12)
 
@@ -97,12 +101,15 @@ class Repo:
             "SELECT * FROM notebook WHERE id = ? AND session_id = ?", (notebook_id, sid)
         ).fetchone()
 
-    def create_notebook(self, sid: str, title: str, kind: str = "personal") -> str:
+    def create_notebook(self, sid: str, title: str, kind: str = "personal", limit: int | None = None) -> str:
         notebook_id = new_id()
-        self.conn.execute(
-            "INSERT INTO notebook (id, session_id, kind, title, created_at) VALUES (?, ?, ?, ?, ?)",
-            (notebook_id, sid, kind, title, utcnow()),
-        )
+        with transaction(self.conn):
+            if limit is not None and self.count_notebooks(sid, kind) >= limit:
+                raise CapacityReached
+            self.conn.execute(
+                "INSERT INTO notebook (id, session_id, kind, title, created_at) VALUES (?, ?, ?, ?, ?)",
+                (notebook_id, sid, kind, title, utcnow()),
+            )
         return notebook_id
 
     def delete_notebook(self, sid: str, notebook_id: str) -> list[str] | None:
@@ -173,11 +180,13 @@ class Repo:
         ).fetchall()
         return {row["id"]: row for row in rows}
 
-    def insert_source(self, new: NewSource) -> str:
+    def insert_source(self, new: NewSource, limit: int | None = None) -> str:
         if len(new.chunks) != len(new.vectors):
             raise ValueError("every chunk needs exactly one vector")
         source_id = new_id()
         with transaction(self.conn):
+            if limit is not None and self.count_sources(new.notebook_id) >= limit:
+                raise CapacityReached
             self.conn.execute(
                 "INSERT INTO source (id, notebook_id, title, kind, bytes, pages, page_starts_json, "
                 "warnings_json, metadata_json, metadata_origin, text, file_path, created_at) "
@@ -220,11 +229,11 @@ class Repo:
         return source_id
 
     def delete_source(self, sid: str, source_id: str) -> list[str] | None:
-        """Delete a source with its chunks, vectors, index rows and citing outputs.
+        """Delete a source with its chunks, vectors, index rows and dependent outputs.
 
-        Chat answers and Studio outputs that cite the source keep their row but
-        lose their content (tombstone), so the transcript shows that something
-        was removed without keeping text derived from the deleted source.
+        Chat answers and Studio outputs generated with the source's passages in the
+        prompt keep their row but lose their content (tombstone), so the transcript
+        shows that something was removed without keeping text derived from it.
         Returns the file paths to unlink, or None if the source does not exist
         for this session.
         """
@@ -248,11 +257,18 @@ class Repo:
             ).fetchall()
             for row in rows:
                 cited = {c.get("source_id") for c in json.loads(row["citations_json"] or "[]")}
-                if source_id in cited:
-                    column = "content" if table == "chat_message" else "output_json"
+                if source_id not in cited:
+                    continue
+                if table == "chat_message":
                     self.conn.execute(
-                        f"UPDATE {table} SET {column} = '{{}}', citations_json = '[]', status = ? "  # noqa: S608 - fixed names
-                        "WHERE id = ?",
+                        "UPDATE chat_message SET content = '{}', search_query = NULL, citations_json = '[]', "
+                        "status = ? WHERE id = ?",
+                        (TOMBSTONE, row["id"]),
+                    )
+                else:
+                    self.conn.execute(
+                        "UPDATE studio_output SET output_json = '{}', input = NULL, citations_json = '[]', "
+                        "status = ? WHERE id = ?",
                         (TOMBSTONE, row["id"]),
                     )
 
@@ -277,14 +293,15 @@ class Repo:
         ).fetchall()
         return {int(row["id"]): row for row in rows}
 
-    def vectors_for_sources(self, source_ids: Sequence[str]) -> tuple[list[int], np.ndarray]:
+    def vectors_for_sources(self, source_ids: Sequence[str], model: str) -> tuple[list[int], np.ndarray]:
+        """Vectors of the selected sources made by `model` (vectors of other models are not comparable)."""
         if not source_ids:
             return [], np.zeros((0, 0), dtype=np.float32)
         marks = ",".join("?" * len(source_ids))
         rows = self.conn.execute(
             f"SELECT v.chunk_id, v.vector FROM chunk_vector v JOIN chunk c ON c.id = v.chunk_id "  # noqa: S608
-            f"WHERE c.source_id IN ({marks}) ORDER BY v.chunk_id",
-            tuple(source_ids),
+            f"WHERE c.source_id IN ({marks}) AND v.model = ? ORDER BY v.chunk_id",
+            (*source_ids, model),
         ).fetchall()
         if not rows:
             return [], np.zeros((0, 0), dtype=np.float32)

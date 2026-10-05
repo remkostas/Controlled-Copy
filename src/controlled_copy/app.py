@@ -38,6 +38,8 @@ from controlled_copy.web.routes import router
 from controlled_copy.web.security import SecurityHeadersMiddleware
 
 BODY_OVERHEAD = 1024 * 1024
+BODY_TOO_LARGE = "controlled_copy.body_too_large"
+TOO_LARGE_MESSAGE = "The request is too large. Files may be up to {mb} MB."
 
 
 class BodyTooLarge(Exception):
@@ -69,6 +71,8 @@ class BodySizeLimitMiddleware:
             if message["type"] == "http.request":
                 received += len(message.get("body", b""))
                 if received > self.limit:
+                    # FastAPI wraps body-parsing errors in a 400; the flag lets the handler answer 413.
+                    scope[BODY_TOO_LARGE] = True
                     raise BodyTooLarge
             return message
 
@@ -85,7 +89,7 @@ class BodySizeLimitMiddleware:
                 await self._reject(send)
 
     async def _reject(self, send: Any) -> None:
-        body = b"Request body too large."
+        body = b"The request is too large."
         await send(
             {
                 "type": "http.response.start",
@@ -184,8 +188,9 @@ def create_app(
         )
     app.state.templates = Jinja2Templates(env=env)
 
-    app.add_middleware(SecurityHeadersMiddleware, hsts=settings.secure_cookies)
+    # Added last = outermost: every response, including a 413 from the size guard, gets the headers.
     app.add_middleware(BodySizeLimitMiddleware, limit=settings.max_file_bytes + BODY_OVERHEAD)
+    app.add_middleware(SecurityHeadersMiddleware, hsts=settings.secure_cookies)
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     app.include_router(router)
     for layer_router in registry.routers:
@@ -214,17 +219,18 @@ def create_app(
         log_event("invalid_request", path=request.url.path, method=request.method, errors=len(exc.errors()))
         return JSONResponse({"error": "The request was not valid."}, status_code=422)
 
+    too_large = TOO_LARGE_MESSAGE.format(mb=settings.max_file_bytes // (1024 * 1024))
+
     @app.exception_handler(StarletteHTTPException)
     async def http_error(request: Request, exc: StarletteHTTPException) -> Response:
-        if wants_json(request) or request.url.path.startswith("/static/"):
-            return JSONResponse(
-                {"error": "Not found." if exc.status_code == 404 else "Request failed."},
-                status_code=exc.status_code,
-            )
-        return HTMLResponse(
-            '<!doctype html><title>Not found</title><p>Not found. <a href="/">Start page</a></p>',
-            status_code=exc.status_code,
+        status = 413 if request.scope.get(BODY_TOO_LARGE) else exc.status_code
+        message = {404: "Not found.", 405: "Method not allowed.", 413: too_large}.get(
+            status, "The request failed."
         )
+        if wants_json(request) or is_htmx(request) or request.url.path.startswith("/static/"):
+            return JSONResponse({"error": message}, status_code=status)
+        page = f'<!doctype html><title>{status}</title><p>{message} <a href="/">Start page</a></p>'
+        return HTMLResponse(page, status_code=status)
 
     @app.exception_handler(Exception)
     async def unexpected(request: Request, exc: Exception) -> Response:

@@ -104,7 +104,8 @@ class OpenRouterProvider:
         if isinstance(data, dict) and data.get("error"):
             code = data["error"].get("code") if isinstance(data["error"], dict) else None
             log_event("provider_error_body", path=path, status=str(code), model=str(body.get("model")))
-            raise ProviderError(f"provider error {code}")
+            kind = ProviderTransient if code in TRANSIENT_STATUS else ProviderError
+            raise kind(f"provider error {code}")
         return data
 
     def embed(self, texts: list[str], *, model: str) -> EmbedResult:

@@ -50,7 +50,8 @@ def run_overview_template(
         ) from exc
     output = result.output
     output["source_count"] = len(source_ids)
-    flat = [{"source_id": c["source_id"], "chunk_id": c["chunk_id"]} for c in result.citations]
+    # Every selected source fed the prompt, so deleting any of them removes this output.
+    flat = [{"source_id": source_id} for source_id in source_ids]
     output_id = services.repo.add_output(notebook_id, template.id, None, output, flat, "ok")
     log_event(
         "studio_output",

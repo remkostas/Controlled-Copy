@@ -175,7 +175,7 @@ def retrieve(
 
     vector_ids: list[int] = []
     cosines: dict[int, float] = {}
-    chunk_ids, matrix = repo.vectors_for_sources(source_ids)
+    chunk_ids, matrix = repo.vectors_for_sources(source_ids, settings.model_embedding)
     if chunk_ids:
         query_vector = np.asarray(embed_texts(services, [query], kind="embed_query")[0], dtype=np.float32)
         norms = np.linalg.norm(matrix, axis=1) * (np.linalg.norm(query_vector) or 1.0)

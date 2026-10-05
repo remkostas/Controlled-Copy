@@ -15,31 +15,15 @@ import re
 import unicodedata
 from dataclasses import dataclass
 
-CHAR_MAP = {
-    "‘": "'",
-    "’": "'",
-    "‚": "'",
-    "‛": "'",
-    "′": "'",
-    "`": "'",
-    "“": '"',
-    "”": '"',
-    "„": '"',
-    "‟": '"',
-    "″": '"',
-    "«": '"',
-    "»": '"',
-    "‐": "-",
-    "‑": "-",
-    "‒": "-",
-    "–": "-",
-    "—": "-",
-    "―": "-",
-    "−": "-",
-    " ": " ",
-}
-ELLIPSIS = re.compile(r"\s*(?:\.\.\.|…|\[\.\.\.\]|\[…\])\s*")
+# Built from code points so no invisible characters live in the source file.
+CHAR_MAP = {chr(code): "'" for code in (0x2018, 0x2019, 0x201A, 0x201B, 0x2032, 0x60)}
+CHAR_MAP |= {chr(code): '"' for code in (0x201C, 0x201D, 0x201E, 0x201F, 0x2033, 0xAB, 0xBB)}
+CHAR_MAP |= {chr(code): "-" for code in (0x2010, 0x2011, 0x2012, 0x2013, 0x2014, 0x2015, 0x2212)}
+CHAR_MAP[chr(0xA0)] = " "  # no-break space
+ELLIPSIS = re.compile(r"\s*(?:\.\.\.|\u2026|\[\.\.\.\]|\[\u2026\])\s*")
 EDGE_PUNCTUATION = " \t\n\"'.,;:!?()[]"
+SOFT_HYPHEN = chr(0xAD)
+HYPHENS = "-" + chr(0x2010) + chr(0x2011)
 OPENING = "([{"
 CLOSING = ",.;:!?)]}%"
 MIN_WORDS = 3
@@ -61,20 +45,26 @@ def normalise_with_map(text: str) -> tuple[str, list[int]]:
     n = len(text)
     while i < n:
         ch = text[i]
-        if ch == "­":  # soft hyphen
+        if ch == SOFT_HYPHEN:
             i += 1
             continue
-        if ch in "-‐‑" and i > 0 and text[i - 1].isalpha():
+        if ch in HYPHENS and out and out[-1].isalpha():
+            # Hyphens inside words are dropped on both sides of the comparison, so
+            # "goods-receipt", "goods-<newline>receipt" (a compound broken at a line end)
+            # and "ware-<newline>house" (line-break hyphenation) match their quoted forms.
             j = i + 1
-            while j < n and text[j] in " \t":
-                j += 1
-            if j < n and text[j] == "\n":
-                j += 1
+            if j < n and text[j] in " \t\n":
                 while j < n and text[j] in " \t":
                     j += 1
-                if j < n and text[j].isalpha():
-                    i = j  # join a word hyphenated across a line break
-                    continue
+                if j < n and text[j] == "\n":
+                    j += 1
+                    while j < n and text[j] in " \t":
+                        j += 1
+                else:
+                    j = -1  # "word - word" or "word- word": a dash between words, keep it
+            if 0 < j < n and text[j].isalpha():
+                i = j
+                continue
         ch = CHAR_MAP.get(ch, ch)
         if ch.isspace():
             if not previous_space and not (out and out[-1] in OPENING):
@@ -102,13 +92,25 @@ def normalise(text: str) -> str:
     return normalise_with_map(text)[0]
 
 
+def _number_continues(haystack: str, at: int, step: int) -> bool:
+    """True if a separator at `at` continues a number ("3" inside "3.5", "1" inside "1,200")."""
+    beyond = at + step
+    return haystack[at] in ".," and 0 <= beyond < len(haystack) and haystack[beyond].isdigit()
+
+
 def _find_whole_words(haystack: str, needle: str, start: int) -> int:
     """Like str.find, but the match may not start or end in the middle of a word."""
     position = haystack.find(needle, start)
     while position >= 0:
         end = position + len(needle)
-        starts_clean = position == 0 or not (needle[0].isalnum() and haystack[position - 1].isalnum())
-        ends_clean = end == len(haystack) or not (needle[-1].isalnum() and haystack[end].isalnum())
+        starts_clean = position == 0 or not (
+            (needle[0].isalnum() and haystack[position - 1].isalnum())
+            or (needle[0].isdigit() and _number_continues(haystack, position - 1, -1))
+        )
+        ends_clean = end == len(haystack) or not (
+            (needle[-1].isalnum() and haystack[end].isalnum())
+            or (needle[-1].isdigit() and _number_continues(haystack, end, 1))
+        )
         if starts_clean and ends_clean:
             return position
         position = haystack.find(needle, position + 1)

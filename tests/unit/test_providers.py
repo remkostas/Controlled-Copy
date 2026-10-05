@@ -73,3 +73,23 @@ def test_tc_idx_003_permanent_errors_are_not_retried(monkeypatch):
     with pytest.raises(ProviderError):
         provider.embed(["x"], model="baai/bge-m3")
     assert len(calls) == 1
+
+
+def test_tc_idx_003_error_in_a_200_body_is_retried_when_transient(monkeypatch):
+    import httpx
+
+    from controlled_copy.providers import openrouter
+
+    monkeypatch.setattr(openrouter, "RETRY_BACKOFF", (0.0, 0.0))
+    replies = iter(
+        [
+            httpx.Response(200, json={"error": {"code": 502, "message": "upstream"}}),
+            httpx.Response(200, json={"data": [{"index": 0, "embedding": [1.0]}]}),
+        ]
+    )
+    provider = openrouter.OpenRouterProvider("key", "https://example.invalid/api/v1", 5)
+    provider._client = httpx.Client(
+        transport=httpx.MockTransport(lambda request: next(replies)),
+        base_url="https://example.invalid/api/v1",
+    )
+    assert provider.embed(["x"], model="baai/bge-m3").vectors == [[1.0]]

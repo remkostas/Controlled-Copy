@@ -15,6 +15,7 @@ from collections import defaultdict, deque
 from datetime import UTC, datetime, timedelta
 
 from controlled_copy.config import Settings
+from controlled_copy.storage.db import transaction
 from controlled_copy.storage.repo import Repo
 
 
@@ -35,26 +36,42 @@ DAILY_LIMIT_MESSAGE = (
 
 
 class AccessLimiter:
+    """Failed access-code attempts per client address, in memory and bounded in size."""
+
+    MAX_TRACKED = 10_000
+
     def __init__(self, attempts_per_hour: int, window_seconds: float = 3600.0) -> None:
         self.limit = attempts_per_hour
         self.window = window_seconds
         self._failures: dict[str, deque[float]] = defaultdict(deque)
         self._lock = threading.Lock()
 
-    def _prune(self, key: str, now: float) -> deque[float]:
-        entries = self._failures[key]
+    def _prune(self, key: str, now: float) -> deque[float] | None:
+        entries = self._failures.get(key)
+        if entries is None:
+            return None
         while entries and now - entries[0] > self.window:
             entries.popleft()
+        if not entries:
+            del self._failures[key]
+            return None
         return entries
 
     def blocked(self, key: str) -> bool:
         with self._lock:
-            return len(self._prune(key, time.monotonic())) >= self.limit
+            entries = self._prune(key, time.monotonic())
+            return entries is not None and len(entries) >= self.limit
 
     def record_failure(self, key: str) -> None:
         with self._lock:
             now = time.monotonic()
-            self._prune(key, now).append(now)
+            if key not in self._failures and len(self._failures) >= self.MAX_TRACKED:
+                for stale in [k for k in self._failures if now - self._failures[k][-1] > self.window]:
+                    del self._failures[stale]
+                if len(self._failures) >= self.MAX_TRACKED:
+                    oldest = min(self._failures, key=lambda k: self._failures[k][-1])
+                    del self._failures[oldest]
+            self._failures[key].append(now)
 
 
 class Budget:
@@ -82,5 +99,7 @@ class Budget:
                 raise LimitExceeded(VISITOR_LIMIT_MESSAGE.format(limit=limit), 429)
 
     def consume(self, sid: str | None, kind: str) -> None:
-        self.check(sid)
-        self.repo.record_model_call(sid, kind)
+        """Check and record one call atomically, so parallel requests cannot overshoot."""
+        with transaction(self.repo.conn):
+            self.check(sid)
+            self.repo.record_model_call(sid, kind)

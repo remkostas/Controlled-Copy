@@ -10,6 +10,7 @@ like a chat answer. Layers such as the governed Resolution Card reuse
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from functools import cache
@@ -95,7 +96,10 @@ def select_overview_passages(
     chosen: list[Passage] = []
     for source_id, chunks in by_source.items():
         used = 0
-        step = max(1, len(chunks) // max(1, share // 900))
+        # Take every step-th chunk so the selection reaches the end of the document.
+        average = max(1, sum(len(row["text"]) for row in chunks) // len(chunks))
+        fits = max(1, share // average)
+        step = max(1, math.ceil(len(chunks) / fits))
         for row in chunks[::step]:
             if used + len(row["text"]) > share and used:
                 break

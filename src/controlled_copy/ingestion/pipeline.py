@@ -152,7 +152,8 @@ def store(services: Services, notebook_id: str, extracted: Extracted, raw: bytes
                 ],
                 vectors=vectors,
                 vector_model=services.settings.model_embedding,
-            )
+            ),
+            limit=services.settings.max_sources_per_notebook,
         )
     except BaseException:
         if file_name:

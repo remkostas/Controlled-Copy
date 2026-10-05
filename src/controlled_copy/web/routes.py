@@ -22,6 +22,7 @@ from controlled_copy.limits import DAILY_LIMIT_MESSAGE, LimitExceeded
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError
 from controlled_copy.services import Services
+from controlled_copy.storage.repo import CapacityReached
 from controlled_copy.studio.actions import StudioError, run_overview_template, suggested_questions
 from controlled_copy.studio.engine import core_templates
 from controlled_copy.web import views
@@ -248,7 +249,12 @@ def create_notebook(
             request, f"You can have at most {limit} notebooks. Delete one to create another.", 409, "#toast"
         )
     cleaned = " ".join(title.split()) or DEFAULT_NOTEBOOK_TITLE
-    notebook_id = services.repo.create_notebook(sid, cleaned)
+    try:
+        notebook_id = services.repo.create_notebook(sid, cleaned, limit=limit)
+    except CapacityReached:
+        return notice(
+            request, f"You can have at most {limit} notebooks. Delete one to create another.", 409, "#toast"
+        )
     log_event("notebook_created", session=sid, notebook=notebook_id)
     if wants_json(request):
         return JSONResponse({"notebook_id": notebook_id}, status_code=201)
@@ -352,6 +358,10 @@ def add_source(
         return notice(request, exc.message, exc.status, target)
     except LimitExceeded as exc:
         return notice(request, exc.message, exc.status, target)
+    except CapacityReached:
+        return notice(
+            request, f"A notebook holds at most {settings.max_sources_per_notebook} sources.", 409, target
+        )
     except ProviderError:
         return notice(
             request,
