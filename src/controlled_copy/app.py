@@ -192,9 +192,10 @@ def create_app(
     app.add_middleware(BodySizeLimitMiddleware, limit=settings.max_file_bytes + BODY_OVERHEAD)
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.secure_cookies)
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-    app.include_router(router)
+    # Layer routes first, so a layer can add a more specific path than a core pattern.
     for layer_router in registry.routers:
         app.include_router(layer_router)
+    app.include_router(router)
 
     @app.exception_handler(NotAuthenticated)
     async def not_authenticated(request: Request, exc: NotAuthenticated) -> Response:

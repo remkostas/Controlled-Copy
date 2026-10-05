@@ -1,0 +1,8 @@
+{% if nb.kind == 'ops_workspace' %}
+<button type="button" class="btn btn--sm" hx-post="/workspace/reset"
+  hx-confirm="Reset Inbound Operations to the original documents? Your uploads, chat and cards in this workspace are deleted.">{{ icon('refresh-ccw') }} Reset workspace</button>
+{% else %}
+{% for n in notebooks if n.kind == 'ops_workspace' %}
+<a class="btn btn--sm" href="/app?nb={{ n.id }}">{{ icon('book-open') }} Open the Inbound Operations demo</a>
+{% endfor %}
+{% endif %}

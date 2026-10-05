@@ -236,11 +236,12 @@ def workspace(
     for hook in request.app.state.registry.workspace_hooks:
         hook(services, sid)
     notebooks = services.repo.list_notebooks(sid)
-    if not notebooks:
+    if not any(n.kind == "personal" for n in notebooks):
         with contextlib.suppress(CapacityReached):  # a parallel request created it first
             services.repo.create_notebook(sid, DEFAULT_NOTEBOOK_TITLE, limit=1)
         notebooks = services.repo.list_notebooks(sid)
-    current = next((n for n in notebooks if n["id"] == nb), notebooks[0])
+    personal = [n for n in notebooks if n.kind == "personal"]
+    current = next((n for n in notebooks if n.id == nb), personal[0])
     return render(request, "workspace.html", workspace_context(request, services, current))
 
 

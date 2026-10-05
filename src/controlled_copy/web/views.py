@@ -21,6 +21,7 @@ TYPE_LABELS = {
     "inference": "Inference",
     "recommendation": "Recommendation",
     "missing_evidence": "Missing evidence",
+    "conflict": "Conflict",
 }
 
 

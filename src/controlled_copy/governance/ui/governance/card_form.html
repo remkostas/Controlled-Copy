@@ -1,0 +1,46 @@
+{% set g = extra.governance %}
+<form class="card-form" hx-post="/notebooks/{{ nb.id }}/studio/resolution-card" hx-include="#source-list-wrap"
+      hx-target="#studio-outputs" hx-swap="afterbegin" hx-disabled-elt="find button">
+  <div class="card-form__head">
+    {{ icon('file-search') }}
+    <span class="studio-action__name">Resolution Card</span>
+    <span class="studio-action__desc">What the applicable approved instructions require for a situation, what is missing, who decides</span>
+  </div>
+  {% if g.scenarios %}
+  <div class="field">
+    <label for="scenario">Scenario</label>
+    <select class="input" id="scenario" data-fill-target="situation">
+      <option value="">Choose a scenario or describe your own…</option>
+      {% for sc in g.scenarios %}<option value="{{ sc.situation }}">{{ sc.title }}</option>{% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <div class="field">
+    <label for="situation">Situation</label>
+    <textarea class="textarea" id="situation" name="situation" rows="3" maxlength="{{ limits.situation_chars }}" data-counter="situation-counter" required
+      placeholder="What happened at the dock?"></textarea>
+    <span class="counter muted" id="situation-counter" data-max="{{ limits.situation_chars }}">0 / {{ '{:,}'.format(limits.situation_chars) }}</span>
+  </div>
+  <div class="context-bar">
+    <div class="field">
+      <label for="card-site">Site</label>
+      <select class="input" id="card-site" name="site">
+        {% for site in g.sites %}<option value="{{ site }}">{{ site }}</option>{% else %}<option value="all">all</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="card-role">Role</label>
+      <select class="input" id="card-role" name="role">
+        {% for role in g.roles %}<option value="{{ role }}" {% if role == g.default_role %}selected{% endif %}>{{ role|replace('_', ' ') }}</option>{% else %}<option value="">any</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="card-date">As of</label>
+      <input class="input" id="card-date" name="as_of" type="date" value="{{ g.today }}">
+    </div>
+  </div>
+  {% if not g.has_metadata %}<p class="muted card-form__note">These sources carry no document-control metadata, so the card will ask for expert confirmation.</p>{% endif %}
+  <button class="btn btn--primary" type="submit" {% if read_only %}disabled{% endif %}>
+    <span class="btn-label--idle">Build Resolution Card</span><span class="btn-label--busy">{{ icon('loader-circle', 'icon--spin') }} Checking the approved instructions…</span>
+  </button>
+</form>
