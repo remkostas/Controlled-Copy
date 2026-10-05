@@ -72,8 +72,12 @@ def rewrite_question(services: Services, history: list[tuple[str, str]], questio
         schema_name="rewrite",
         model_cls=RewriteOut,
     )
-    rewritten = " ".join(payload.search_question.split())
-    return rewritten[: services.settings.max_question_chars] or question
+    rewritten = " ".join(payload.search_question.split())[: services.settings.max_question_chars]
+    return rewritten or question
+
+
+def _same_question(first: str, second: str) -> bool:
+    return " ".join(first.lower().split()).rstrip("?.! ") == " ".join(second.lower().split()).rstrip("?.! ")
 
 
 def ask(services: Services, notebook: OwnedNotebook, question: str, selected_ids: list[str]) -> TurnResult:
@@ -95,11 +99,13 @@ def ask(services: Services, notebook: OwnedNotebook, question: str, selected_ids
         history = history_pairs(repo.list_messages(notebook))
         search_query: str | None = None
         if history:
-            search_query = rewrite_question(services, history, question)
+            rewritten = rewrite_question(services, history, question)
+            # Only show (and use) a rewrite that actually changed the question.
+            search_query = None if _same_question(rewritten, question) else rewritten
         query = search_query or question
         retrieval = retrieve(services, source_ids, query)
         if not retrieval.above_floor(settings.evidence_floor):
-            answer = refusal(len(source_ids), query, "No passage was close enough to the question.")
+            answer = refusal(len(source_ids), query, None)
             log_event(
                 "answer",
                 session=services.session_id,

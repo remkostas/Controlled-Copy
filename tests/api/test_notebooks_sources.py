@@ -107,3 +107,11 @@ def test_tc_fup_002_the_rewritten_question_is_shown(visitor):
     assert response.status_code == 200
     assert 'class="searched"' in response.text
     assert "Searched for <q>" in response.text and "outer packaging" in response.text
+
+
+def test_tc_fup_002_an_unchanged_rewrite_is_not_shown(visitor, fake):
+    visitor.upload("wi.md", corpus_file("WI-QUA-004_damaged-material_rev2.md"))
+    visitor.ask("How is damaged outer packaging handled?")
+    second = visitor.ask("What should happen when a seal is broken at receipt?").json()
+    assert [c.schema_name for c in fake.chat_calls].count("rewrite") == 1
+    assert second["search_query"] is None

@@ -63,7 +63,7 @@
           <div class="composer__box">
             <label class="visually-hidden" for="question">Question</label>
             <textarea id="question" name="question" rows="1" maxlength="{{ limits.question_chars }}" data-counter="question-counter"
-              placeholder="{{ 'Ask about the selected sources…' if sources else 'Add a source to start asking…' }}" required {% if read_only %}disabled{% endif %}></textarea>
+              placeholder="Ask about the selected sources…" required {% if read_only %}disabled{% endif %}></textarea>
             <button class="btn btn--primary btn--icon" type="submit" aria-label="Ask" {% if read_only %}disabled{% endif %}>{{ icon('send-horizontal') }}</button>
           </div>
           <p class="composer__meta">
