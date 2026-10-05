@@ -161,7 +161,7 @@ def run_template(
         if template.statement_types:
             allowed = template.statement_types
             raw = [s if s.type in allowed else s.model_copy(update={"type": None}) for s in raw]
-        verified = verify_statements(raw, mapping, numbering)
+        verified = verify_statements(raw, mapping, numbering, keep_uncited=bool(template.statement_types))
         removed += verified.removed
         sections.append({"key": spec.key, "title": spec.title, "items": verified.statements})
     output = {

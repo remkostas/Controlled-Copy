@@ -151,10 +151,12 @@ def turn_views(messages: list[sqlite3.Row]) -> list[dict[str, Any]]:
     return views
 
 
-def output_view(row: sqlite3.Row, open_: bool = False) -> dict[str, Any]:
+def output_view(
+    row: sqlite3.Row, open_: bool = False, partials: dict[str, str] | None = None
+) -> dict[str, Any]:
     created = time_label(row["created_at"])
     output = json.loads(row["output_json"] or "{}")
-    base = {"id": row["id"], "open": open_, "removed": 0, "sections": [], "message": ""}
+    base = {"id": row["id"], "open": open_, "removed": 0, "sections": [], "message": "", "partial": None}
     if row["status"] == TOMBSTONE:
         return {**base, "kind": "tombstone", "title": "Studio output removed", "meta_label": created}
     citations = {int(c["n"]): c for c in output.get("citations", [])}
@@ -162,6 +164,7 @@ def output_view(row: sqlite3.Row, open_: bool = False) -> dict[str, Any]:
     for section in output.get("sections", []):
         entries = [
             {
+                "type": item.get("type"),
                 "text": item["text"],
                 "type_label": TYPE_LABELS.get(item.get("type") or ""),
                 "cites": _cite_views(item.get("cites", []), citations),
@@ -178,6 +181,8 @@ def output_view(row: sqlite3.Row, open_: bool = False) -> dict[str, Any]:
         "sections": sections,
         "removed": int(output.get("removed", 0)),
         "extra": output,
+        "partial": (partials or {}).get(row["template"]),
+        "cite_index": citations,
     }
 
 

@@ -123,7 +123,8 @@ class Repo:
     # Notebooks ----------------------------------------------------------------
     def list_notebooks(self, sid: str) -> list[OwnedNotebook]:
         rows = self.conn.execute(
-            "SELECT * FROM notebook WHERE session_id = ? ORDER BY kind DESC, created_at, rowid",
+            "SELECT * FROM notebook WHERE session_id = ? "
+            "ORDER BY kind = 'ops_workspace' DESC, created_at, rowid",
             (sid,),
         ).fetchall()
         return [_notebook(row) for row in rows]

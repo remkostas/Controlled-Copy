@@ -5,7 +5,9 @@
     <span class="output__meta">{{ o.meta_label }}</span>
   </summary>
   <div class="output__body">
-    {% if o.kind == 'ok' %}
+    {% if o.kind == 'ok' and o.partial %}
+    {% include o.partial %}
+    {% elif o.kind == 'ok' %}
     {% for sec in o.sections %}
     <section class="output__section">
       <h3>{{ sec.title }}</h3>

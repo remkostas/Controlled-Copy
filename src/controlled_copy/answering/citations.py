@@ -68,8 +68,12 @@ def verify_statements(
     raw: Sequence[StatementOut],
     mapping: dict[str, Passage],
     numbering: CitationNumbering,
+    keep_uncited: bool = False,
 ) -> VerifiedStatements:
     """Keep statements that have at least one verified citation.
+
+    With `keep_uncited` (typed templates), statements whose citations all fail are
+    kept with no citations, so type rules can downgrade them instead of hiding them.
 
     A citation is verified when its passage ID was in the prompt and its quote
     occurs in that passage. Offsets are stored relative to the source text.
@@ -91,7 +95,7 @@ def verify_statements(
             if entry not in cites:
                 cites.append(entry)
         text = " ".join(statement.text.split())
-        if cites and text:
+        if text and (cites or keep_uncited):
             item: dict[str, Any] = {"text": text, "cites": [{"n": c["n"]} for c in cites]}
             if statement.type is not None:
                 item["type"] = statement.type

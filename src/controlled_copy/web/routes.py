@@ -128,7 +128,8 @@ def workspace_context(
         "selected_ids": selected,
         "turns": views.turn_views(repo.list_messages(notebook)),
         "outputs": [
-            views.output_view(row, open_=i == 0) for i, row in enumerate(repo.list_outputs(notebook))
+            views.output_view(row, open_=i == 0, partials=request.app.state.registry.output_partials)
+            for i, row in enumerate(repo.list_outputs(notebook))
         ],
         "notice": DAILY_LIMIT_MESSAGE if read_only else None,
         "read_only": read_only,
@@ -237,10 +238,7 @@ def workspace(
     if not notebooks:
         services.repo.create_notebook(sid, DEFAULT_NOTEBOOK_TITLE)
         notebooks = services.repo.list_notebooks(sid)
-    current = next((n for n in notebooks if n["id"] == nb), None)
-    if current is None:
-        personal = [n for n in notebooks if n["kind"] == "personal"]
-        current = personal[0] if personal else notebooks[0]
+    current = next((n for n in notebooks if n["id"] == nb), notebooks[0])
     return render(request, "workspace.html", workspace_context(request, services, current))
 
 
@@ -503,4 +501,7 @@ def run_studio(
     if wants_json(request):
         return JSONResponse({"output_id": stored.output_id, "output": stored.output})
     row = services.repo.get_output(notebook, stored.output_id)
-    return render(request, "partials/output.html", {"o": views.output_view(row, open_=True)})
+    partials = request.app.state.registry.output_partials
+    return render(
+        request, "partials/output.html", {"o": views.output_view(row, open_=True, partials=partials)}
+    )

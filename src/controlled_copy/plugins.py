@@ -39,6 +39,8 @@ class Registry:
     migrations: list[Migration] = field(default_factory=list)
     studio_actions: list[StudioAction] = field(default_factory=list)
     topbar_partials: list[str] = field(default_factory=list)
+    # Studio template id -> partial that renders its outputs (instead of the generic list).
+    output_partials: dict[str, str] = field(default_factory=dict)
     template_dirs: list[Path] = field(default_factory=list)
     # Called with (services, session_id) when a visitor opens the workspace.
     workspace_hooks: list[Callable[[Any, str], None]] = field(default_factory=list)
