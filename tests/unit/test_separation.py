@@ -49,4 +49,20 @@ def test_tc_rev_001_core_runs_with_the_layer_switched_off(app, settings):
         pytest.skip("this run has the governance layer switched on")
     assert app.state.registry.loaded == []
     assert app.state.registry.routers == [] and app.state.registry.migrations == []
-    assert "controlled_copy.governance" not in __import__("sys").modules
+    # In a fresh interpreter (test collection may import layer tests), the core app must not
+    # import any layer module when the flag is off.
+    import subprocess
+    import sys
+
+    probe = (
+        "import sys, tempfile, pathlib;"
+        "from controlled_copy.app import create_app;"
+        "from controlled_copy.config import Settings;"
+        "create_app(Settings(_env_file=None, app_access_code='x', model_provider='fake',"
+        " feature_governance=False, data_dir=pathlib.Path(tempfile.mkdtemp())), run_purge=False);"
+        "sys.exit(1 if any(m.startswith('controlled_copy.governance') for m in sys.modules) else 0)"
+    )
+    assert (
+        subprocess.run([sys.executable, "-c", probe], capture_output=True, timeout=60, check=False).returncode
+        == 0
+    )
