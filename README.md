@@ -6,7 +6,7 @@ You add your documents, ask questions, and get answers in which every statement 
 
 ![Workspace with sources, a cited answer, a follow-up, a refusal and a Studio Briefing](docs/screenshots/app-workspace.png)
 
-This repository is a portfolio project built in four days. It runs on synthetic data only. Stage 1, the NotebookLM-style core, is complete and tested. Stage 2 adds a governed-documents layer (revisions, status, applicability and a Resolution Card) behind a feature flag.
+This repository is a portfolio project built in four days. It runs on synthetic data only. Stage 1, the NotebookLM-style core, is complete and tested. Stage 2 adds a governed-documents layer (revisions, status, applicability and a Resolution Card) behind a feature flag. Stage 3 adds a model picker, Markdown export and a document-control form.
 
 ## What you can do
 
@@ -15,6 +15,10 @@ This repository is a portfolio project built in four days. It runs on synthetic 
 - **Refusal:** a question your sources do not cover gets "Not in the selected sources", with what was searched.
 - **Studio:** a Briefing (overview, key points, important terms, open questions) in which every item carries a verified citation. Suggested questions under an empty chat.
 - **Deletion:** delete a source or a notebook and everything derived from it disappears: file, chunks, vectors, search index rows, and every answer or output generated from its passages.
+- **Resolution Card** (governed layer): describe a situation at the dock and get what the applicable approved instructions require, what information is missing and who decides. Every requirement needs a verified quote from a document that is approved, effective on the chosen date and valid for the chosen site and role. Drafts, obsolete or superseded revisions and other sites' documents are named as "not applied", with the reason. The status (supported, context incomplete, expert confirmation required, conflicting instructions) comes from fixed rules, never from the model. Each visitor gets their own copy of a curated "Inbound Operations" workspace and can reset it.
+- **Models** (model picker layer): choose which evaluated model writes answers, Briefings and cards. Every answer shows the model that wrote it, and "(fallback)" when the fallback model stepped in.
+- **Export:** copy any Briefing or Resolution Card as Markdown, or download it, with every verified quote listed under its citation number.
+- **Document control:** type a document ID, revision, status, effective date, site and roles when you add a source, instead of writing YAML front matter. The app marks this metadata as asserted by the uploader.
 
 ## The ten questions
 
@@ -34,7 +38,7 @@ This repository is a portfolio project built in four days. It runs on synthetic 
 
 **8. How does it handle unsupported information?** In three layers. Retrieval refuses before any model call when the best match is weaker than an evidence floor (exact codes such as `GR-204` bypass it). The model must return statements with quotes in a fixed JSON schema. The server then checks every quote against its passage and removes what fails, so an answer the model invented cannot reach you with a citation attached.
 
-**9. How did I evaluate it?** With mechanical checks only, no model judging another model. The generic set (G-01 to G-06) runs on a public 48-page PDF (NIST AI 100-1): three answerable questions, one unsupported question, one citation check and one Briefing in which every citation must verify. A model bake-off compared three embedding models on retrieval (hit@3, hit@5, mean reciprocal rank) and three generation models on six cases (schema validity, quote validity, outcome, latency, cost). Results, misses included, are in [`eval/results/`](eval/results/). The sets are small, so the numbers are indicative only.
+**9. How did I evaluate it?** With mechanical checks only, no model judging another model. The generic set (G-01 to G-06) runs on a public 48-page PDF (NIST AI 100-1): three answerable questions, one unsupported question, one citation check and one Briefing in which every citation must verify. A model bake-off compared three embedding models on retrieval (hit@3, hit@5, mean reciprocal rank) and three generation models on six cases (schema validity, quote validity, outcome, latency, cost). The Resolution Card has its own set: 14 cases (E-01 to E-14) on the curated workspace, plus 11 held-out paraphrases (H-01 to H-11) that were written and committed before their first run, because the prompt had been tuned on the first set. GPT-6 Luna passes 13 of 14 and 11 of 11. The same sets compared five candidate fallback models; Gemini 3.5 Flash Lite won on the grounds that it runs on a different provider, answers in about two seconds and errs on the cautious side. Results, misses included, are in [`eval/results/`](eval/results/). The sets are small, so the numbers are indicative only.
 
 **10. What would production need?** Real sign-in instead of a shared access code, row-level isolation for a shared company workspace, a data processing agreement with every processor and EU-only model routing, document status coming from a real document-control system instead of uploaded front matter, a sandboxed parsing service with malware scanning, encryption at rest with deletion that reaches backups, monitoring, and a review with the works council and the data protection officer before any pilot.
 
@@ -52,7 +56,7 @@ browser ── htmx ──> FastAPI (session cookie, CSRF token, strict CSP)
                                     google/gemini-3.5-flash-lite as fallback
 ```
 
-More detail: [`docs/architecture.md`](docs/architecture.md). The governed layer plugs in through one registry behind `FEATURE_GOVERNANCE`; the core never imports it, and CI runs the whole core suite with the layer switched off.
+More detail: [`docs/architecture.md`](docs/architecture.md). The governed layer (`FEATURE_GOVERNANCE`) and the model picker (`FEATURE_MODEL_PICKER`, allowlist `MODEL_CHOICES`) plug in through one registry; the core never imports them, and CI runs the whole core suite with every layer switched off and the full suite with every layer on.
 
 ## Run it
 
@@ -80,12 +84,14 @@ The app refuses to start in deploy mode without a strong access code and secret 
 ## Tests
 
 ```
-.venv/bin/python -m pytest -m "stage1 and not eval and not smoke_live"
+.venv/bin/python -m pytest -m "stage1 and not eval and not smoke_live"                       # the core
+FEATURE_GOVERNANCE=true FEATURE_MODEL_PICKER=true \
+  .venv/bin/python -m pytest -m "(stage1 or stage2 or stage3) and not eval and not smoke_live"  # everything
 ```
 
 Every test carries the ID of the test case it implements (for example `test_tc_src_011_...`), and every test case maps to a requirement in [`docs/testing.md`](docs/testing.md). The suite uses a deterministic fake model, so it needs no key and costs nothing. It includes unit, integration, API, security and browser tests (Playwright with Chromium), among them an automated WCAG contrast check. `scripts/test_report.py` turns a JUnit run into a requirement-to-result table.
 
-The evaluation against the real model is manual: `python eval/run_eval.py generic` and `python eval/bakeoff.py` (see [`eval/README.md`](eval/README.md)).
+The evaluation against the real model is manual: `python eval/run_eval.py generic`, `governed`, `holdout` and `python eval/bakeoff.py` (see [`eval/README.md`](eval/README.md)). A live check drives both journeys against a running instance with the real model: `LIVE_URL=https://... LIVE_ACCESS_CODE=... pytest -m smoke_live tests/live`.
 
 ## Privacy and security
 
