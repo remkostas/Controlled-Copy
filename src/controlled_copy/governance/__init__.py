@@ -68,12 +68,18 @@ def _superseded_banner(services: Services, context: dict[str, Any]) -> None:
         d
         for d in documents
         if this
-        and d.document_id == this.document_id
+        and d.id_key
+        and d.id_key == this.id_key
         and d.status == "approved"
         and d.revision_key > this.revision_key
     ]
-    if newer:
-        source["superseded_by"] = max(newer, key=lambda d: d.revision_key).label
+    # A curated revision names the successor; an uploaded claim only when nothing curated
+    # does, and then marked as asserted.
+    curated = [d for d in newer if d.origin == "curated"]
+    if curated:
+        source["superseded_by"] = max(curated, key=lambda d: d.revision_key).label
+    elif newer:
+        source["superseded_by"] = max(newer, key=lambda d: d.revision_key).label + " (asserted by uploader)"
 
 
 def register(registry: Registry, settings: Settings) -> None:

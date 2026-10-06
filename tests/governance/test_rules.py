@@ -219,6 +219,28 @@ def test_tc_gov_009_asserted_metadata_never_overrides_a_curated_document():
     assert alone.authoritative_ids() == ["upload"]
 
 
+def test_tc_gov_009_asserted_metadata_cannot_take_a_curated_id_by_spelling_or_context():
+    def claim(source_id: str, document_id: str) -> rules.Document:
+        meta = {
+            "document_id": document_id,
+            "revision": "9",
+            "status": "approved",
+            "effective_from": "2026-01-01",
+            "site": "all",
+        }
+        return rules.document_from(source_id, "Supplier note", meta, "asserted")
+
+    curated = doc("curated", document_id="SOP-INB-001")
+    variants = [claim("lower", "sop-inb-001"), claim("dash", "SOP\u2011INB\u2011001 ")]
+    result = rules.split([curated, *variants], CONTEXT)
+    assert result.authoritative_ids() == ["curated"]
+    # The curated revision does not apply here (another site); the upload still may not stand in.
+    elsewhere = doc("elsewhere", document_id="SOP-INB-001", site="HAM-02")
+    result = rules.split([elsewhere, claim("upload", "SOP-INB-001")], CONTEXT)
+    assert result.authoritative_ids() == []
+    assert result.excluded["upload"][1].startswith("asserted by uploader")
+
+
 def test_tc_gov_008_supported_names_unverified_statements():
     status, reasons = rules.result_status(
         conflict=False,

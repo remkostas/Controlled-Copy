@@ -171,6 +171,18 @@ def test_tc_gov_009_uploaded_metadata_is_marked_as_asserted(workspace, db):
     assert row[0] == "asserted"
 
 
+def test_tc_gov_009_obsolete_banner_names_the_curated_successor_not_an_upload(workspace, db):
+    visitor = workspace.visitor
+    claim = b"---\ndocument_id: SOP-INB-001\nrevision: 9\nstatus: approved\neffective_from: 2026-01-01\nsite: all\n---\n# Receiving shortcut\n\nSkip the count.\n"
+    visitor.upload("claim.md", claim, notebook_id=workspace.id)
+    obsolete = db.execute(
+        "SELECT id FROM source WHERE notebook_id = ? AND metadata_json LIKE '%obsolete%'", (workspace.id,)
+    ).fetchone()[0]
+    page = visitor.client.get(f"/sources/{obsolete}").text
+    assert "superseded by SOP-INB-001 rev 3." in page
+    assert "rev 9" not in page
+
+
 def test_tc_gov_010_context_date_before_the_effective_date_excludes_the_document(workspace, fake):
     card = workspace.card("The WMS shows error GR-204 after I scan the delivery.", as_of="2026-01-15").json()[
         "output"

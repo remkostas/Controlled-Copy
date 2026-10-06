@@ -17,6 +17,7 @@ from typing import Any
 # Error codes and document IDs (GR-204, SOP-INB-001) and location codes (A-14, OD-01, Q-01).
 IDENTIFIER = re.compile(r"\b(?:[A-Z]{2,}(?:-[A-Z0-9]+)*-\d{2,}|[A-Z]{1,3}-\d{2,3})\b", re.IGNORECASE)
 REVISION_PART = re.compile(r"\d+|[A-Za-z]+")
+DASHES = re.compile(r"[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]")
 DEFAULT_ROLE = "warehouse_operator"
 
 STATUS_PRECEDENCE = ("conflict", "expert_confirmation", "context_incomplete", "supported")
@@ -56,8 +57,18 @@ class Document:
         return self.title
 
     @property
+    def id_key(self) -> str | None:
+        return document_key(self.document_id)
+
+    @property
     def revision_key(self) -> tuple[tuple[int, int | str], ...]:
         return revision_key(self.revision)
+
+
+def document_key(document_id: Any) -> str | None:
+    """Compare document IDs as one code: 'sop-inb-001' and 'SOP\u2011INB\u2011001' are SOP-INB-001."""
+    key = DASHES.sub("-", str(document_id or "")).strip().casefold()
+    return key or None
 
 
 def revision_key(revision: Any) -> tuple[tuple[int, int | str], ...]:
@@ -121,11 +132,12 @@ def split(documents: Sequence[Document], context: Context) -> Split:
             result.excluded[doc.source_id] = (doc, reason)
         else:
             candidates.append(doc)
-    # Metadata an uploader asserts never overrides a curated controlled document.
-    curated = {d.document_id for d in candidates if d.document_id and d.origin == "curated"}
+    # Metadata an uploader asserts never overrides a curated controlled document, also
+    # when no curated revision applies to this context (a draft, another site).
+    curated = {d.id_key for d in documents if d.id_key and d.origin == "curated"}
     eligible = []
     for doc in candidates:
-        if doc.origin != "curated" and doc.document_id in curated:
+        if doc.origin != "curated" and doc.id_key in curated:
             reason = f"asserted by uploader, but {doc.document_id} is a curated controlled document"
             result.excluded[doc.source_id] = (doc, reason)
         else:
@@ -134,9 +146,7 @@ def split(documents: Sequence[Document], context: Context) -> Split:
         newer = [
             other
             for other in eligible
-            if other.document_id
-            and other.document_id == doc.document_id
-            and other.revision_key > doc.revision_key
+            if other.id_key and other.id_key == doc.id_key and other.revision_key > doc.revision_key
         ]
         if newer:
             best = max(newer, key=lambda other: other.revision_key)
