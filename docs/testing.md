@@ -87,6 +87,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-ANS-06 | Provider error falls back once | TC-ANS-006 | integration | Primary fake raises; fallback succeeds | Answer from fallback; event logged without content |
 | FR-ANS-07 | Timeout handled | TC-ANS-007 | integration | Fake that exceeds the timeout | Clear message within the time limit |
 | FR-ANS-08 | Citation opens the passage | TC-ANS-008 | e2e | Click a citation chip | Viewer opens, passage highlighted and visible |
+| FR-ANS-09 | Answers follow the language of the question; quotes stay in the language of their source | TC-ANS-009 | unit, integration | The prompts; a German source and a German question | No prompt fixes the answer language; the German answer keeps its verified German quote |
 
 ### Follow-ups (stage 1)
 

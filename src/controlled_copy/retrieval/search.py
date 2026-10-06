@@ -20,7 +20,8 @@ from controlled_copy.ingestion.pipeline import embed_texts
 from controlled_copy.services import Services
 
 RRF_K = 60
-TOKEN = re.compile(r"[A-Za-z0-9]+(?:[-_./][A-Za-z0-9]+)*")
+# Letters and digits of any script, so "Größere" stays one search term instead of "gr" and "ere".
+TOKEN = re.compile(r"[^\W_]+(?:[-_./][^\W_]+)*")
 IDENTIFIER = re.compile(r"\b[A-Za-z]{2,}(?:-[A-Za-z0-9]+)*-[A-Za-z0-9]*\d[A-Za-z0-9]*\b")
 STOPWORDS = frozenset(
     [
