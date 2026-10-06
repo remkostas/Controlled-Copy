@@ -31,6 +31,7 @@ STRING_KEYS = frozenset(
         "status",
         "error_type",
         "path",
+        "route",
         "method",
         "template",
         "outcome",

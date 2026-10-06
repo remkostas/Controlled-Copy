@@ -213,6 +213,8 @@ def access(
         existing if existing and services.repo.session_last_seen(existing) else services.repo.create_session()
     )
     log_event("access", outcome="granted", session=sid)
+    services.session_id = sid
+    _prepare_visitor(request, services)  # first notebook and layer workspaces, on this checked POST
     response = RedirectResponse("/app", status_code=303)
     response.set_cookie(
         SESSION_COOKIE,
@@ -250,19 +252,34 @@ def healthz(settings: SettingsDep) -> Response:
 
 
 # Workspace -----------------------------------------------------------------------
+def _prepare_visitor(request: Request, services: Services) -> None:
+    """Create what a visitor needs: the layers' workspaces and a first personal notebook."""
+    sid = services.sid
+    for hook in request.app.state.registry.workspace_hooks:
+        hook(services, sid)
+    if not any(n.kind == "personal" for n in services.repo.list_notebooks(sid)):
+        with contextlib.suppress(CapacityReached):  # a parallel request created it first
+            services.repo.create_notebook(sid, DEFAULT_NOTEBOOK_TITLE, limit=1)
+
+
+def _navigation_from_this_site(request: Request) -> bool:
+    """A GET may repair missing notebooks only for the visitor's own navigation: typed or
+    bookmarked (none), from this origin, or a client that sends no fetch metadata. A link
+    from another site (cross-site, same-site) must not write (full audit SEC-04)."""
+    return request.headers.get("sec-fetch-site") in (None, "none", "same-origin")
+
+
 @router.get("/app", response_class=HTMLResponse)
 def workspace(
     request: Request, services: SessionDep, nb: Annotated[str | None, Query(max_length=64)] = None
 ) -> Response:
     sid = services.sid
-    for hook in request.app.state.registry.workspace_hooks:
-        hook(services, sid)
+    if _navigation_from_this_site(request):
+        _prepare_visitor(request, services)
     notebooks = services.repo.list_notebooks(sid)
-    if not any(n.kind == "personal" for n in notebooks):
-        with contextlib.suppress(CapacityReached):  # a parallel request created it first
-            services.repo.create_notebook(sid, DEFAULT_NOTEBOOK_TITLE, limit=1)
-        notebooks = services.repo.list_notebooks(sid)
     personal = [n for n in notebooks if n.kind == "personal"]
+    if not personal:
+        return render(request, "continue.html", {})
     current = next((n for n in notebooks if n.id == nb), personal[0])
     return render(request, "workspace.html", workspace_context(request, services, current))
 

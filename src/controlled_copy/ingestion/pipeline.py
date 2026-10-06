@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import os
 import secrets
+import shutil
 import time
 from dataclasses import dataclass, field
 from pathlib import PurePath
@@ -25,7 +26,7 @@ from controlled_copy.ingestion.validate import IngestError, decode_text, detect_
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError, call_with_deadline
 from controlled_copy.services import Services
-from controlled_copy.storage.repo import NewSource, OwnedNotebook, characters_full
+from controlled_copy.storage.repo import NewSource, OwnedNotebook, characters_full, storage_full
 
 MIN_PAGE_CHARS = 20
 KIND_EXTENSION = {"pdf": ".pdf", "md": ".md", "txt": ".txt"}
@@ -111,10 +112,12 @@ def embed_texts(services: Services, texts: list[str], kind: str = "embed") -> li
     settings = services.settings
     batch = max(1, settings.embedding_batch_size)
     batches = [texts[i : i + batch] for i in range(0, len(texts), batch)]
-    services.budget.check(services.session_id, calls=len(batches))
+    reserve = settings.usd_reserve_per_embedding
+    services.budget.check(services.session_id, calls=len(batches), reserve_usd=reserve * len(batches))
     vectors: list[list[float]] = []
     for part in batches:
-        services.budget.consume(services.session_id, kind)
+        # Embedding responses carry no price here: the conservative reservation stays.
+        services.budget.consume(services.session_id, kind, reserve_usd=reserve)
         result = call_with_deadline(
             lambda part=part: services.provider.embed(part, model=settings.model_embedding),
             settings.provider_timeout_seconds,
@@ -127,9 +130,15 @@ def embed_texts(services: Services, texts: list[str], kind: str = "embed") -> li
 
 def store(services: Services, notebook: OwnedNotebook, extracted: Extracted, raw: bytes | None) -> str:
     started = time.monotonic()
-    char_limit = services.settings.max_notebook_chars
+    settings = services.settings
+    char_limit = settings.max_notebook_chars
     if services.repo.count_chars(notebook) + len(extracted.text) > char_limit:
         raise characters_full(char_limit)  # before any embedding call; checked again on insert
+    storage_limits = (settings.max_visitor_upload_mb, settings.max_total_upload_mb)
+    services.repo.check_storage(notebook.session_id, extracted.bytes, *storage_limits)
+    free = shutil.disk_usage(settings.data_dir).free
+    if free - extracted.bytes < settings.min_free_disk_mb * 1024 * 1024:
+        raise storage_full()
     vectors = embed_texts(services, [embedding_input(extracted.title, c) for c in extracted.chunks])
     file_name: str | None = None
     uploads = services.settings.uploads_dir
@@ -160,6 +169,7 @@ def store(services: Services, notebook: OwnedNotebook, extracted: Extracted, raw
             ),
             limit=services.settings.max_sources_per_notebook,
             char_limit=char_limit,
+            storage_limits_mb=storage_limits,
         )
     except BaseException:
         if file_name:

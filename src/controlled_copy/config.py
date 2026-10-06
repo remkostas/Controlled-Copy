@@ -64,13 +64,22 @@ class Settings(BaseSettings):
     # Total extracted characters per notebook (S-08): bounds stored text and embedding work,
     # which raw file sizes do not (a small PDF can extract to a lot of text).
     max_notebook_chars: int = Field(default=2_000_000, gt=0)
+    # Disk: raw uploads are kept, so their bytes are limited per visitor and in total, and
+    # nothing is accepted when the data volume runs low (full audit SEC-02).
+    max_visitor_upload_mb: int = Field(default=200, gt=0)
+    max_total_upload_mb: int = Field(default=5000, gt=0)
+    min_free_disk_mb: int = Field(default=2048, ge=0)
     max_notebooks_per_visitor: int = Field(default=5, gt=0)
     max_question_chars: int = Field(default=1500, gt=0)
     max_situation_chars: int = Field(default=2000, gt=0)
     model_calls_per_visitor_hour: int = 120
     model_calls_per_day: int = 3000
-    # Daily spend limit in USD over all visitors, from the cost OpenRouter reports per call.
+    # Daily spend limit in USD over all visitors. Each call reserves a conservative amount
+    # when it starts (so parallel and timed-out calls count) and settles to the cost the
+    # provider reports; a call without a reported cost keeps its reservation.
     max_usd_per_day: float = Field(default=5.0, gt=0)
+    usd_reserve_per_generation: float = Field(default=0.02, ge=0)
+    usd_reserve_per_embedding: float = Field(default=0.001, ge=0)
     access_attempts_per_hour: int = 10
     provider_timeout_seconds: float = Field(default=45.0, gt=0)
     # Highest endpoint price a generation request may route to, USD per million tokens.

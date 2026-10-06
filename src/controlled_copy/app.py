@@ -132,6 +132,13 @@ def _purge_loop(app: FastAPI, stop: threading.Event) -> None:
             return
 
 
+def _route_label(request: Request) -> str:
+    """The matched route's template ("/sources/{source_id}"), never the raw path: paths can carry
+    IDs or text a client chose, and logs stay content-free (full audit SEC-05)."""
+    route = request.scope.get("route")
+    return str(getattr(route, "path", "unmatched"))
+
+
 def create_app(
     settings: Settings | None = None, provider: ModelProvider | None = None, run_purge: bool = True
 ) -> FastAPI:
@@ -208,7 +215,7 @@ def create_app(
 
     @app.exception_handler(CsrfFailed)
     async def csrf_failed(request: Request, exc: CsrfFailed) -> Response:
-        log_event("csrf_rejected", path=request.url.path, method=request.method)
+        log_event("csrf_rejected", route=_route_label(request), method=request.method)
         return JSONResponse(
             {"error": "The request could not be verified. Reload the page and try again."}, status_code=403
         )
@@ -216,7 +223,9 @@ def create_app(
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request: Request, exc: RequestValidationError) -> Response:
         # The default handler echoes the submitted values; never send content back or log it.
-        log_event("invalid_request", path=request.url.path, method=request.method, errors=len(exc.errors()))
+        log_event(
+            "invalid_request", route=_route_label(request), method=request.method, errors=len(exc.errors())
+        )
         return JSONResponse({"error": "The request was not valid."}, status_code=422)
 
     too_large = TOO_LARGE_MESSAGE.format(mb=settings.max_file_bytes // (1024 * 1024))

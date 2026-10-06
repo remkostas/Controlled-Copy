@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+# The package is imported from src/ instead of being installed: an editable install would
+# download an unlocked build backend (full audit SCM-01). Everything installed is hash-locked.
+env:
+  PYTHONPATH: src
+
 jobs:
   lint:
     runs-on: ubuntu-24.04
@@ -16,7 +21,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
-      - run: pip install --require-hashes -r requirements-dev.lock && pip install --no-deps -e .
+      - run: pip install --require-hashes -r requirements-dev.lock
       - run: ruff check src tests scripts eval
       - run: ruff format --check src tests scripts eval
 
@@ -43,7 +48,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
-      - run: pip install --require-hashes -r requirements-dev.lock && pip install --no-deps -e .
+      - run: pip install --require-hashes -r requirements-dev.lock
       - run: python -m playwright install --with-deps chromium
       - name: gitleaks for TC-SEC-007
         run: |
@@ -68,7 +73,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
-      - run: pip install --require-hashes -r requirements-dev.lock && pip install --no-deps -e .
+      - run: pip install --require-hashes -r requirements-dev.lock
       - name: Settings for a throwaway deploy-mode stack (TC-LIVE-001 makes no model calls)
         run: |
           code=$(python -c "import secrets; print(secrets.token_urlsafe(16))")

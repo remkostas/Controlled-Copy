@@ -11,6 +11,7 @@ unsupported parameter would rule out every endpoint.
 
 from __future__ import annotations
 
+import math
 import time
 from typing import Any
 
@@ -56,6 +57,26 @@ def build_chat_request(
         "max_tokens": 4000,
         "usage": {"include": True},
     }
+
+
+def _envelope(data: Any) -> dict[str, Any]:
+    """The JSON body of a 200 response must be an object; anything else is bad output."""
+    if not isinstance(data, dict):
+        raise ProviderBadOutput("response is not a JSON object")
+    return data
+
+
+def _usage(data: dict[str, Any]) -> dict[str, Any]:
+    usage = data.get("usage")
+    return usage if isinstance(usage, dict) else {}
+
+
+def _finite(value: Any) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def _int(value: Any) -> int:
+    return int(value) if _finite(value) else 0
 
 
 class OpenRouterProvider:
@@ -126,17 +147,25 @@ class OpenRouterProvider:
         return data
 
     def embed(self, texts: list[str], *, model: str) -> EmbedResult:
-        data = self._post_with_retry("/embeddings", build_embedding_request(texts, model), retries=2)
+        body = build_embedding_request(texts, model)
+        data = _envelope(self._post_with_retry("/embeddings", body, retries=2))
         items = data.get("data")
         if not isinstance(items, list) or len(items) != len(texts):
             raise ProviderBadOutput("embedding response has the wrong number of vectors")
-        ordered = sorted(items, key=lambda item: item.get("index", 0))
-        vectors = [item["embedding"] for item in ordered]
-        usage = data.get("usage") or {}
+        if not all(isinstance(item, dict) for item in items):
+            raise ProviderBadOutput("embedding response has a malformed item")
+        ordered = sorted(items, key=lambda item: _int(item.get("index")))
+        vectors = []
+        for item in ordered:
+            vector = item.get("embedding")
+            if not isinstance(vector, list) or not vector or not all(_finite(v) for v in vector):
+                raise ProviderBadOutput("embedding response has a malformed vector")
+            vectors.append([float(v) for v in vector])
+        usage = _usage(data)
         return EmbedResult(
             vectors=vectors,
             model=str(data.get("model") or model),
-            input_tokens=int(usage.get("prompt_tokens") or usage.get("total_tokens") or 0),
+            input_tokens=_int(usage.get("prompt_tokens") or usage.get("total_tokens")),
         )
 
     def chat_json(
@@ -153,20 +182,22 @@ class OpenRouterProvider:
             build_chat_request(messages, schema, schema_name, model, self.max_price),
             timeout,
         )
-        try:
-            message = data["choices"][0]["message"]
-            content = message.get("content")
-        except (KeyError, IndexError, TypeError) as exc:
-            raise ProviderBadOutput("chat response has no message") from exc
-        if not isinstance(content, str) or not content.strip():
-            raise ProviderBadOutput("chat response is empty")
-        usage = data.get("usage") or {}
+        data = _envelope(data)
+        usage = _usage(data)
         cost = usage.get("cost")
+        cost_usd = float(cost) if _finite(cost) else None
+        choices = data.get("choices")
+        first = choices[0] if isinstance(choices, list) and choices else None
+        message = first.get("message") if isinstance(first, dict) else None
+        content = message.get("content") if isinstance(message, dict) else None
+        if not isinstance(content, str) or not content.strip():
+            # Billed but unusable: the cost travels with the error into the daily budget.
+            raise ProviderBadOutput("chat response has no usable message", cost_usd=cost_usd)
         return ChatResult(
             content=content,
             model=str(data.get("model") or model),
-            input_tokens=int(usage.get("prompt_tokens") or 0),
-            output_tokens=int(usage.get("completion_tokens") or 0),
-            cost_usd=float(cost) if isinstance(cost, int | float) else None,
+            input_tokens=_int(usage.get("prompt_tokens")),
+            output_tokens=_int(usage.get("completion_tokens")),
+            cost_usd=cost_usd,
             provider=str(data.get("provider")) if data.get("provider") else None,
         )

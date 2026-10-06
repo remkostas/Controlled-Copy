@@ -60,10 +60,10 @@ You need Python 3.12 or newer (developed on 3.14) and an OpenRouter API key.
 
 ```
 python -m venv .venv
-.venv/bin/pip install --require-hashes -r requirements-dev.lock
-.venv/bin/pip install --no-deps -e .
+.venv/bin/pip install --require-hashes -r requirements-dev.lock   # every package hash-locked
+export PYTHONPATH=src                                              # the app runs from src/, not installed
 cp .env.example .env        # then fill in OPENROUTER_API_KEY, APP_ACCESS_CODE, APP_SECRET_KEY
-.venv/bin/uvicorn controlled_copy.app:app --port 8000
+.venv/bin/uvicorn controlled_copy.app:app --port 8000   # local mode: APP_MODE is unset
 ```
 
 Open http://127.0.0.1:8000 and enter your access code.

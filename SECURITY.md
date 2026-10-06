@@ -9,12 +9,12 @@ Report suspected vulnerabilities privately through GitHub's "Report a vulnerabil
 ## What is in place
 
 - Anonymous sessions behind a shared access code; every notebook, source, answer and output belongs to one session, and a foreign ID behaves like a missing one.
-- CSRF tokens and an Origin check on every state-changing request; a strict Content Security Policy without inline scripts; HSTS, `nosniff` and frame blocking.
-- Uploads are typed by content, limited in size, pages and total characters per notebook; PDF text is extracted in a time- and memory-limited child process.
+- CSRF tokens and an Origin check on every state-changing request; the first notebook is created at the checked login, and `GET /app` repairs a missing notebook only for the visitor's own navigation (fetch metadata), never for a link from another site. A strict Content Security Policy without inline scripts; HSTS, `nosniff`, frame blocking and `noindex`.
+- Uploads are typed by content, limited in size, pages and total characters per notebook, and in stored bytes per visitor and in total; nothing is accepted when the data volume runs low. PDF text is extracted in a time- and memory-limited child process.
 - Every quote in an answer is verified against the source text on the server; text from documents is treated as data, never as instructions.
-- Deletion removes the file, chunks, vectors and full-text index entries (SQLite `secure_delete` and FTS5 `secure-delete`) and every answer or output derived from them; sessions not seen for seven days are purged.
-- Logs hold IDs, sizes, durations and token counts, never document text, questions or answers.
-- Model calls go through OpenRouter with zero-data-retention routing and data collection denied on every request; per-visitor and daily call budgets.
+- Deletion removes the file, chunks, vectors and full-text index entries and every answer or output derived from them at once (SQLite `secure_delete` and FTS5 `secure-delete`). The bytes leave the database file at the next completed write-ahead-log checkpoint, after each deletion and in the hourly purge; a long read by another request can delay it. Sessions not seen for seven days are purged.
+- Logs hold event names, hashed session IDs, route templates, sizes, durations and token counts, never document text, questions, answers, URLs or client addresses (the app server's access log is off).
+- Model calls go through OpenRouter with zero-data-retention routing and data collection denied on every request, a price cap per million tokens, per-visitor and daily call budgets, and a daily budget in dollars that reserves each call's cost before it starts.
 - Dependencies are pinned with hashes, CI actions with commit SHAs; CI scans the history for secrets and the container image for fixable HIGH and CRITICAL vulnerabilities.
 - The container runs as a non-root user with a read-only file system, no Linux capabilities and no new privileges; only the reverse proxy publishes ports.
 
