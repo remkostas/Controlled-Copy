@@ -34,6 +34,26 @@ def test_tc_out_001_a_briefing_exports_with_every_quote(visitor):
     assert f'data-copy-markdown="{url}"' in page and f'href="{url}?download=true"' in page
 
 
+@pytest.mark.parametrize(("template_id", "title"), [("faq", "FAQ"), ("study-guide", "Study guide")])
+def test_tc_out_001_faq_and_study_guide_export_with_every_quote(visitor, template_id, title):
+    visitor.paste(
+        "Dock rules",
+        "Inbound trucks are unloaded at dock two in the morning. Damaged pallets are moved to the "
+        "blocked area and photographed. The shift lead confirms every recount before posting.",
+    )
+    body = visitor.client.post(
+        f"/notebooks/{visitor.notebook_id}/studio/{template_id}",
+        data={"source_ids": visitor.sources},
+        headers=visitor.json_headers(),
+    ).json()
+    text = visitor.client.get(f"/notebooks/{visitor.notebook_id}/outputs/{body['output_id']}.md").text
+    assert text.startswith(f"# {title}\n")
+    assert body["output"]["citations"]
+    for citation in body["output"]["citations"]:
+        quote = " ".join(citation["quote"].split())
+        assert f"[{citation['n']}] " in text and f'"{quote}"' in text
+
+
 def test_tc_out_001_download_names_the_file(visitor):
     url, _ = briefing_url(visitor)
     response = visitor.client.get(url + "?download=true")

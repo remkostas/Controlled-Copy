@@ -16,9 +16,27 @@ This repository is a portfolio project built in four days. It runs on synthetic 
 - **Studio:** a Briefing (overview, key points, important terms, open questions), an FAQ and a study guide (key concepts, review questions, glossary), in which every item carries a verified citation. Each output type is one JSON template, not a code path. Suggested questions under an empty chat.
 - **Deletion:** delete a source or a notebook and everything derived from it disappears: file, chunks, vectors, search index rows, and every answer or output generated from its passages.
 - **Resolution Card** (governed layer): describe a situation at the dock and get what the applicable approved instructions require, what information is missing and who decides. Every requirement needs a verified quote from a document that is approved, effective on the chosen date and valid for the chosen site and role. Drafts, obsolete or superseded revisions and other sites' documents are named as "not applied", with the reason. The status (supported, context incomplete, expert confirmation required, conflicting instructions) is chosen by fixed rules: they decide which documents apply, which statements may count and the order of the statuses. Whether two cited passages really conflict, or information is missing, is still the model's reading, and it only counts with verified quotes. Each visitor gets their own copy of a curated "Inbound Operations" workspace and can reset it.
-- **Models** (model picker layer): choose which evaluated model writes answers, Briefings and cards. Every answer shows the model that wrote it, and "(fallback)" when the fallback model stepped in.
-- **Export:** copy any Briefing or Resolution Card as Markdown, or download it, with every verified quote listed under its citation number.
+- **Models** (model picker layer): choose which evaluated model writes answers, Studio outputs and cards. Every answer shows the model that wrote it, and "(fallback)" when the fallback model stepped in.
+- **Export:** copy any Studio output (Briefing, FAQ, study guide) or Resolution Card as Markdown, or download it, with every verified quote listed under its citation number.
 - **Document control:** type a document ID, revision, status, effective date, site and roles when you add a source, instead of writing YAML front matter. The app marks this metadata as asserted by the uploader.
+
+## Compared with NotebookLM
+
+| NotebookLM | Here | Why |
+| :--- | :--- | :--- |
+| Notebooks of your own sources; pick which sources a question uses | Yes: up to 5 notebooks of 20 sources per visitor | The core interaction |
+| Sources: PDF, text, Markdown, pasted text | Yes | |
+| Sources: web pages, YouTube, Google Docs and Slides, audio files | No | Each adds a parser or provider surface (web import means server-side requests to arbitrary addresses) without serving the core promise |
+| Cited answers; a citation opens the passage | Yes, and the server checks every quote against its passage before you see it | Citations are the promise |
+| Follow-up questions | Yes; the app shows the standalone question it searched for | |
+| Saying when the sources do not cover a question | Yes: before any model call when nothing relevant is found, and when no quote verifies | |
+| Answers stream while they are written | No: an answer appears once its quotes are verified | Streaming would show unverified text first |
+| Suggested questions | Yes | |
+| Studio reports: briefing doc, FAQ, study guide | Yes, every item cited; copy or download as Markdown | Each report is one JSON template |
+| Audio and Video Overviews, mind maps, quizzes, flashcards | No | Audio and video add a speech provider and one more processor for document content; the learning tools sit outside the controlled-documents use case |
+| Notes, sharing, accounts | No: anonymous sessions behind an access code, deleted seven days after the last visit | A demo for strangers; real sign-in is the first item under question 10 |
+| Languages | English interface; answers, Studio outputs and cards follow the language of the question, sources or situation | Quotes stay in the language of their source |
+| Not in NotebookLM | Document control (revision, status, effective date, site, role), the Resolution Card, a model picker | The use case: which instruction applies, and who decides |
 
 ## The ten questions
 
@@ -112,7 +130,7 @@ The evaluation against the real model is manual: `python eval/run_eval.py generi
 
 ## Limitations
 
-A quote can exist in a passage and still not support the statement next to it; the app verifies existence, not support. Prompt injection inside a document can still bias wording within that notebook, although it cannot produce a citation the server cannot verify. There is no OCR, so scanned PDFs show a warning and contribute no text. The interface is in English; answers and Resolution Cards follow the language of the question or situation (German was checked), and quotes stay in the language of their source.
+A quote can exist in a passage and still not support the statement next to it; the app verifies existence, not support. Prompt injection inside a document can still bias wording within that notebook, although it cannot produce a citation the server cannot verify. There is no OCR, so scanned PDFs show a warning and contribute no text. The interface is in English; answers, Studio outputs and Resolution Cards follow the language of the question, sources or situation (German was checked), and quotes stay in the language of their source.
 
 ## How AI tools were used
 
