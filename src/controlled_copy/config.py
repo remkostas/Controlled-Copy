@@ -75,6 +75,9 @@ class Settings(BaseSettings):
     # Workspace Resets per visitor (governed layer): each one rewrites the whole copy.
     resets_per_visitor_hour: int = 10
     provider_timeout_seconds: float = Field(default=45.0, gt=0)
+    # Highest endpoint price a generation request may route to, USD per million tokens.
+    max_price_prompt_per_million: float = Field(default=3.0, gt=0)
+    max_price_completion_per_million: float = Field(default=15.0, gt=0)
     pdf_parse_timeout_seconds: float = Field(default=20.0, gt=0)
     pdf_parse_memory_mb: int = Field(default=1024, gt=0)
 
