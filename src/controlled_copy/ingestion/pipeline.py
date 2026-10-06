@@ -124,12 +124,11 @@ def embed_texts(services: Services, texts: list[str], kind: str = "embed") -> li
     # Each batch reserves the most it can cost: every byte at the embedding price cap, for the
     # first request and each retry.
     price = settings.max_price_embedding_per_million
-    reserves = [
-        worst_case_usd(sum(len(t.encode()) for t in part), price, attempts=EMBED_ATTEMPTS) for part in batches
-    ]
+    per_request = [worst_case_usd(sum(len(t.encode()) for t in part), price) for part in batches]
+    reserves = [one * EMBED_ATTEMPTS for one in per_request]
     services.budget.check(services.session_id, calls=len(batches), reserve_usd=sum(reserves))
     vectors: list[list[float]] = []
-    for part, reserve in zip(batches, reserves, strict=True):
+    for part, reserve, one in zip(batches, reserves, per_request, strict=True):
         call_id = services.budget.consume(services.session_id, kind, reserve_usd=reserve)
         try:
             result = call_with_deadline(
@@ -137,10 +136,14 @@ def embed_texts(services: Services, texts: list[str], kind: str = "embed") -> li
                 settings.provider_timeout_seconds,
             )
         except ProviderError as exc:
-            services.budget.settle(call_id, exc.cost_usd)
+            services.budget.settle(call_id, exc.cost_usd)  # no reported cost: the reservation stays
             raise
-        # A reported price replaces the reservation; without one the reservation stays.
-        services.budget.settle(call_id, result.cost_usd)
+        # The answering request's reported cost replaces the reservation. Earlier requests of a
+        # retried batch lost their replies but may still have been billed, so each keeps its
+        # worst case; without a reported cost the whole reservation stays (re-check RCK2-02).
+        if result.cost_usd is not None:
+            earlier = max(0, min(result.requests, EMBED_ATTEMPTS) - 1)
+            services.budget.settle(call_id, result.cost_usd + earlier * one)
         if len(result.vectors) != len(part):
             raise ProviderError("embedding count mismatch")
         vectors.extend(result.vectors)

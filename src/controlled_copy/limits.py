@@ -1,10 +1,12 @@
 """Rate limits and the model-call budget.
 
 - Access-code attempts: counted per client IP in memory (no IPs on disk).
-- Model calls: every provider call is recorded in the database (session ID,
-  kind, time, no content). A visitor may make `model_calls_per_visitor_hour`
-  calls per hour; all visitors together `model_calls_per_day` per UTC day, after
-  which the app is read-only until midnight UTC.
+- Model calls: every model call is recorded in the database (session ID, kind,
+  time, cost, no content): one generation attempt, or one embedding batch, which
+  may send up to three requests when the first fail and whose cost covers all of
+  them. A visitor may make `model_calls_per_visitor_hour` calls per hour; all
+  visitors together `model_calls_per_day` per UTC day, after which the app is
+  read-only until midnight UTC.
 """
 
 from __future__ import annotations

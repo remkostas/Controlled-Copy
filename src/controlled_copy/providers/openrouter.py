@@ -89,6 +89,13 @@ def _int(value: Any) -> int:
     return int(value) if _finite(value) else 0
 
 
+def _cost(usage: dict[str, Any]) -> float | None:
+    """The reported cost in USD, or None when it is missing or not a sensible amount (a
+    negative cost would lower the day's total), so the call keeps its reservation."""
+    cost = usage.get("cost")
+    return float(cost) if _finite(cost) and cost >= 0 else None
+
+
 class OpenRouterProvider:
     name = "openrouter"
 
@@ -112,14 +119,15 @@ class OpenRouterProvider:
     def close(self) -> None:
         self._client.close()
 
-    def _post_with_retry(self, path: str, body: dict[str, Any], retries: int) -> dict[str, Any]:
+    def _post_with_retry(self, path: str, body: dict[str, Any], retries: int) -> tuple[dict[str, Any], int]:
         """Retry transient failures (rate limits, 5xx, network) with a short backoff, but never
-        beyond the caller's time limit: a retry that could not finish in time is not started."""
+        beyond the caller's time limit: a retry that could not finish in time is not started.
+        Returns the response and how many requests were sent."""
         started = time.monotonic()
         for attempt in range(retries + 1):
             remaining = self.timeout - (time.monotonic() - started)
             try:
-                return self._post(path, body, timeout=max(1.0, remaining))
+                return self._post(path, body, timeout=max(1.0, remaining)), attempt + 1
             except ProviderError as exc:
                 if not isinstance(exc, ProviderTransient) or attempt == retries:
                     raise
@@ -164,7 +172,8 @@ class OpenRouterProvider:
 
     def embed(self, texts: list[str], *, model: str) -> EmbedResult:
         body = build_embedding_request(texts, model, self.max_price_embedding)
-        data = _envelope(self._post_with_retry("/embeddings", body, retries=EMBED_ATTEMPTS - 1))
+        reply, requests = self._post_with_retry("/embeddings", body, retries=EMBED_ATTEMPTS - 1)
+        data = _envelope(reply)
         items = data.get("data")
         if not isinstance(items, list) or len(items) != len(texts):
             raise ProviderBadOutput("embedding response has the wrong number of vectors")
@@ -178,12 +187,12 @@ class OpenRouterProvider:
                 raise ProviderBadOutput("embedding response has a malformed vector")
             vectors.append([float(v) for v in vector])
         usage = _usage(data)
-        cost = usage.get("cost")
         return EmbedResult(
             vectors=vectors,
             model=str(data.get("model") or model),
             input_tokens=_int(usage.get("prompt_tokens") or usage.get("total_tokens")),
-            cost_usd=float(cost) if _finite(cost) else None,
+            cost_usd=_cost(usage),
+            requests=requests,
         )
 
     def chat_json(
@@ -202,8 +211,7 @@ class OpenRouterProvider:
         )
         data = _envelope(data)
         usage = _usage(data)
-        cost = usage.get("cost")
-        cost_usd = float(cost) if _finite(cost) else None
+        cost_usd = _cost(usage)
         choices = data.get("choices")
         first = choices[0] if isinstance(choices, list) and choices else None
         message = first.get("message") if isinstance(first, dict) else None

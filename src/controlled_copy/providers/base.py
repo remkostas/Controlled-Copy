@@ -54,7 +54,10 @@ class EmbedResult:
     model: str
     input_tokens: int = 0
     extra: dict[str, Any] = field(default_factory=dict)
-    cost_usd: float | None = None
+    cost_usd: float | None = None  # what the provider reported for the request that answered
+    # How many requests the batch took (first try plus retries). The earlier ones may have been
+    # billed although their replies were lost, so the budget keeps their worst case.
+    requests: int = 1
 
 
 class ModelProvider(Protocol):
