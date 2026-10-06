@@ -1,0 +1,146 @@
+{
+  "model": "mistralai/mistral-small-2603",
+  "set": "governed",
+  "results": [
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers GR-299"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Stop the goods receipt process immediately when the WMS shows an error code not listed in GUIDE-WMS-003.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not bypass the WMS error by posting the goods receipt against a different purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not override the error with a manual posting.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "recommendation",
+          "text": "Contact the WMS key user to resolve the unlisted error code GR-299.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1",
+            "MATRIX-ESC-001 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Escalate to the WMS key user if the error code GR-299 is not resolved within 1 hour.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "recommendation",
+        "requirement"
+      ],
+      "items": 5,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "mistralai/mistral-small-2603",
+      "reasons": [],
+      "case_id": "E-03",
+      "title": "Unknown code GR-299",
+      "passed": true,
+      "seconds": 4.1
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "For batch-managed material, the batch number from the supplier label must be recorded before the goods receipt is posted.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "missing_evidence",
+          "text": "If no batch number is visible, do not post the goods receipt. Move the handling unit to the blocked area B-02 and inform the shift lead.",
+          "cites": [],
+          "downgraded": "no verified quote in an applicable approved document"
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "The supplier label must match the delivery note in material number, quantity and batch or serial number.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the label and the delivery note do not match, do not post the goods receipt; move the handling unit to the blocked area B-02 and inform the shift lead.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "The shift lead contacts the supplier for the batch number.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "STD-LAB-002 rev 5",
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 5,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 1,
+      "model": "mistralai/mistral-small-2603",
+      "reasons": [],
+      "case_id": "E-04",
+      "title": "Missing batch number",
+      "passed": true,
+      "seconds": 2.9
+    }
+  ]
+}

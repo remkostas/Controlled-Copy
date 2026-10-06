@@ -276,10 +276,9 @@ def write_report(
 ) -> Path:
     stamp = datetime.now(UTC).strftime("%Y-%m-%d_%H%M%S")
     slug = model.replace("/", "_")
-    base = EVAL / "results" / f"{stamp}-{slug}-{set_name}{'-subset' if subset else ''}"
-    base.with_suffix(".json").write_text(
-        json.dumps({"model": model, "set": set_name, "results": results}, indent=2) + "\n"
-    )
+    name = f"{stamp}-{slug}-{set_name}{'-subset' if subset else ''}"
+    json_path, md_path = EVAL / "results" / f"{name}.json", EVAL / "results" / f"{name}.md"
+    json_path.write_text(json.dumps({"model": model, "set": set_name, "results": results}, indent=2) + "\n")
     passed = sum(1 for r in results if r["passed"])
     lines = [
         f"# Evaluation: {set_name} set",
@@ -312,8 +311,8 @@ def write_report(
             )
     if extra:
         lines += ["", extra]
-    base.with_suffix(".md").write_text("\n".join(lines) + "\n")
-    return base.with_suffix(".md")
+    md_path.write_text("\n".join(lines) + "\n")
+    return md_path
 
 
 def main() -> int:

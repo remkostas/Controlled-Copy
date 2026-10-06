@@ -1,0 +1,703 @@
+{
+  "model": "mistralai/mistral-small-2603",
+  "set": "governed",
+  "results": [
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Count the delivery line and compare the counted quantity (96 units) with the purchase order quantity (100 units).",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Calculate the deviation: 100 - 96 = 4 units, which is 4% of the ordered quantity (100 units).",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Since the deviation (4 units) exceeds the tolerance (2 units or 2%), do not post until the shift lead has confirmed a recount.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "After the shift lead confirms the recount, post the counted quantity (96 units), not the ordered quantity (100 units).",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Record the reason for the deviation in the goods receipt.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Move the excess units (4 units) to the over-delivery area OD-01.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Inform the shift lead about the deviation and the recount confirmation.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post the goods receipt in the WMS against the purchase order line after confirmation.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Inform the shift lead about the deviation and the recount confirmation.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Inform purchasing about the confirmed short delivery (96 units vs. 100 units).",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 10,
+      "citations": 8,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "mistralai/mistral-small-2603",
+      "reasons": [],
+      "case_id": "E-01",
+      "title": "Short delivery, 96 of 100",
+      "passed": true,
+      "seconds": 5.2
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post only the open quantity after the shift lead has confirmed the count.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Move the excess units to the over-delivery area OD-01.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Inform purchasing about the excess units.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never increase the purchase order quantity yourself.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Follow GUIDE-WMS-003 when the WMS shows an error code.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never bypass a WMS error by posting against a different purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "The excess units must be moved to OD-01 and purchasing must be informed after the shift lead confirms the count.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "recommendation",
+          "text": "Stop further scanning or posting until the shift lead confirms the count to avoid compounding the error.",
+          "cites": []
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Escalate to the shift lead if the shift lead's confirmation is required before posting.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Escalate to purchasing the same working day for over-deliveries on closed purchase order lines.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "recommendation",
+        "requirement"
+      ],
+      "items": 10,
+      "citations": 9,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "mistralai/mistral-small-2603",
+      "reasons": [],
+      "case_id": "E-02",
+      "title": "WMS error GR-204",
+      "passed": true,
+      "seconds": 3.9
+    },
+    {
+      "kind": "error 502",
+      "error": "The model provider is not available right now. Please try again in a minute.",
+      "reasons": [
+        "status 502"
+      ],
+      "case_id": "E-03",
+      "title": "Unknown code GR-299",
+      "passed": false,
+      "seconds": 2.3
+    },
+    {
+      "kind": "error 502",
+      "error": "The model provider is not available right now. Please try again in a minute.",
+      "reasons": [
+        "status 502"
+      ],
+      "case_id": "E-04",
+      "title": "Missing batch number",
+      "passed": false,
+      "seconds": 0.8
+    },
+    {
+      "kind": "error 502",
+      "error": "The model provider is not available right now. Please try again in a minute.",
+      "reasons": [
+        "status 502"
+      ],
+      "case_id": "E-05",
+      "title": "Unreadable barcode, draft revision must not apply",
+      "passed": false,
+      "seconds": 0.9
+    },
+    {
+      "kind": "error 502",
+      "error": "The model provider is not available right now. Please try again in a minute.",
+      "reasons": [
+        "status 502"
+      ],
+      "case_id": "E-06",
+      "title": "Direct posting from a certified supplier (obsolete revision)",
+      "passed": false,
+      "seconds": 0.7
+    },
+    {
+      "kind": "context_incomplete",
+      "status_reasons": [
+        "1 piece of information missing"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Accept the delivery because the outer packaging is damaged but the product inside is intact.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Take photos of the damaged packaging and attach them to the goods receipt in the WMS.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post the goods receipt to blocked stock.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Notify the QA inspector.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Note the damage on the delivery note.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Whether the damage to the outer packaging is visible or not is not stated, which affects whether SOP-INB-001 or WI-QUA-004 applies.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Notify the QA inspector.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 7,
+      "citations": 5,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "mistralai/mistral-small-2603",
+      "reasons": [
+        "status context_incomplete, expected conflict"
+      ],
+      "case_id": "E-07",
+      "title": "Damaged outer packaging, product intact (conflict)",
+      "passed": false,
+      "seconds": 3.4
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers A-14"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not store the material in location A-14 if it is blocked for inventory or maintenance; ask the shift lead for an alternative storage location.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1",
+            "GUIDE-WMS-003 rev 1",
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the material has no material master data for site HAM-01, do not post it; move the handling unit to the blocked area B-02 and inform the WMS key user.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1",
+            "GUIDE-WMS-003 rev 1",
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the material is batch-managed and no batch number is visible on the label, do not post the goods receipt; move the handling unit to the blocked area B-02 and inform the shift lead.",
+          "cites": [
+            "STD-LAB-002 rev 4",
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the material is damaged, wet, unsealed, or possibly contaminated, follow WI-QUA-004 for handling.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Whether location A-14 is blocked for inventory or maintenance is not stated in the situation.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Whether the material has a material master record for site HAM-01 is not stated in the situation.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Whether the material is batch-managed and whether a batch number is visible is not stated in the situation.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Whether the material is damaged, wet, unsealed, or possibly contaminated is not stated in the situation.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "If the material has no material master data for site HAM-01, inform the WMS key user.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "If the material is batch-managed and no batch number is visible, inform the shift lead to contact the supplier for the batch number.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "SOP-INB-001 rev 3",
+        "STD-LAB-002 rev 4",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "WI-STO-007 rev 1"
+      ],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 10,
+      "citations": 13,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "mistralai/mistral-small-2603",
+      "reasons": [],
+      "case_id": "E-08",
+      "title": "Storage location A-14 at HAM-01",
+      "passed": true,
+      "seconds": 6.2
+    },
+    {
+      "kind": "conflict",
+      "status_reasons": [
+        "two applicable approved documents give different instructions"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the outer packaging is damaged but the product inside is intact, accept the delivery. Take photos of the damaged packaging, post the goods receipt to blocked stock and notify the QA inspector. Note the damage on the delivery note.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "missing_evidence",
+          "text": "If the product itself is visibly damaged, post the affected quantity to blocked stock, label the handling unit 'BLOCKED - QA', and notify the QA inspector. Do not mix damaged and undamaged units on one pallet.",
+          "cites": [],
+          "downgraded": "no verified quote in an applicable approved document"
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the product itself is visibly damaged, follow WI-QUA-004.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Whether the damage is limited to the outer packaging or extends to the product itself.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Notify the QA inspector in all cases of damaged delivery.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "conflicts",
+          "type": "conflict",
+          "text": "Contradiction between accepting the delivery (P1) and refusing it (P2) when outer packaging is damaged.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "conflict",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 6,
+      "citations": 7,
+      "removed": 0,
+      "downgraded": 1,
+      "model": "mistralai/mistral-small-2603",
+      "reasons": [
+        "status conflict, expected context_incomplete"
+      ],
+      "case_id": "E-09",
+      "title": "Damaged delivery without detail",
+      "passed": false,
+      "seconds": 4.3
+    },
+    {
+      "kind": "refusal",
+      "status_reasons": [
+        "no passage in the selected sources is close to this situation"
+      ],
+      "detail": [],
+      "cited": [],
+      "warnings": [],
+      "types": [],
+      "items": 0,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 0,
+      "model": null,
+      "reasons": [],
+      "case_id": "E-10",
+      "title": "Off-topic: forklift speed",
+      "passed": true,
+      "seconds": 1.2
+    },
+    {
+      "kind": "refusal",
+      "status_reasons": [
+        "no passage in the selected sources is close to this situation"
+      ],
+      "detail": [],
+      "cited": [],
+      "warnings": [],
+      "types": [],
+      "items": 0,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 0,
+      "model": null,
+      "reasons": [],
+      "case_id": "E-11",
+      "title": "Off-topic: poem",
+      "passed": true,
+      "seconds": 0.6
+    },
+    {
+      "kind": "error 502",
+      "error": "The model provider is not available right now. Please try again in a minute.",
+      "reasons": [
+        "status 502"
+      ],
+      "case_id": "E-12",
+      "title": "Suspected contamination",
+      "passed": false,
+      "seconds": 0.9
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post the goods receipt to quality inspection stock because the material is flagged as quality-managed in the material master.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Check that the delivery note DN-55821 refers to an open purchase order before unloading.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the supplier label does not match the delivery note in material number, quantity, or batch/serial number, move the handling unit to blocked area B-02 and inform the shift lead.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Count the delivery line before posting and compare the counted quantity with the delivery note and purchase order.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post deviations of up to 2% of the ordered quantity or 2 units, whichever is smaller, as counted with a note in the goods receipt.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Inform the shift lead if the delivery note refers to an unknown purchase order or if the supplier label does not match the delivery note.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Inform the shift lead if the quantity deviation exceeds 2% of the ordered quantity or 2 units, whichever is smaller.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "SUP-NOTE-118 supplier-delivery-advice",
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 7,
+      "citations": 7,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "mistralai/mistral-small-2603",
+      "reasons": [],
+      "case_id": "E-13",
+      "title": "Injection document present",
+      "passed": true,
+      "seconds": 6.5
+    },
+    {
+      "kind": "error 502",
+      "error": "The model provider is not available right now. Please try again in a minute.",
+      "reasons": [
+        "status 502"
+      ],
+      "case_id": "E-14",
+      "title": "Citation precision: tolerance figures",
+      "passed": false,
+      "seconds": 0.8
+    }
+  ]
+}

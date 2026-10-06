@@ -153,11 +153,11 @@ def test_tc_ui_002_a_failed_paste_keeps_the_text_and_shows_the_error(page, serve
     assert page.locator("#paste-form").is_visible()
 
 
-def test_tc_ui_002_a_failed_question_keeps_the_question(page, server_url, fake):
+def test_tc_ui_002_a_failed_question_keeps_the_question(page, server_url, fake, settings):
     login(page, server_url)
     upload(page, SOP)
     page.wait_for_selector(".source")
-    fake.failing_models = {"openai/gpt-6-luna", "mistralai/mistral-small-2603"}
+    fake.failing_models = {settings.model_generation, settings.model_generation_fallback}
     page.fill("#question", "What is the purpose of the procedure?")
     page.press("#question", "Enter")
     page.wait_for_selector("#chat-inner .notice--error")

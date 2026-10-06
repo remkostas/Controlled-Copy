@@ -49,7 +49,7 @@ browser ── htmx ──> FastAPI (session cookie, CSRF token, strict CSP)
                      │             evidence floor
                      ├─ answering: one structured model call, quote verification, numbered citations
                      └─ OpenRouter: baai/bge-m3 embeddings; openai/gpt-6-luna with
-                                    mistralai/mistral-small-2603 as fallback
+                                    google/gemini-3.5-flash-lite as fallback
 ```
 
 More detail: [`docs/architecture.md`](docs/architecture.md). The governed layer plugs in through one registry behind `FEATURE_GOVERNANCE`; the core never imports it, and CI runs the whole core suite with the layer switched off.
