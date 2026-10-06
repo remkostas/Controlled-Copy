@@ -21,8 +21,6 @@ from controlled_copy.web.routes import json_or_redirect, notice, owned_notebook,
 
 router = APIRouter()
 
-RESETS_PER_HOUR = 10  # each Reset rewrites the whole copy; no model calls, but disk and locks
-
 
 def default_context(rows: list, site: str, role: str, as_of: str) -> rules.Context:
     """The context the visitor chose. A chosen site or role is never replaced, so documents
@@ -74,7 +72,7 @@ def reset(request: Request, services: WriteDep) -> Response:
     sid = services.sid
     limiter = getattr(request.app.state, "reset_limiter", None)
     if limiter is None:
-        limiter = request.app.state.reset_limiter = AccessLimiter(RESETS_PER_HOUR)
+        limiter = request.app.state.reset_limiter = AccessLimiter(services.settings.resets_per_visitor_hour)
     if limiter.blocked(sid):
         return notice(
             request, "The workspace was reset often in the last hour. Try again later.", 429, "#toast"

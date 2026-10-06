@@ -54,6 +54,7 @@ def eval_settings(**overrides: Any) -> Settings:
         "data_dir": Path(tempfile.mkdtemp(prefix="cc-eval-")),
         "model_calls_per_visitor_hour": 10_000,
         "model_calls_per_day": 100_000,
+        "resets_per_visitor_hour": 10_000,  # one Reset per case
     }
     update.update(overrides)
     return base.model_copy(update=update)

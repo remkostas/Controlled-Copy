@@ -237,14 +237,23 @@ def test_seeding_that_fails_halfway_leaves_no_partial_workspace(services, monkey
     assert seed.workspace_of(services, sid) is None, "a retry seeds a complete copy"
 
 
-def test_reset_is_limited_per_visitor(workspace, monkeypatch):
-    from controlled_copy.governance import routes
+def test_reset_is_limited_per_visitor(settings):
+    from fastapi.testclient import TestClient
 
-    monkeypatch.setattr(routes, "RESETS_PER_HOUR", 2)
-    visitor = workspace.visitor
-    codes = [
-        visitor.client.post("/workspace/reset", headers=visitor.json_headers()).status_code for _ in range(3)
-    ]
+    from controlled_copy.app import create_app
+    from controlled_copy.providers.fake import FakeProvider
+    from tests.conftest import Visitor
+    from tests.governance.conftest import Workspace
+
+    app = create_app(
+        settings.model_copy(update={"resets_per_visitor_hour": 2}), FakeProvider(), run_purge=False
+    )
+    with TestClient(app) as client:
+        visitor = Visitor(client).login()
+        Workspace(visitor)
+        codes = [
+            client.post("/workspace/reset", headers=visitor.json_headers()).status_code for _ in range(3)
+        ]
     assert codes == [200, 200, 429]
 
 
