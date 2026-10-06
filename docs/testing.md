@@ -101,7 +101,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 
 | Req | Requirement | TC | Type | Input | Expected |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| FR-STU-01 | Briefing with sections and verified citations | TC-STU-001 | integration | Notebook with two sources; fake briefing | All template sections present; every citation verified |
+| FR-STU-01 | Studio outputs (Briefing, FAQ, study guide) with sections and verified citations | TC-STU-001 | integration | Notebook with two sources; fake briefing | All template sections present; every citation verified |
 | FR-STU-02 | Three suggested questions, cached | TC-STU-002 | integration | Add a source; reload twice | Three questions; generated once per source change |
 | FR-STU-03 | Templates are data | TC-STU-003 | unit | Load the template files | Validate against the template schema; no template-specific code path |
 

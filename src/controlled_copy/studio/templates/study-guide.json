@@ -1,0 +1,14 @@
+{
+  "id": "study-guide",
+  "title": "Study guide",
+  "description": "Key concepts, review questions with answers, and a glossary",
+  "icon": "book-open",
+  "system": "You write a study guide about the user's sources for someone who has to learn them, using only the passages provided. Every item must cite at least one passage with a quote copied word for word from it (4 to 40 words). Do not add facts that are not in the passages. Keep items short and concrete. Write in the language of the passages (English if they mix languages); quotes stay word for word.",
+  "statement_types": null,
+  "passage_budget_chars": 14000,
+  "sections": [
+    {"key": "key_concepts", "title": "Key concepts", "instruction": "The ideas, rules or steps a learner must understand, one per item.", "max_items": 5},
+    {"key": "review_questions", "title": "Review questions", "instruction": "Short-answer questions that check understanding, each with its answer in the same item, written as 'Question? Answer.'", "max_items": 6},
+    {"key": "glossary", "title": "Glossary", "instruction": "Terms, roles or codes a learner must know, each as 'term: meaning' taken from the passages.", "max_items": 6}
+  ]
+}
