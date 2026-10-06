@@ -19,7 +19,7 @@ Each run writes a `.json` file (every case, every check) and a `.md` summary. A 
 | `2026-10-06_1316-openai_gpt-6-luna-generic` | `d82528a`, clean | `26cfa0915630d06d` | 6 of 6 | Current scorer: terms counted only in the statements; statements and quotes kept |
 | `2026-10-06_1302-openai_gpt-6-luna-generic` | `3d4c88e`, clean | `26cfa0915630d06d` | 6 of 6 | Scored before the scorer stopped counting terms that appear only in quotes (EVAL-01) |
 
-Second re-check of the full-audit fixes (2026-10-06, evening): the action checks were revised again (a negation counts only in the action's own part of the sentence; more words for the same actions). Re-scoring the stored statements of all 255 cards in this folder with the revised checks changes no verdict, so every number above also stands under the current checks.
+Second re-check of the full-audit fixes (2026-10-06, evening): the action checks were revised again (a negation counts only in the action's own part of the sentence; more words for the same actions). Re-scoring the stored statements of all 545 cards in this folder with the revised checks changes no verdict, so every number above also stands under the current checks.
 
 ## Exploratory (code version not recorded)
 
