@@ -24,7 +24,7 @@ from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError
 from controlled_copy.retrieval.search import Passage, RetrievalResult, embed_query, retrieve
 from controlled_copy.services import Services
-from controlled_copy.storage.repo import OwnedNotebook
+from controlled_copy.storage.repo import TOMBSTONE, OwnedNotebook
 from controlled_copy.studio.actions import StoredOutput, StudioError
 from controlled_copy.studio.engine import StudioTemplate, load_template, run_template
 
@@ -363,5 +363,7 @@ def _store(
 ) -> StoredOutput:
     # Lineage: every selected source (they all fed the split, the warnings or the prompt).
     lineage = {row["id"] for row in rows} | {c["source_id"] for c in citations} | set(context_sources)
-    output_id = services.repo.add_output(notebook, TEMPLATE_ID, card.situation.strip(), output, lineage, "ok")
-    return StoredOutput(output_id, output)
+    stored = services.repo.add_output(notebook, TEMPLATE_ID, card.situation.strip(), output, lineage, "ok")
+    if stored.status == TOMBSTONE:
+        return StoredOutput(stored.id, {"kind": "tombstone"})  # a source was deleted meanwhile
+    return StoredOutput(stored.id, output)

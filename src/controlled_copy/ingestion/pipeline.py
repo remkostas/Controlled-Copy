@@ -25,7 +25,7 @@ from controlled_copy.ingestion.validate import IngestError, decode_text, detect_
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError, call_with_deadline
 from controlled_copy.services import Services
-from controlled_copy.storage.repo import NewSource, OwnedNotebook
+from controlled_copy.storage.repo import NewSource, OwnedNotebook, characters_full
 
 MIN_PAGE_CHARS = 20
 KIND_EXTENSION = {"pdf": ".pdf", "md": ".md", "txt": ".txt"}
@@ -127,6 +127,9 @@ def embed_texts(services: Services, texts: list[str], kind: str = "embed") -> li
 
 def store(services: Services, notebook: OwnedNotebook, extracted: Extracted, raw: bytes | None) -> str:
     started = time.monotonic()
+    char_limit = services.settings.max_notebook_chars
+    if services.repo.count_chars(notebook) + len(extracted.text) > char_limit:
+        raise characters_full(char_limit)  # before any embedding call; checked again on insert
     vectors = embed_texts(services, [embedding_input(extracted.title, c) for c in extracted.chunks])
     file_name: str | None = None
     uploads = services.settings.uploads_dir
@@ -156,6 +159,7 @@ def store(services: Services, notebook: OwnedNotebook, extracted: Extracted, raw
                 vector_model=services.settings.model_embedding,
             ),
             limit=services.settings.max_sources_per_notebook,
+            char_limit=char_limit,
         )
     except BaseException:
         if file_name:

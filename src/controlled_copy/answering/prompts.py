@@ -161,6 +161,8 @@ REWRITE_SCHEMA: dict[str, Any] = {
 
 SUGGEST_SCHEMA: dict[str, Any] = {
     "type": "object",
+    # Three questions are enforced server-side (SuggestOut), not here: not every provider
+    # accepts array-size constraints in strict structured output.
     "properties": {"questions": {"type": "array", "items": {"type": "string"}}},
     "required": ["questions"],
     "additionalProperties": False,

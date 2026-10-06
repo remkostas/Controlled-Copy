@@ -73,7 +73,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | FR-RET-01 | Hybrid search with rank fusion | TC-RET-001 | unit | Ranked lists from full-text and vector search | Fused order matches the reciprocal-rank formula |
 | FR-RET-02 | Exact terms found by full-text search | TC-RET-002 | integration | Question containing a code that appears once | That chunk is in the top results |
-| FR-RET-03 | Evidence floor refuses before any model call | TC-RET-003 | integration | Off-topic question | Refusal; the fake model was not called |
+| FR-RET-03 | Evidence floor refuses before answer generation (the question itself is embedded) | TC-RET-003 | integration | Off-topic question | Refusal; no generation call |
 
 ### Answers (stage 1)
 

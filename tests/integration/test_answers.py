@@ -32,12 +32,14 @@ def test_tc_ret_002_exact_code_is_found_by_full_text_search(warehouse, services)
     assert result.fts_hits >= 1
 
 
-def test_tc_ret_003_evidence_floor_refuses_before_any_model_call(warehouse, fake):
+def test_tc_ret_003_evidence_floor_refuses_before_answer_generation(warehouse, fake):
+    """Only the question is embedded (to compare it with the passages); no generation call."""
     response = warehouse.ask("What is the forklift speed limit in the yard?")
     answer = response.json()["answer"]
     assert answer["kind"] == "refusal"
     assert answer["searched_sources"] == 4
     assert fake.chat_calls == [], "the generation model must not be called below the floor"
+    assert fake.embed_calls >= 1, "the question itself is embedded"
 
 
 def test_tc_ans_001_verified_answer_renders_statements_with_citation_chips(warehouse, fake):

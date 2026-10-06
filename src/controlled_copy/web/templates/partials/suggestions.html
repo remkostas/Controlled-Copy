@@ -1,5 +1,5 @@
 {% if pending %}
-<div class="suggestions" id="suggestions" hx-get="/notebooks/{{ nb.id }}/suggestions" hx-trigger="load" hx-swap="outerHTML">
+<div class="suggestions" id="suggestions" hx-post="/notebooks/{{ nb.id }}/suggestions" hx-trigger="load" hx-swap="outerHTML">
   <p class="label">Suggested questions</p>
   <div class="suggestions__list" aria-busy="true"><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span></div>
 </div>

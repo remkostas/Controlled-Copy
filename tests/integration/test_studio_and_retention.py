@@ -66,15 +66,15 @@ def test_tc_stu_001_briefing_drops_items_with_failed_quotes(visitor, fake):
 def test_tc_stu_002_three_suggested_questions_generated_once_per_source_change(visitor, fake):
     visitor.paste("Doc", "Pallets are wrapped in foil before storage. Labels face the aisle.")
     url = f"/notebooks/{visitor.notebook_id}/suggestions"
-    first = visitor.client.get(url)
-    second = visitor.client.get(url)
+    first = visitor.client.post(url, headers=visitor.headers)
+    second = visitor.client.post(url, headers=visitor.headers)
     assert first.status_code == second.status_code == 200
     assert first.text.count('class="suggestion"') == 3
     assert first.text == second.text
     assert len([c for c in fake.chat_calls if c.schema_name == "suggestions"]) == 1
     visitor.paste("Doc 2", "Forklifts are charged overnight in bay seven.")
-    visitor.client.get(url)
-    visitor.client.get(url)
+    visitor.client.post(url, headers=visitor.headers)
+    visitor.client.post(url, headers=visitor.headers)
     assert len([c for c in fake.chat_calls if c.schema_name == "suggestions"]) == 2
 
 

@@ -6,7 +6,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from controlled_copy.answering import prompts
 from controlled_copy.answering.generate import generate
@@ -15,7 +15,7 @@ from controlled_copy.limits import DAILY_LIMIT_MESSAGE
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError
 from controlled_copy.services import Services
-from controlled_copy.storage.repo import OwnedNotebook
+from controlled_copy.storage.repo import TOMBSTONE, OwnedNotebook
 from controlled_copy.studio.engine import StudioTemplate, run_template, select_overview_passages
 
 
@@ -43,22 +43,41 @@ def run_overview_template(
     output = result.output
     output["source_count"] = len(source_ids)
     # Every selected source fed the prompt, so deleting any of them removes this output.
-    output_id = services.repo.add_output(notebook, template.id, None, output, source_ids, "ok")
+    stored = services.repo.add_output(notebook, template.id, None, output, source_ids, "ok")
+    output_id = stored.id
+    if stored.status == TOMBSTONE:
+        output = {"kind": "tombstone"}  # a source was deleted while it was generated
     log_event(
         "studio_output",
         session=services.session_id,
         notebook=notebook.id,
         output=output_id,
         template=template.id,
-        items=sum(len(s["items"]) for s in output["sections"]),
-        removed=output["removed"],
+        items=sum(len(s["items"]) for s in output.get("sections", [])),
+        removed=output.get("removed", 0),
         model=result.model,
     )
     return StoredOutput(output_id, output)
 
 
 class SuggestOut(BaseModel):
+    """Exactly three distinct, non-empty questions after normalisation (FR-STU-02). Anything
+    else is malformed output: generate() retries with the fallback model, and a failed
+    attempt is never cached."""
+
     questions: list[str] = Field(max_length=10)
+
+    @field_validator("questions")
+    @classmethod
+    def three_distinct(cls, value: list[str]) -> list[str]:
+        cleaned: list[str] = []
+        for question in value:
+            text = " ".join(question.split())[:160]
+            if text and text.casefold() not in {q.casefold() for q in cleaned}:
+                cleaned.append(text)
+        if len(cleaned) < 3:
+            raise ValueError("fewer than three distinct questions")
+        return cleaned[:3]
 
 
 def suggestions_key(source_ids: list[str]) -> str:
@@ -87,11 +106,7 @@ def suggested_questions(services: Services, notebook: OwnedNotebook) -> list[str
         )
     except (UserFacingError, ProviderError):
         return []
-    questions = []
-    for question in payload.questions:
-        cleaned = " ".join(question.split())[:160]
-        if cleaned and cleaned not in questions:
-            questions.append(cleaned)
-    questions = questions[:3]
-    services.repo.set_suggestions(notebook, key, questions, source_ids)
+    questions = payload.questions  # already three distinct, cleaned questions
+    if not services.repo.set_suggestions(notebook, key, questions, source_ids):
+        return []  # the sources changed (or one was deleted) while the questions were generated
     return questions
