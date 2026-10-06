@@ -16,9 +16,12 @@ RUN apt-get update \
     && apt-get -y upgrade --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Every dependency is pinned with a hash; nothing unpinned is downloaded.
+# Every dependency is pinned with a hash; nothing unpinned is downloaded. pip itself is then
+# removed: the app never installs anything at runtime, and the base image's pip carries
+# vendored copies of urllib3, msgpack and setuptools that lag behind their security fixes.
 COPY requirements.lock ./
-RUN pip install --require-hashes -r requirements.lock
+RUN pip install --require-hashes -r requirements.lock \
+    && pip uninstall -y pip
 
 COPY src ./src
 COPY demo-data ./demo-data
