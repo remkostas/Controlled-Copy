@@ -24,16 +24,45 @@ MIGRATIONS = [
     )
 ]
 
-# Display names for the evaluated models; anything else shows its OpenRouter ID.
+# Display names for models measured on the evaluation sets; anything else configured in
+# MODEL_CHOICES shows its OpenRouter ID.
 LABELS = {
     "openai/gpt-6-luna": "GPT-6 Luna",
     "openai/gpt-6-luna-pro": "GPT-6 Luna Pro",
+    "openai/gpt-6-sol": "GPT-6 Sol",
     "google/gemini-3.5-flash-lite": "Gemini 3.5 Flash Lite",
+    "google/gemini-3.7-flash": "Gemini 3.7 Flash",
+    "anthropic/claude-sonnet-5.5": "Claude Sonnet 5.5",
+    "deepseek/deepseek-v4.1-flash": "DeepSeek V4.1 Flash",
+    "deepseek/deepseek-v4-pro": "DeepSeek V4 Pro",
+    "x-ai/grok-4.7": "Grok 4.7",
+    "moonshotai/kimi-k2.6": "Kimi K2.6",
+}
+VENDORS = {
+    "openai": "OpenAI",
+    "google": "Google",
+    "anthropic": "Anthropic",
+    "deepseek": "DeepSeek",
+    "x-ai": "xAI",
+    "moonshotai": "Moonshot AI",
 }
 
 
 def label(model: str) -> str:
     return LABELS.get(model, model)
+
+
+def vendor(model: str) -> str:
+    prefix = model.split("/", 1)[0]
+    return VENDORS.get(prefix, prefix)
+
+
+def groups(models: list[str]) -> list[dict[str, Any]]:
+    """Models grouped by provider, in the configured order (the default model's group first)."""
+    grouped: dict[str, list[dict[str, str]]] = {}
+    for model in models:
+        grouped.setdefault(vendor(model), []).append({"id": model, "label": label(model)})
+    return [{"vendor": name, "models": items} for name, items in grouped.items()]
 
 
 def chosen_model(services: Services) -> str | None:
@@ -55,6 +84,7 @@ def _view_hook(services: Services, notebook: Any, context: dict[str, Any]) -> No
     current = chosen_model(services) or settings.model_generation
     context["extra"]["models"] = {
         "choices": [{"id": m, "label": label(m)} for m in settings.model_choice_list],
+        "groups": groups(settings.model_choice_list),
         "current": current,
     }
 
