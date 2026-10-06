@@ -1,9 +1,11 @@
 """OpenRouter adapter (OpenAI-compatible HTTP API, called with httpx).
 
 Privacy routing on every request: `provider.zdr = true` (zero-data-retention
-endpoints only) and `provider.data_collection = "deny"`. Generation requests
-also set `require_parameters`, so they only reach providers that honour the
-JSON schema (structured outputs). No sampling parameters are sent: several
+endpoints only), `provider.data_collection = "deny"` and `provider.ignore` for the
+Mistral provider (D-040: some open models are also served on Mistral's platform).
+Generation requests also set `require_parameters`, so they only reach providers
+that honour the JSON schema (structured outputs), and `max_price`, so a model
+added to the model picker cannot route to an expensive endpoint. No sampling parameters are sent: several
 current models reject `temperature`, and with `require_parameters` an unsupported
 parameter would rule out every endpoint.
 """
@@ -25,18 +27,25 @@ from controlled_copy.providers.base import (
     ProviderTransient,
 )
 
-PRIVACY = {"zdr": True, "data_collection": "deny"}
+PRIVACY: dict[str, Any] = {"zdr": True, "data_collection": "deny", "ignore": ["mistral"]}
 TRANSIENT_STATUS = frozenset({408, 429, 500, 502, 503, 504})
 RETRY_BACKOFF = (1.0, 3.0)
 
 
 def build_embedding_request(texts: list[str], model: str) -> dict[str, Any]:
-    return {"model": model, "input": texts, "provider": dict(PRIVACY)}
+    return {"model": model, "input": texts, "provider": {**PRIVACY, "ignore": list(PRIVACY["ignore"])}}
 
 
 def build_chat_request(
-    messages: list[dict[str, str]], schema: dict[str, Any], schema_name: str, model: str
+    messages: list[dict[str, str]],
+    schema: dict[str, Any],
+    schema_name: str,
+    model: str,
+    max_price: dict[str, float] | None = None,
 ) -> dict[str, Any]:
+    provider: dict[str, Any] = {**PRIVACY, "ignore": list(PRIVACY["ignore"]), "require_parameters": True}
+    if max_price:
+        provider["max_price"] = dict(max_price)
     return {
         "model": model,
         "messages": messages,
@@ -44,7 +53,7 @@ def build_chat_request(
             "type": "json_schema",
             "json_schema": {"name": schema_name, "strict": True, "schema": schema},
         },
-        "provider": {**PRIVACY, "require_parameters": True},
+        "provider": provider,
         "max_tokens": 4000,
         "usage": {"include": True},
     }
@@ -53,8 +62,11 @@ def build_chat_request(
 class OpenRouterProvider:
     name = "openrouter"
 
-    def __init__(self, api_key: str, base_url: str, timeout: float) -> None:
+    def __init__(
+        self, api_key: str, base_url: str, timeout: float, max_price: dict[str, float] | None = None
+    ) -> None:
         self.timeout = timeout
+        self.max_price = max_price
         self._client = httpx.Client(
             base_url=base_url.rstrip("/"),
             headers={"Authorization": f"Bearer {api_key}"},
@@ -138,7 +150,9 @@ class OpenRouterProvider:
         timeout: float,
     ) -> ChatResult:
         data = self._post(
-            "/chat/completions", build_chat_request(messages, schema, schema_name, model), timeout
+            "/chat/completions",
+            build_chat_request(messages, schema, schema_name, model, self.max_price),
+            timeout,
         )
         try:
             message = data["choices"][0]["message"]
