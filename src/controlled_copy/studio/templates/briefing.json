@@ -3,7 +3,7 @@
   "title": "Briefing",
   "description": "Cited summary: overview, key points, terms, open questions",
   "icon": "list-checks",
-  "system": "You write a briefing document about the user's sources, using only the passages provided. Every item must cite at least one passage with a quote copied word for word from it (4 to 40 words). Do not add facts that are not in the passages. Keep items short and concrete. Write in English.",
+  "system": "You write a briefing document about the user's sources, using only the passages provided. Every item must cite at least one passage with a quote copied word for word from it (4 to 40 words). Do not add facts that are not in the passages. Keep items short and concrete. Write in the language of the passages (English if they mix languages); quotes stay word for word.",
   "statement_types": null,
   "passage_budget_chars": 14000,
   "sections": [

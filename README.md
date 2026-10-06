@@ -56,11 +56,12 @@ More detail: [`docs/architecture.md`](docs/architecture.md). The governed layer 
 
 ## Run it
 
-You need Python 3.12 or newer (developed on 3.14) and an OpenRouter API key.
+You need Python 3.14 (the version CI tests and the lock files target; the code itself needs 3.12 or newer) and an OpenRouter API key.
 
 ```
 python -m venv .venv
 .venv/bin/pip install --require-hashes -r requirements-dev.lock   # every package hash-locked
+.venv/bin/python -m playwright install chromium                  # browser for the end-to-end tests
 export PYTHONPATH=src                                              # the app runs from src/, not installed
 cp .env.example .env        # then fill in OPENROUTER_API_KEY, APP_ACCESS_CODE, APP_SECRET_KEY
 .venv/bin/uvicorn controlled_copy.app:app --port 8000   # local mode: APP_MODE is unset
@@ -85,7 +86,7 @@ The app refuses to start in deploy mode without a strong access code and secret 
 .venv/bin/python -m pytest -m "stage1 and not eval and not smoke_live"
 ```
 
-Every test carries the ID of the test case it implements (for example `test_tc_src_011_...`), and every test case maps to a requirement in [`docs/testing.md`](docs/testing.md). The suite uses a deterministic fake model, so it needs no key and costs nothing. It includes unit, integration, API, security and browser tests (Playwright with Chromium), among them an automated WCAG contrast check. `scripts/test_report.py` turns a JUnit run into a requirement-to-result table.
+Every test carries the ID of the test case it implements (for example `test_tc_src_011_...`), and every test case maps to a requirement in [`docs/testing.md`](docs/testing.md). The suite uses a deterministic fake model, so it needs no key and costs nothing. It includes unit, integration, API, security and browser tests (Playwright with Chromium), among them an automated WCAG contrast check; without Chromium installed, the browser tests are skipped with a message (CI installs it and runs them). `scripts/test_report.py` turns a JUnit run into a requirement-to-result table.
 
 The evaluation against the real model is manual: `python eval/run_eval.py generic` and `python eval/bakeoff.py` (see [`eval/README.md`](eval/README.md)).
 
@@ -98,7 +99,7 @@ The evaluation against the real model is manual: `python eval/run_eval.py generi
 
 ## Limitations
 
-A quote can exist in a passage and still not support the statement next to it; the app verifies existence, not support. Prompt injection inside a document can still bias wording within that notebook, although it cannot produce a citation the server cannot verify. There is no OCR, so scanned PDFs show a warning and contribute no text. English only.
+A quote can exist in a passage and still not support the statement next to it; the app verifies existence, not support. Prompt injection inside a document can still bias wording within that notebook, although it cannot produce a citation the server cannot verify. There is no OCR, so scanned PDFs show a warning and contribute no text. The interface is in English; answers follow the language of the question (German was checked), and quotes stay in the language of their source.
 
 ## How AI tools were used
 

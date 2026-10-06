@@ -18,7 +18,14 @@ def browser() -> Iterator[object]:
     playwright_api = pytest.importorskip("playwright.sync_api")
     with playwright_api.sync_playwright() as playwright:
         executable = os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE") or None
-        browser = playwright.chromium.launch(executable_path=executable)
+        try:
+            browser = playwright.chromium.launch(executable_path=executable)
+        except playwright_api.Error as exc:
+            # A fresh checkout has the package but not the browser. CI installs it, so there a
+            # missing browser stays an error instead of a quiet skip.
+            if os.environ.get("CI") or "Executable doesn't exist" not in str(exc):
+                raise
+            pytest.skip("Chromium for Playwright is missing: run `python -m playwright install chromium`")
         yield browser
         browser.close()
 
