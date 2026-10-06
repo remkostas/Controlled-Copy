@@ -13,7 +13,7 @@ This repository is a portfolio project built in four days. It runs on synthetic 
 - **Sources:** upload PDF, TXT or Markdown, or paste text. Pick which sources a question may use. Open any source in a viewer that shows exactly the text the model saw, including text hidden in the original file.
 - **Chat:** ask a question and get short statements with numbered citation chips. A chip opens the source at the highlighted passage. Follow-up questions use the last two turns, and the app shows the standalone search question it built.
 - **Refusal:** a question your sources do not cover gets "Not in the selected sources", with what was searched.
-- **Studio:** a Briefing (overview, key points, important terms, open questions) in which every item carries a verified citation. Suggested questions under an empty chat.
+- **Studio:** a Briefing (overview, key points, important terms, open questions), an FAQ and a study guide (key concepts, review questions, glossary), in which every item carries a verified citation. Each output type is one JSON template, not a code path. Suggested questions under an empty chat.
 - **Deletion:** delete a source or a notebook and everything derived from it disappears: file, chunks, vectors, search index rows, and every answer or output generated from its passages.
 
 ## The ten questions
@@ -24,7 +24,7 @@ This repository is a portfolio project built in four days. It runs on synthetic 
 
 **3. Why is ordinary document chat not enough?** It cites loosely or not at all, and it rarely refuses. Controlled Copy answers in statements that each need a quote from a passage that was actually retrieved; the server verifies the quote and drops any statement whose quote it cannot find. If nothing survives, you get a refusal.
 
-**4. What did I prioritise?** A complete, recognisable NotebookLM core first: three panels (Sources, Chat, Studio), verified citations, follow-ups, refusal, a cited Briefing, and real deletion. Stage 2 adds document control: revision, status, effective date and site as metadata, a split into authoritative and excluded documents, and a Resolution Card that separates requirements from inferences and recommendations.
+**4. What did I prioritise?** A complete, recognisable NotebookLM core first: three panels (Sources, Chat, Studio), verified citations, follow-ups, refusal, cited Studio outputs (Briefing, FAQ, study guide), and real deletion. Stage 2 adds document control: revision, status, effective date and site as metadata, a split into authoritative and excluded documents, and a Resolution Card that separates requirements from inferences and recommendations.
 
 **5. What alternatives did I consider?** A pure clone (well covered by other projects), a draft checker, and a process-brief generator. For the stack, Streamlit and a Next.js front end lost to one FastAPI service with server-rendered HTML and htmx: one process, one language, full control over the layout. PostgreSQL with pgvector lost to SQLite for a single-node demo; the storage code sits behind one module, so pgvector stays the production path.
 

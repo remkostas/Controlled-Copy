@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from controlled_copy.purge import purge
+from controlled_copy.studio.engine import core_templates
 from tests.conftest import corpus_file
 
 pytestmark = [pytest.mark.integration, pytest.mark.stage1]
@@ -34,6 +35,33 @@ def test_tc_stu_001_briefing_has_all_sections_and_only_verified_citations(visito
             assert item["cites"], "every item carries at least one verified citation"
     page = visitor.refresh().page
     assert "Briefing" in page and "Key points" in page
+
+
+@pytest.mark.parametrize("template_id", ["faq", "study-guide"])
+def test_tc_stu_001_faq_and_study_guide_are_cited_studio_outputs(visitor, db, template_id):
+    """NotebookLM's FAQ and study guide: the same engine, one JSON template each."""
+    template = core_templates()[template_id]
+    visitor.paste(
+        "Dock rules",
+        "Inbound trucks are unloaded at dock two in the morning. Damaged pallets are moved to the "
+        "blocked area and photographed. The shift lead confirms every recount before posting.",
+    )
+    response = visitor.client.post(
+        f"/notebooks/{visitor.notebook_id}/studio/{template_id}",
+        data={"source_ids": visitor.sources},
+        headers=visitor.json_headers(),
+    )
+    assert response.status_code == 200
+    output = response.json()["output"]
+    assert [s["title"] for s in output["sections"]] == [s.title for s in template.sections]
+    text = db.execute("SELECT text FROM source WHERE id = ?", (visitor.sources[0],)).fetchone()["text"]
+    assert output["citations"]
+    for citation in output["citations"]:
+        assert text[citation["start"] : citation["end"]] == citation["quote"]
+    for section in output["sections"]:
+        for item in section["items"]:
+            assert item["cites"], "every item carries at least one verified citation"
+    assert template.title in visitor.refresh().page
 
 
 def test_tc_stu_001_briefing_drops_items_with_failed_quotes(visitor, fake):
