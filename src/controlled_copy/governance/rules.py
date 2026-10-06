@@ -126,8 +126,20 @@ class Split:
         return entry[0] if entry else None
 
 
-def split(documents: Sequence[Document], context: Context) -> Split:
-    """Authoritative: approved, effective on the date, matching site and role, not superseded."""
+def split(
+    documents: Sequence[Document],
+    context: Context,
+    *,
+    curated_only: bool = False,
+    curated_ids: Iterable[str] = (),
+) -> Split:
+    """Authoritative: approved, effective on the date, matching site and role, not superseded.
+
+    The curated-document guard is decided by the notebook, never by the visitor's selection:
+    `curated_only` says the notebook is a curated workspace (asserted metadata is never
+    authoritative there, D-039), and `curated_ids` are the curated document IDs of the whole
+    notebook, so an upload claiming one of them is refused even when the curated document
+    itself is not selected (D-036)."""
     result = Split()
     candidates: list[Document] = []
     for doc in documents:
@@ -141,7 +153,8 @@ def split(documents: Sequence[Document], context: Context) -> Split:
     # selection holds curated documents (the Inbound Operations workspace), asserted
     # metadata is not authoritative at all (D-039); without any, it counts (D-036).
     curated = {d.id_key for d in documents if d.id_key and d.origin == "curated"}
-    has_curated = any(d.origin == "curated" for d in documents)
+    curated |= {key for key in (document_key(i) for i in curated_ids) if key}
+    has_curated = curated_only or any(d.origin == "curated" for d in documents)
     eligible = []
     for doc in candidates:
         if doc.origin != "curated" and doc.id_key in curated:

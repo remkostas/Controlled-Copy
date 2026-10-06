@@ -292,3 +292,24 @@ def test_tc_gov_003_revision_prefixes_and_lookalike_ids():
     assert rules.revision_key("v1") < rules.revision_key("2")
     assert rules.revision_key("rev. 10") == rules.revision_key("10")
     assert rules.document_key("SOP​-INB-001") == rules.document_key("ＳＯＰ-INB-001") == "sop-inb-001"
+
+
+def test_s2_1_the_guard_uses_the_notebook_not_the_selection():
+    upload = rules.document_from(
+        "upload",
+        "Supplier note",
+        {
+            "document_id": "sop-1",
+            "revision": "9",
+            "status": "approved",
+            "effective_from": "2026-01-01",
+            "site": "all",
+        },
+        "asserted",
+    )
+    alone = rules.split([upload], CONTEXT)
+    assert alone.authoritative_ids() == ["upload"], "a personal notebook of uploads: asserted counts (D-036)"
+    guarded = rules.split([upload], CONTEXT, curated_ids=["SOP-1"])
+    assert guarded.excluded["upload"][1] == "asserted by uploader, but sop-1 is a curated controlled document"
+    workspace = rules.split([upload], CONTEXT, curated_only=True)
+    assert workspace.authoritative_ids() == []
