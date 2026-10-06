@@ -21,6 +21,8 @@ _MARKDOWN = re.compile(r"([\\`*_\[\]<>])")
 # Bare URLs are auto-linked by GitHub-flavoured renderers; breaking the scheme and "www."
 # keeps them as text (Codex Stage 3 review, S3-5).
 _AUTOLINK = re.compile(r"(?i)\b(https?|ftp)://|\bwww\.")
+# E-mail addresses are auto-linked too (mailto:); an escaped "@" keeps them as text.
+_EMAIL_AT = re.compile(r"(?<=[\w.+-])@(?=[\w-]+\.)")
 
 
 def clean(text: Any) -> str:
@@ -28,6 +30,7 @@ def clean(text: Any) -> str:
     row, no Markdown or HTML syntax."""
     text = _MARKDOWN.sub(r"\\\1", " ".join(str(text or "").split()))
     text = _AUTOLINK.sub(lambda m: f"{m.group(1)}\\://" if m.group(1) else "www\\.", text)
+    text = _EMAIL_AT.sub("\\@", text)
     # A leading "#" would make an item a heading.
     return "\\" + text if text.startswith("#") else text
 

@@ -69,3 +69,8 @@ def test_tc_out_001_bare_urls_and_leading_hashes_stay_text():
     assert "https://" not in escaped and "https\\://attacker.example" in escaped
     assert "www.evil" not in escaped and "www\\.evil.example" in escaped
     assert clean("# Not a heading").startswith("\\# Not a heading")
+
+
+def test_tc_out_001_email_addresses_stay_text():
+    """Quick re-check R2-2: renderers turn ops@evil.example into a mailto link."""
+    assert clean("Write to ops@evil.example today") == "Write to ops\\@evil.example today"

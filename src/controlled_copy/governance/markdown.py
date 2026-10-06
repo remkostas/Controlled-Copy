@@ -16,12 +16,18 @@ def _labelled(document: dict[str, Any]) -> str:
 def card_markdown(output: dict[str, Any], created_at: str) -> str:
     card = output.get("card", {})
     ctx = card.get("context", {})
+    fallback = card.get("fallback_escalation")
     lines = [
         "# Resolution Card",
         "",
         f"**Status: {clean(card.get('status_label'))}**",
         "",
         *[f"- {clean(reason)}" for reason in card.get("reasons", [])],
+        *(
+            ["", f"**Who decides:** {clean(fallback)} (standard escalation, not taken from the documents)"]
+            if fallback
+            else []
+        ),
         "",
         f"**Situation:** {clean(card.get('situation'))}",
         "",
@@ -44,13 +50,16 @@ def card_markdown(output: dict[str, Any], created_at: str) -> str:
     lines += sections_md(output)
     used = card.get("used", [])
     excluded = card.get("excluded", [])
-    if used or excluded or card.get("consulted"):
+    if used or excluded or card.get("consulted") or card.get("not_selected"):
         lines += ["", "## Applicability"]
     if used:
         rows = [
             [_labelled(d), d.get("status"), d.get("effective") or "-", d.get("site") or "-"] for d in used
         ]
         lines += ["", *table(["Used", "Status", "Effective", "Site"], rows)]
+    if card.get("not_selected"):
+        names = ", ".join(clean(d.get("label")) for d in card["not_selected"])
+        lines += ["", f"Applicable but not selected, so not used: {names}"]
     if card.get("consulted"):
         names = ", ".join(clean(_labelled(d)) for d in card["consulted"])
         lines += ["", f"Also given to the model, not cited: {names}"]

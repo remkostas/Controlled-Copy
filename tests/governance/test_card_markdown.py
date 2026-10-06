@@ -94,3 +94,17 @@ def test_tc_out_001_the_card_export_keeps_origins_and_the_notes_of_the_html_card
     assert "warehouse operator" in text, "role names read as words, not escaped underscores"
     assert "2 item(s) shown with a weaker type" in text
     assert "1 item(s) not shown" in text
+
+
+def test_full_audit_the_card_export_carries_the_new_card_lines():
+    output = {
+        "card": {
+            "status_label": "Expert confirmation required",
+            "context": {},
+            "fallback_escalation": "Stop and ask the person responsible for these documents.",
+            "not_selected": [{"label": "POST-1 rev 2"}],
+        }
+    }
+    text = card_markdown(output, "2026-10-06T10:00:00+00:00")
+    assert "**Who decides:** Stop and ask the person responsible" in text
+    assert "Applicable but not selected, so not used: POST-1 rev 2" in text
