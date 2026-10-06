@@ -10,6 +10,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Debian security updates published since the base image was built (build with --pull to
+# also start from the newest base image).
+RUN apt-get update \
+    && apt-get -y upgrade --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 # Every dependency is pinned with a hash; nothing unpinned is downloaded.
 COPY requirements.lock ./
 RUN pip install --require-hashes -r requirements.lock
