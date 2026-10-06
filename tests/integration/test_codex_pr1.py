@@ -204,7 +204,13 @@ def test_tc_lim_002_the_daily_limit_also_counts_dollars(settings):
     from tests.helpers.responders import quote_passage_containing
 
     fake = FakeProvider(cost_per_call=0.03)
-    app = create_app(settings.model_copy(update={"max_usd_per_day": 0.05}), fake, run_purge=False)
+    # Low price caps keep each call's worst-case reservation near 0.01 USD.
+    update = {
+        "max_usd_per_day": 0.05,
+        "max_price_prompt_per_million": 1.0,
+        "max_price_completion_per_million": 1.0,
+    }
+    app = create_app(settings.model_copy(update=update), fake, run_purge=False)
     with TestClient(app) as client:
         visitor = Visitor(client).login()
         visitor.paste("Doc", "Deviations of up to 2% of the ordered quantity are posted as counted.")

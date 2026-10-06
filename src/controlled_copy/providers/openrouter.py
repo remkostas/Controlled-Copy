@@ -4,7 +4,10 @@ Privacy routing on every request: `provider.zdr = true` (zero-data-retention
 endpoints only) and `provider.data_collection = "deny"`. Generation requests
 also set `require_parameters`, so they only reach providers that honour the
 JSON schema (structured outputs), and `max_price`, so a model added to the model
-picker cannot route to an expensive endpoint. No sampling parameters are sent:
+picker cannot route to an expensive endpoint; embedding requests carry a prompt
+price cap too. Together with the output allowance (`max_tokens`) the caps bound
+what one call can cost, which the daily dollar budget reserves before each call.
+No sampling parameters are sent:
 several current models reject `temperature`, and with `require_parameters` an
 unsupported parameter would rule out every endpoint.
 """
@@ -19,6 +22,8 @@ import httpx
 
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import (
+    EMBED_ATTEMPTS,
+    MAX_COMPLETION_TOKENS,
     ChatResult,
     EmbedResult,
     ProviderBadOutput,
@@ -32,8 +37,13 @@ TRANSIENT_STATUS = frozenset({408, 429, 500, 502, 503, 504})
 RETRY_BACKOFF = (1.0, 3.0)
 
 
-def build_embedding_request(texts: list[str], model: str) -> dict[str, Any]:
-    return {"model": model, "input": texts, "provider": dict(PRIVACY)}
+def build_embedding_request(
+    texts: list[str], model: str, max_price_prompt: float | None = None
+) -> dict[str, Any]:
+    provider: dict[str, Any] = dict(PRIVACY)
+    if max_price_prompt:
+        provider["max_price"] = {"prompt": max_price_prompt}
+    return {"model": model, "input": texts, "provider": provider}
 
 
 def build_chat_request(
@@ -54,7 +64,7 @@ def build_chat_request(
             "json_schema": {"name": schema_name, "strict": True, "schema": schema},
         },
         "provider": provider,
-        "max_tokens": 4000,
+        "max_tokens": MAX_COMPLETION_TOKENS,
         "usage": {"include": True},
     }
 
@@ -83,10 +93,16 @@ class OpenRouterProvider:
     name = "openrouter"
 
     def __init__(
-        self, api_key: str, base_url: str, timeout: float, max_price: dict[str, float] | None = None
+        self,
+        api_key: str,
+        base_url: str,
+        timeout: float,
+        max_price: dict[str, float] | None = None,
+        max_price_embedding: float | None = None,
     ) -> None:
         self.timeout = timeout
         self.max_price = max_price
+        self.max_price_embedding = max_price_embedding
         self._client = httpx.Client(
             base_url=base_url.rstrip("/"),
             headers={"Authorization": f"Bearer {api_key}"},
@@ -147,8 +163,8 @@ class OpenRouterProvider:
         return data
 
     def embed(self, texts: list[str], *, model: str) -> EmbedResult:
-        body = build_embedding_request(texts, model)
-        data = _envelope(self._post_with_retry("/embeddings", body, retries=2))
+        body = build_embedding_request(texts, model, self.max_price_embedding)
+        data = _envelope(self._post_with_retry("/embeddings", body, retries=EMBED_ATTEMPTS - 1))
         items = data.get("data")
         if not isinstance(items, list) or len(items) != len(texts):
             raise ProviderBadOutput("embedding response has the wrong number of vectors")
@@ -162,10 +178,12 @@ class OpenRouterProvider:
                 raise ProviderBadOutput("embedding response has a malformed vector")
             vectors.append([float(v) for v in vector])
         usage = _usage(data)
+        cost = usage.get("cost")
         return EmbedResult(
             vectors=vectors,
             model=str(data.get("model") or model),
             input_tokens=_int(usage.get("prompt_tokens") or usage.get("total_tokens")),
+            cost_usd=float(cost) if _finite(cost) else None,
         )
 
     def chat_json(
