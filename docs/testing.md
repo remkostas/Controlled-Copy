@@ -11,7 +11,7 @@ python scripts/test_report.py reports/junit.xml
 
 ## 1. Conventions
 
-- **Requirement IDs:** `FR-<area>-<nn>` (functional) and `NFR-<area>-<nn>` (security, privacy, reliability, reversibility). Areas: ACC access and sessions, NB notebooks, SRC sources, IDX indexing, RET retrieval, ANS answers, FUP follow-ups, STU studio, GOV governance, EXT extension, LIM limits, RTN retention, LOG logging, SEC security, REV reversibility, UI interface.
+- **Requirement IDs:** `FR-<area>-<nn>` (functional) and `NFR-<area>-<nn>` (security, privacy, reliability, reversibility). Areas: ACC access and sessions, NB notebooks, SRC sources, IDX indexing, RET retrieval, ANS answers, FUP follow-ups, STU studio, GOV governance, EXT extension, LIM limits, RTN retention, LOG logging, SEC security, REV reversibility, UI interface, EVAL evaluation scoring.
 - **Test case IDs:** `TC-<area>-<nnn>`. Automated tests are named `test_tc_<area>_<nnn>_<behaviour>` (for example `test_tc_src_004_rejects_renamed_binary`).
 - **pytest markers:** a type (`unit`, `integration`, `api`, `e2e`, `security`, `eval`, `smoke_live`) and a stage (`stage1`, `stage2`, `stage3`). Example: `pytest -m "stage1 and not eval"` runs the core gate.
 - **Model calls:** unit, integration, api, e2e and security tests use a fake model provider (deterministic, no network, no cost). Only `eval` and `smoke_live` call the real model.
@@ -179,7 +179,21 @@ Replaces the persona switcher planned earlier (never built; Remko asked for a mo
 
 ### Evaluation (real model, published as measured)
 
-G-01 to G-06 (generic path) and E-01 to E-14 (governed path), specified in demo-corpus-and-eval.md. Marker `eval`, run manually and before the video. Retrieval metrics (hit@k, mean reciprocal rank) from the same cases feed the model bake-off.
+G-01 to G-06 (generic path) and E-01 to E-14 (governed path), specified in demo-corpus-and-eval.md. Marker `eval`, run manually and before the video. Retrieval metrics (hit@k, mean reciprocal rank) from the same cases feed the model bake-off. Only results that record a clean commit and the case-file hash count as evidence (see `eval/results/README.md`).
+
+The scorer itself is tested offline with hand-made responses, so a pass cannot come from the right words in a quote next to a wrong statement:
+
+| Req | Requirement | TC | Type | Input | Expected |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| NFR-EVAL-01 | Expected terms must be in the answer, not only in its quotes | TC-EVAL-001 | unit | A wrong statement next to a genuine quote that holds every expected term | The case fails; the statements and quotes are kept in the result |
+| NFR-EVAL-02 | A card passes only if its statements give the required actions and none of the prohibited ones | TC-EVAL-002 | unit | E-12 card: "continue unloading, do not contact QA or EHS" next to the genuine WI-QUA-004 quote | Fails on missing stop, isolate, QA lead and on the prohibited actions |
+| NFR-EVAL-02 | | TC-EVAL-003 | unit | E-12 card that only notifies QA lead and EHS | Fails on missing stop and isolate |
+| NFR-EVAL-02 | | TC-EVAL-004 | unit | A vague statement whose quotes hold every required word | Fails: quotes are never searched |
+| NFR-EVAL-03 | Every Requirement cites an applicable approved document | TC-EVAL-005 | unit | A Requirement backed only by a verified quote from the obsolete revision | Fails |
+| NFR-EVAL-02 | | TC-EVAL-006 | unit | The E-12 wording of the versioned GPT-6 Luna run | Passes |
+| NFR-EVAL-02 | | TC-EVAL-007 | unit | A conflict that does not name both instructions | Fails |
+| NFR-EVAL-02 | | TC-EVAL-008 | unit | "Never:" with a colon, "is not permitted" after the verb, "rather than"; and the plain harmful instruction | Correct wording passes, the harmful one fails |
+| NFR-EVAL-02 | | TC-EVAL-009 | unit | Both governed case files | Every check is well formed; every case that expects instructions lists them |
 
 ### Live smoke (deployed URL)
 

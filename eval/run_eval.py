@@ -69,17 +69,21 @@ def check_answer(
     reasons += verify_citations(app, citations, texts)
     if case["expected_pages"] and not (cited_pages(citations) & set(case["expected_pages"])):
         reasons.append(f"no citation from expected pages {case['expected_pages']}")
-    haystack = (
-        " ".join(s["text"] for s in answer["statements"]) + " " + " ".join(c["quote"] for c in citations)
-    )
-    haystack = re.sub(r"\s+", " ", haystack.lower().replace("-\n", "").replace("- ", ""))
-    found = [k for k in case["keywords"] if k.lower() in haystack]
+    # The expected terms must be in what the answer says, not only in its quotes: a quote can
+    # contain the right words while the statement next to it says something else (EVAL-01).
+    said = " ".join(s["text"] for s in answer["statements"])
+    said = re.sub(r"\s+", " ", said.lower().replace("-\n", "").replace("- ", ""))
+    found = [k for k in case["keywords"] if k.lower() in said]
     record["keywords_found"] = f"{len(found)}/{len(case['keywords'])}"
     if len(found) < case["min_keywords"]:
         reasons.append(f"only {len(found)} of {case['min_keywords']} required terms present")
     must = case.get("quote_must_contain")
     if must and not any(must.lower() in re.sub(r"\s+", " ", c["quote"].lower()) for c in citations):
         reasons.append(f"no quote contains '{must}'")
+    # The full answer is kept for a human read: whether a quote supports its statement is not
+    # checked mechanically.
+    record["said"] = [s["text"] for s in answer["statements"]]
+    record["quotes"] = [{"n": c["n"], "label": c["label"], "quote": c["quote"]} for c in citations]
     return {**record, "reasons": reasons}
 
 
@@ -123,6 +127,75 @@ def normalised(text: str) -> str:
     return re.sub(r"\s+", " ", text.lower())
 
 
+# Action checks (full audit EVAL-01). A case lists what a correct card must say (`must_say`)
+# and what it must not say (`must_not_say`), as regular expressions over the statements the
+# card shows, never over the quotes: a genuine quote next to a wrong instruction must fail.
+NEGATIONS = {"not", "never", "no", "don't", "cannot", "can't", "mustn't", "nor", "neither"}
+NEGATION_STEMS = ("prohibit", "forbid")
+# Between the verb and the object of a prohibited action: no negation and no condition, so
+# "post it to inspection stock until QA releases it to unrestricted stock" is not "post it to
+# unrestricted stock".
+GAP = (
+    r"(?:(?!\b(?:not|never|no|until|unless|after|before|once|only|then|releas\w*|rather than|instead of)\b)"
+    r"[^.;:])*?"
+)
+# A prohibited action is not said when the rest of its clause makes it conditional or forbids
+# it ("resume unloading only after EHS clears the area", "direct posting is not permitted").
+EXCUSED_AFTER = re.compile(
+    r"\b(?:only after|only once|only when|until|unless|(?:is|are|be) (?:not|never)|prohibited|forbidden|"
+    r"not (?:permitted|allowed))\b"
+)
+CLAUSE = re.compile(r"[.;:!?](?:\s+|$)|,?\s+but\s+")
+
+
+def clauses(text: str) -> list[str]:
+    plain = normalised(text).replace("\u2019", "'").replace("\u201c", '"').replace("\u201d", '"')
+    # The documents write "Never: post against another line"; that colon does not end the clause.
+    plain = re.sub(r"\b(never|do not|don't|not)\s*:\s*", r"\1 ", plain)
+    return [c for c in CLAUSE.split(plain) if c.strip()]
+
+
+def negated(clause: str, start: int, window: int | None) -> bool:
+    """A negation before the match in the same clause: within `window` words for an action
+    that must be said, anywhere before it for one that must not be said."""
+    words = re.findall(r"[\w']+", clause[:start])
+    return any(w in NEGATIONS or w.startswith(NEGATION_STEMS) for w in (words[-window:] if window else words))
+
+
+def says(texts: list[str], patterns: list[str], *, prohibited: bool) -> bool:
+    for text in texts:
+        for clause in clauses(text):
+            for pattern in patterns:
+                for match in re.finditer(pattern.replace("{gap}", GAP), clause):
+                    if negated(clause, match.start(), None if prohibited else 3):
+                        continue
+                    if prohibited and EXCUSED_AFTER.search(clause, match.end()):
+                        continue
+                    return True
+    return False
+
+
+def action_reasons(case: dict[str, Any], items: list[dict[str, Any]], backed: set[int]) -> list[str]:
+    """Required actions must appear in a statement of the given types, by default a Requirement
+    or an Inference that cites an applicable approved document (an inference applies a rule to
+    the situation: "4 units exceed the tolerance, so do not post"); prohibited ones in none."""
+    reasons = []
+    for check in case.get("must_say", []):
+        types = check.get("types", ["requirement", "inference"])
+        texts = [
+            i["text"]
+            for i in items
+            if i["type"] in types and (i["type"] not in ("requirement", "inference") or id(i) in backed)
+        ]
+        if not says(texts, check["any"], prohibited=False):
+            reasons.append(f"does not say: {check['what']}")
+    shown = [i["text"] for i in items]
+    for check in case.get("must_not_say", []):
+        if says(shown, check["any"], prohibited=True):
+            reasons.append(f"says: {check['what']}")
+    return reasons
+
+
 def check_card(
     case: dict[str, Any], status: int, body: dict[str, Any], app: AppClient, texts: dict[str, str]
 ) -> dict[str, Any]:
@@ -160,6 +233,14 @@ def check_card(
     ]
     if unquoted:
         reasons.append(f"{len(unquoted)} requirement(s) without a verified quote")
+    authoritative = {d["source_id"] for d in card["used"]}
+    backed = {
+        id(i) for i in items if {source_of[c["n"]] for c in i["cites"] if c["n"] in source_of} & authoritative
+    }
+    unbacked = [i for i in items if i["type"] == "requirement" and id(i) not in backed and i not in unquoted]
+    if unbacked:
+        reasons.append(f"{len(unbacked)} requirement(s) cite no applicable approved document")
+    reasons += action_reasons(case, items, backed)
     identifier = case.get("undocumented_identifier")
     if identifier and identifier not in card["undocumented"]:
         reasons.append(f"{identifier} not reported as undocumented")
@@ -190,6 +271,11 @@ def check_card(
         "kind": card["status"],
         "status_reasons": card["reasons"],
         "detail": detail,
+        # Kept for a human read: whether each quote supports its statement is not checked here.
+        "quotes": [
+            {"n": c["n"], "document": label_of.get(c["source_id"], "?"), "quote": c["quote"]}
+            for c in citations
+        ],
         "cited": cited,
         "warnings": [w["label"] for w in card["warnings"]],
         "types": types,
@@ -296,6 +382,15 @@ def write_report(
         provenance_line(info),
         "",
     ]
+    if set_name in ("governed", "holdout"):
+        lines += [
+            "Mechanical checks: status, cited and excluded documents, warnings, statement types, every quote at its "
+            "offsets, every Requirement backed by an applicable approved document, and the required and prohibited "
+            "actions in the case file, searched in the statements and never in the quotes. Not checked mechanically: "
+            "whether each quote supports the statement next to it; the JSON file keeps every statement and quote "
+            "for that human read.",
+            "",
+        ]
     if set_name in ("governed", "holdout"):
         lines += [
             "| Case | Title | Result | Status | Cited documents | Warnings | Types | Seconds | Reasons |",
