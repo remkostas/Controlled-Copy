@@ -68,7 +68,9 @@ def split_front_matter(text: str) -> tuple[dict[str, Any] | None, str, str | Non
         return None, body, MALFORMED
     try:
         data = yaml.safe_load(raw)
-    except yaml.YAMLError:
+    except (yaml.YAMLError, RecursionError):
+        # RecursionError: deeply nested lists or maps ("[[[[...") exhaust the parser's stack
+        # well below the size limit; that is malformed metadata, not a failed upload.
         return None, body, MALFORMED
     if not isinstance(data, dict):
         return None, body, MALFORMED
