@@ -6,8 +6,10 @@ Each run writes a `.json` file (every case, every check) and a `.md` summary. A 
 
 | File | Code | Cases | Result | Note |
 | :--- | :--- | :--- | :--- | :--- |
-| `2026-10-06_132816-openai_gpt-6-luna-governed` | `f6da0bd`, clean | `98e1fc14eb86bcde` | 14 of 14 | With the action checks (EVAL-01) |
-| `2026-10-06_133025-openai_gpt-6-luna-holdout` | `f6da0bd`, clean | `ad8ed053143a4c64` | 11 of 11 | With the action checks (EVAL-01) |
+| `2026-10-06_153902-openai_gpt-6-luna-governed` | `06f20cf`, clean | `c3327bfb4a93f2dd` | 13 of 14 | Action checks as revised after the re-check (RCK-02). E-09: expert confirmation instead of context incomplete (no requirement, one missing-information item) |
+| `2026-10-06_154144-openai_gpt-6-luna-holdout` | `06f20cf`, clean | `d734949bd05c8858` | 11 of 11 | Action checks as revised after the re-check (RCK-02) |
+| `2026-10-06_132816-openai_gpt-6-luna-governed` | `f6da0bd`, clean | `98e1fc14eb86bcde` | 14 of 14 | First version of the action checks (EVAL-01) |
+| `2026-10-06_133025-openai_gpt-6-luna-holdout` | `f6da0bd`, clean | `ad8ed053143a4c64` | 11 of 11 | First version of the action checks (EVAL-01) |
 | `2026-10-06_1316-openai_gpt-6-luna-generic` | `d82528a`, clean | `26cfa0915630d06d` | 6 of 6 | Current scorer: terms counted only in the statements; statements and quotes kept |
 | `2026-10-06_1302-openai_gpt-6-luna-generic` | `3d4c88e`, clean | `26cfa0915630d06d` | 6 of 6 | Scored before the scorer stopped counting terms that appear only in quotes (EVAL-01) |
 
