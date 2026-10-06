@@ -40,6 +40,8 @@ class Registry:
     migrations: list[Migration] = field(default_factory=list)
     studio_actions: list[StudioAction] = field(default_factory=list)
     topbar_partials: list[str] = field(default_factory=list)
+    # Partials shown below the upload and paste buttons (inputs named doc_*, sent with both).
+    upload_partials: list[str] = field(default_factory=list)
     # Partials shown at the top of the chat log (for example a note on what chat covers).
     chat_partials: list[str] = field(default_factory=list)
     # Studio template id -> partial that renders its outputs (instead of the generic list).

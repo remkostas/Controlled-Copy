@@ -486,6 +486,30 @@ select {
   background: var(--surface-chrome-2);
   color: var(--text-on-chrome);
 }
+.doc-control {
+  margin-top: var(--sp-3);
+  font-size: var(--fs-sm);
+}
+.doc-control summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.doc-control__fields {
+  display: grid;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+.doc-control__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+}
+.doc-control__pair .field {
+  min-width: 0;
+}
 .output__actions {
   display: flex;
   flex-wrap: wrap;

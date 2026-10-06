@@ -173,6 +173,9 @@ Replaces the persona switcher planned earlier (never built; Remko asked for a mo
 | FR-OUT-01 | Studio outputs export as Markdown with every verified quote | TC-OUT-001 | api | Export a Briefing and a Resolution Card; download | Title, sections, typed items with citation numbers, every quote listed; card status, context, warnings, applicability; download names the file |
 | FR-OUT-02 | Only the owner exports; removed outputs are not exported | TC-OUT-002 | api | Another visitor, a wrong ID, no session, a deleted cited source, the layer switched off | 404 or the landing page; nothing exported |
 | FR-UI-06 | Copy a card as Markdown in a real browser | TC-UI-006 | e2e | Build a card, press "Copy as Markdown" | Confirmation shown; the clipboard holds the card |
+| FR-META-01 | Typed document-control metadata is validated like front matter | TC-META-001 | unit | Empty form; full form; missing or unknown status; bad date; bad document ID | None; normalised metadata; clear refusals |
+| FR-META-02 | Typed metadata is stored as asserted and replaces front matter | TC-META-002 | integration | Paste or upload with the form filled; an unusable form; a card in a personal notebook | Stored with origin "asserted"; refusal stores nothing; a supported card names the asserted approval |
+| FR-UI-07 | Document-control form in a real browser | TC-UI-007 | e2e | Fill the form, paste a text | Badges show the typed metadata as asserted; the fields clear; contrast passes |
 
 ### Evaluation (real model, published as measured)
 

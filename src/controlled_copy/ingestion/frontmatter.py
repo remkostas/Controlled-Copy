@@ -73,3 +73,30 @@ def split_front_matter(text: str) -> tuple[dict[str, Any] | None, str, str | Non
     if not isinstance(data, dict):
         return None, body, MALFORMED
     return _normalise(data), body, None
+
+
+FORM_FIELDS = ("document_id", "revision", "status", "effective_from", "site", "applicable_roles")
+_DOCUMENT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
+
+
+def from_form(fields: dict[str, str | None]) -> dict[str, Any] | None:
+    """Document-control metadata typed into the upload form, validated like front matter.
+
+    Returns None when every field is empty (the file's own front matter then applies).
+    Raises ValueError with a user-facing message for a value the rules cannot use."""
+    values = {key: " ".join((fields.get(key) or "").split()) for key in FORM_FIELDS}
+    if not any(values.values()):
+        return None
+    if values["status"] not in STATUSES:
+        raise ValueError("Choose a status for the document: approved, draft or obsolete.")
+    if values["document_id"] and not _DOCUMENT_ID.fullmatch(values["document_id"]):
+        raise ValueError("Use letters, digits, dots, hyphens or underscores for the document ID.")
+    if values["effective_from"]:
+        try:
+            dt.date.fromisoformat(values["effective_from"])
+        except ValueError:
+            raise ValueError("Enter the effective date as YYYY-MM-DD.") from None
+    data: dict[str, Any] = {key: value for key, value in values.items() if value}
+    if "applicable_roles" in data:
+        data["applicable_roles"] = [r.strip() for r in data["applicable_roles"].split(",") if r.strip()]
+    return _normalise(data)

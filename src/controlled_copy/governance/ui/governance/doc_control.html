@@ -1,0 +1,39 @@
+<details class="doc-control">
+  <summary>{{ icon('file-search') }} Document control (optional)</summary>
+  <div id="doc-control" class="doc-control__fields">
+    <p class="muted doc-control__note">Applies to the next upload or paste and replaces any front matter in the file. Shown as "asserted by uploader".{% if nb.kind == 'ops_workspace' %} In this workspace only the curated documents are controlled, so the Resolution Card lists your document as not applied; use a personal notebook to build cards on your own documents.{% endif %}</p>
+    <div class="field">
+      <label for="doc-id">Document ID</label>
+      <input class="input" id="doc-id" name="doc_document_id" maxlength="64" placeholder="SOP-INB-002" autocomplete="off">
+    </div>
+    <div class="doc-control__pair">
+      <div class="field">
+        <label for="doc-revision">Revision</label>
+        <input class="input" id="doc-revision" name="doc_revision" maxlength="20" placeholder="1" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="doc-status">Status</label>
+        <select class="input" id="doc-status" name="doc_status">
+          <option value="">none</option>
+          <option value="approved">approved</option>
+          <option value="draft">draft</option>
+          <option value="obsolete">obsolete</option>
+        </select>
+      </div>
+    </div>
+    <div class="doc-control__pair">
+      <div class="field">
+        <label for="doc-effective">Effective from</label>
+        <input class="input" id="doc-effective" name="doc_effective_from" type="date">
+      </div>
+      <div class="field">
+        <label for="doc-site">Site</label>
+        <input class="input" id="doc-site" name="doc_site" maxlength="40" placeholder="HAM-01 or all" autocomplete="off">
+      </div>
+    </div>
+    <div class="field">
+      <label for="doc-roles">Roles (comma-separated, empty for every role)</label>
+      <input class="input" id="doc-roles" name="doc_roles" maxlength="400" placeholder="warehouse_operator, shift_lead" autocomplete="off">
+    </div>
+  </div>
+</details>

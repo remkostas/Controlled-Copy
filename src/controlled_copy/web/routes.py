@@ -19,7 +19,7 @@ from markupsafe import Markup
 from controlled_copy.answering.answer import ask
 from controlled_copy.config import Settings
 from controlled_copy.errors import UserFacingError
-from controlled_copy.ingestion import pipeline
+from controlled_copy.ingestion import frontmatter, pipeline
 from controlled_copy.ingestion.validate import IngestError
 from controlled_copy.limits import DAILY_LIMIT_MESSAGE
 from controlled_copy.logs import log_event
@@ -157,6 +157,7 @@ def workspace_context(
         "ui": {
             "topbar_partials": list(request.app.state.registry.topbar_partials),
             "chat_partials": list(request.app.state.registry.chat_partials),
+            "upload_partials": list(request.app.state.registry.upload_partials),
             "studio_actions": studio_actions(request),
         },
         "pending": pending,
@@ -349,6 +350,12 @@ def add_source(
     title: Annotated[str | None, Form(max_length=500)] = None,
     text: Annotated[str | None, Form()] = None,
     source_ids: Annotated[list[str] | None, Form()] = None,
+    doc_document_id: Annotated[str | None, Form(max_length=200)] = None,
+    doc_revision: Annotated[str | None, Form(max_length=200)] = None,
+    doc_status: Annotated[str | None, Form(max_length=200)] = None,
+    doc_effective_from: Annotated[str | None, Form(max_length=200)] = None,
+    doc_site: Annotated[str | None, Form(max_length=200)] = None,
+    doc_roles: Annotated[str | None, Form(max_length=2000)] = None,
 ) -> Response:
     settings = services.settings
     target = "#add-source-status"
@@ -361,7 +368,23 @@ def add_source(
     if services.budget.read_only():
         return notice(request, DAILY_LIMIT_MESSAGE, 503, target)
     try:
+        typed = frontmatter.from_form(
+            {
+                "document_id": doc_document_id,
+                "revision": doc_revision,
+                "status": doc_status,
+                "effective_from": doc_effective_from,
+                "site": doc_site,
+                "applicable_roles": doc_roles,
+            }
+        )
+    except ValueError as exc:
+        return notice(request, str(exc), 422, target)
+    try:
         extracted = _extract(settings, file, title, text)
+        if typed is not None:
+            # Typed metadata replaces the file's own front matter; both are asserted by the uploader.
+            extracted.metadata, extracted.metadata_origin = typed, "asserted"
         source_id = pipeline.store(services, notebook, extracted, extracted.raw)
     except UserFacingError as exc:
         log_event("source_rejected", session=services.sid, notebook=notebook_id, status=str(exc.status))

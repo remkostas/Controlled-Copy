@@ -2,6 +2,7 @@
 
 import pytest
 
+from tests.e2e.test_journey_a import CONTRAST_JS
 from tests.e2e.test_journey_b import build_card, login
 
 pytestmark = [pytest.mark.e2e, pytest.mark.stage3]
@@ -25,4 +26,5 @@ def test_tc_ui_006_copy_a_card_as_markdown(page, server_url):
     assert "**Status: " in copied and "## Applicability" in copied
     download = card.locator("a:has-text('Download .md')")
     assert download.get_attribute("href").endswith(".md?download=true")
+    assert page.evaluate(CONTRAST_JS) == []
     assert page.js_errors == []

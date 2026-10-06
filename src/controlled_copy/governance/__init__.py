@@ -107,6 +107,7 @@ def register(registry: Registry, settings: Settings) -> None:
     )
     registry.topbar_partials.append("governance/reset_button.html")
     registry.chat_partials.append("governance/chat_note.html")
+    registry.upload_partials.append("governance/doc_control.html")
     registry.output_partials["resolution-card"] = "governance/card_output.html"
     registry.output_markdown["resolution-card"] = _card_markdown
     registry.notebook_kinds.append(WORKSPACE_KIND)

@@ -215,6 +215,10 @@
       updateSelectionCount();
       const status = $("#add-source-status");
       if (status && event.detail.xhr && event.detail.xhr.status < 300) status.replaceChildren();
+      // Typed document-control fields apply to one upload only.
+      if (event.detail.xhr && event.detail.xhr.status < 300) {
+        $$("#doc-control input, #doc-control select").forEach((field) => (field.value = ""));
+      }
     }
     if (target.id === "toast") {
       window.setTimeout(() => target.replaceChildren(), 8000);
