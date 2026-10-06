@@ -32,6 +32,7 @@ class ChatResult:
     output_tokens: int = 0
     cost_usd: float | None = None
     provider: str | None = None
+    fallback: bool = False  # set by generate(): the fallback model answered
 
 
 @dataclass(frozen=True)

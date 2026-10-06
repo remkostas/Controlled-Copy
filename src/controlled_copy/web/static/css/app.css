@@ -468,6 +468,27 @@ select {
   background: var(--surface-chrome-2);
   color: var(--text-on-chrome);
 }
+.model-select {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.model-select .icon {
+  color: var(--accent);
+}
+.model-select select {
+  max-width: 14rem;
+  height: 2rem;
+  padding: 0 var(--sp-6) 0 var(--sp-3);
+  border: 1px solid var(--border-chrome);
+  border-radius: var(--radius-md);
+  background: var(--surface-chrome-2);
+  color: var(--text-on-chrome);
+}
+.answer__model {
+  font-family: var(--font-mono);
+}
 .topbar .btn {
   min-height: 2rem;
   background: var(--surface-chrome-2);

@@ -89,6 +89,14 @@ def _cite_views(numbers: list[dict[str, Any]], citations: dict[int, dict[str, An
     return views
 
 
+def model_label(model: str | None, fallback: bool = False) -> str | None:
+    """'gpt-6-luna' for 'openai/gpt-6-luna'; marked when the fallback model answered."""
+    if not model:
+        return None
+    name = model.rsplit("/", 1)[-1]
+    return f"{name} (fallback)" if fallback else name
+
+
 def answer_view(answer: dict[str, Any], status: str = "ok") -> dict[str, Any]:
     if status == TOMBSTONE:
         return {"kind": "tombstone"}
@@ -107,6 +115,7 @@ def answer_view(answer: dict[str, Any], status: str = "ok") -> dict[str, Any]:
         "searched_sources": int(answer.get("searched_sources", 0)),
         "search_query": answer.get("search_query"),
         "reason": answer.get("reason"),
+        "model_label": model_label(answer.get("model"), bool(answer.get("fallback"))),
     }
 
 
@@ -184,7 +193,15 @@ def output_view(
         **base,
         "kind": "ok",
         "title": output.get("title", "Studio output"),
-        "meta_label": f"{_plural(sources, 'source')} · {created}",
+        "meta_label": " · ".join(
+            part
+            for part in (
+                _plural(sources, "source"),
+                model_label(output.get("model"), bool(output.get("fallback"))),
+                created,
+            )
+            if part
+        ),
         "sections": sections,
         "removed": int(output.get("removed", 0)),
         "extra": output,

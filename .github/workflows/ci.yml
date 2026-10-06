@@ -34,10 +34,11 @@ jobs:
           ./gitleaks git --no-banner --redact --exit-code 1 .
 
   core-with-layer-off:
-    name: TC-REV-001 stage 1 suite with FEATURE_GOVERNANCE=false
+    name: TC-REV-001 stage 1 suite with every layer off
     runs-on: ubuntu-24.04
     env:
       FEATURE_GOVERNANCE: "false"
+      FEATURE_MODEL_PICKER: "false"
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
@@ -79,4 +80,26 @@ jobs:
         if: always()
         with:
           name: test-report-stage2
+          path: reports/
+
+  stage3-gate:
+    name: Stage 3 gate with every layer on
+    runs-on: ubuntu-24.04
+    env:
+      FEATURE_GOVERNANCE: "true"
+      FEATURE_MODEL_PICKER: "true"
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.14"
+      - run: pip install --require-hashes -r requirements-dev.lock && pip install --no-deps -e .
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m pytest -m "(stage1 or stage2 or stage3) and not eval and not smoke_live" --junitxml=reports/junit-stage3.xml
+      - run: python scripts/test_report.py reports/junit-stage3.xml > reports/test-report-stage3.md
+        if: always()
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: test-report-stage3
           path: reports/

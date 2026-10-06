@@ -17,6 +17,8 @@ class Services:
     repo: Repo
     budget: Budget
     session_id: str | None = None
+    # The visitor's chosen generation model (model picker layer); None means the default.
+    model: str | None = None
 
     @property
     def sid(self) -> str:

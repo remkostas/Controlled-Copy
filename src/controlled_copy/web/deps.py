@@ -63,6 +63,11 @@ def require_session(request: Request, services: ServicesDep) -> Services:
     if datetime.fromisoformat(last_seen) < datetime.now(UTC) - TOUCH_INTERVAL:
         services.repo.touch_session(sid)
     services.session_id = sid
+    for resolve in request.app.state.registry.model_resolvers:
+        model = resolve(services)
+        if model:
+            services.model = model
+            break
     return services
 
 

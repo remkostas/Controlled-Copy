@@ -21,6 +21,7 @@ from controlled_copy.storage.db import Migration
 LAYERS: dict[str, tuple[str, str]] = {
     # name: (module, settings flag)
     "governance": ("controlled_copy.governance", "feature_governance"),
+    "models": ("controlled_copy.models", "feature_model_picker"),
 }
 
 
@@ -48,6 +49,9 @@ class Registry:
     workspace_hooks: list[Callable[[Any, str], None]] = field(default_factory=list)
     # Called with (services, notebook_row, context dict) to extend the workspace view.
     view_hooks: list[Callable[[Any, Any, dict[str, Any]], None]] = field(default_factory=list)
+    # Called with (services) after the session check; the first non-None result is the
+    # visitor's generation model for this request (the fallback model stays configured).
+    model_resolvers: list[Callable[[Any], str | None]] = field(default_factory=list)
     # Notebook kinds a layer owns. Visitors see them only while the layer is loaded.
     notebook_kinds: list[str] = field(default_factory=list)
     loaded: list[str] = field(default_factory=list)

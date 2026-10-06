@@ -150,7 +150,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-GOV-09 | Context bar filters by site, role and date | TC-GOV-010 | integration | Set the date before an effective date | That document becomes excluded with the reason "not yet effective" |
 | FR-UI-03 | Journey B end to end | TC-UI-004 | e2e | Open workspace, run scenarios 1, 5, 6, open evidence, Reset | Every step works in a real browser |
 
-### Reversibility (stages 1 and 2)
+### Reversibility (all layers)
 
 | Req | Requirement | TC | Type | Input | Expected |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -158,13 +158,18 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | NFR-REV-02 | Layer database changes are additive | TC-REV-002 | integration | Apply stage 2 migrations to a stage 1 database, then run the stage 1 suite | Green; no stage 1 table altered destructively |
 | NFR-REV-03 | Switching the layer off hides it cleanly | TC-REV-003 | e2e | Run with the flag off | No workspace switcher entry, no card button, no errors |
 
-### Extension (stage 3, only if reached)
+### Model picker and extras (stage 3)
+
+Replaces the persona switcher planned earlier (never built; Remko asked for a model picker on 2026-10-06).
 
 | Req | Requirement | TC | Type | Input | Expected |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| FR-EXT-01 | Persona switcher labelled as a demo persona | TC-EXT-001 | e2e | Open the switcher | Label "demo persona, not a login" visible |
-| FR-EXT-02 | Only the controller changes document status | TC-EXT-002 | api | Operator persona calls approve | 403 |
-| FR-EXT-03 | Approving makes a document authoritative | TC-EXT-003 | integration | Upload as draft, approve, ask | The document can now support requirements |
+| FR-MOD-01 | The picker offers the allowlist, default selected | TC-MOD-001 | integration | Open the workspace with `FEATURE_MODEL_PICKER=true` | GPT-6 Luna, GPT-6 Luna Pro, Gemini 3.5 Flash Lite; the primary model selected |
+| FR-MOD-02 | Only allowlisted models can be chosen, with CSRF | TC-MOD-002 | integration | Post a Mistral ID, an empty value, no CSRF token, a valid model | 422, 422, 403, saved |
+| FR-MOD-03 | The chosen model writes answers, Briefings and cards, and is shown | TC-MOD-003 | integration | Choose a model, ask, build a card | Calls go to that model; the answer and output show its name |
+| FR-MOD-04 | The fallback still answers; choices are per visitor | TC-MOD-004 | integration | Chosen model fails; two visitors choose differently | Fallback answers and is marked "(fallback)"; each visitor keeps their own choice |
+| FR-MOD-05 | The allowlist is checked; removed models fall back to the default | TC-MOD-005 | integration | Duplicate, missing primary, malformed ID; a stored choice no longer listed | Startup refused with the reason; the default model is used |
+| FR-UI-05 | Model picker in a real browser | TC-UI-005 | e2e | Choose a model, ask, reload | Confirmation shown, answer labelled, choice kept, contrast passes |
 
 ### Evaluation (real model, published as measured)
 
@@ -181,4 +186,5 @@ G-01 to G-06 (generic path) and E-01 to E-14 (governed path), specified in demo-
 
 - **Stage 1 gate:** `pytest -m "stage1 and not eval and not smoke_live"` green; TC-REV-001 green; lint clean; gitleaks clean; G-01 to G-06 run and recorded; self-audit and Codex review findings addressed.
 - **Stage 2 gate:** `pytest -m "(stage1 or stage2) and not eval and not smoke_live"` green; TC-REV-001 to TC-REV-003 green; E-01 to E-14 run and recorded.
+- **Stage 3 gate:** `pytest -m "(stage1 or stage2 or stage3) and not eval and not smoke_live"` green with every layer on; TC-REV-001 green with every layer off.
 - **Before the video:** TC-LIVE-001 and TC-LIVE-002 twice.

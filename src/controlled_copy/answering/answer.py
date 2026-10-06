@@ -132,6 +132,7 @@ def ask(services: Services, notebook: OwnedNotebook, question: str, selected_ids
             "searched_sources": len(source_ids),
             "search_query": query,
             "model": result.model,
+            "fallback": result.fallback,
         }
     else:
         reason = gaps[0] if gaps else None
