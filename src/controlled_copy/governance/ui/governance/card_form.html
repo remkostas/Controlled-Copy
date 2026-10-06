@@ -18,7 +18,7 @@
   <div class="field">
     <label for="situation">Situation</label>
     <textarea class="textarea" id="situation" name="situation" rows="3" maxlength="{{ limits.situation_chars }}" data-counter="situation-counter" required
-      placeholder="What happened at the dock?"></textarea>
+      placeholder="Describe the situation, with any codes or document IDs"></textarea>
     <span class="counter muted" id="situation-counter" data-max="{{ limits.situation_chars }}">0 / {{ '{:,}'.format(limits.situation_chars) }}</span>
   </div>
   <div class="context-bar">

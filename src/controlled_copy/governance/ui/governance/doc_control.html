@@ -4,7 +4,7 @@
     <p class="muted doc-control__note">Applies to the next upload or paste and replaces any front matter in the file. Shown as "asserted by uploader".{% if nb.kind == 'ops_workspace' %} In this workspace only the curated documents are controlled, so the Resolution Card lists your document as not applied; use a personal notebook to build cards on your own documents.{% endif %}</p>
     <div class="field">
       <label for="doc-id">Document ID</label>
-      <input class="input" id="doc-id" name="doc_document_id" maxlength="64" placeholder="SOP-INB-002" autocomplete="off">
+      <input class="input" id="doc-id" name="doc_document_id" maxlength="64" placeholder="for example SOP-001" autocomplete="off">
     </div>
     <div class="doc-control__pair">
       <div class="field">
@@ -28,12 +28,12 @@
       </div>
       <div class="field">
         <label for="doc-site">Site</label>
-        <input class="input" id="doc-site" name="doc_site" maxlength="40" placeholder="HAM-01 or all" autocomplete="off">
+        <input class="input" id="doc-site" name="doc_site" maxlength="40" placeholder="site code or all" autocomplete="off">
       </div>
     </div>
     <div class="field">
       <label for="doc-roles">Roles (comma-separated, empty for every role)</label>
-      <input class="input" id="doc-roles" name="doc_roles" maxlength="400" placeholder="warehouse_operator, shift_lead" autocomplete="off">
+      <input class="input" id="doc-roles" name="doc_roles" maxlength="400" placeholder="for example operator, supervisor" autocomplete="off">
     </div>
   </div>
 </details>

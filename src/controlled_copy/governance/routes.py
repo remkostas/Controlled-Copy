@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, Response
 from controlled_copy.errors import UserFacingError
 from controlled_copy.governance import rules
 from controlled_copy.governance.card import CardInput, context_options, run_card
-from controlled_copy.governance.seed import reset_workspace
+from controlled_copy.governance.seed import default_role, reset_workspace
 from controlled_copy.limits import AccessLimiter
 from controlled_copy.logs import log_event
 from controlled_copy.purge import remove_uploads
@@ -26,7 +26,8 @@ def default_context(rows: list, site: str, role: str, as_of: str) -> rules.Conte
     """The context the visitor chose. A chosen site or role is never replaced, so documents
     for another site or role stay excluded even when none of the selected sources mentions
     the chosen value. A missing site is an error when the documents name sites (guessing one
-    would apply another site's instructions); a missing role falls back to the default role."""
+    would apply another site's instructions); a missing role falls back to the demo's default
+    role when the documents list it, else to the first role they list."""
     options = context_options(rows)
     if not site:
         if options["sites"]:
@@ -34,7 +35,8 @@ def default_context(rows: list, site: str, role: str, as_of: str) -> rules.Conte
         site = "all"
     if not role:
         roles = options["roles"]
-        role = rules.DEFAULT_ROLE if rules.DEFAULT_ROLE in roles or not roles else roles[0]
+        preferred = default_role()
+        role = preferred if preferred in roles else (roles[0] if roles else "")
     try:
         when = date.fromisoformat(as_of) if as_of else datetime.now(UTC).date()
     except ValueError as exc:

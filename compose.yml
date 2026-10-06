@@ -22,7 +22,7 @@ services:
       - internal
 
   caddy:
-    image: caddy:2.10
+    image: caddy:2.11
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
     ports:

@@ -33,8 +33,7 @@ MIGRATIONS = [
 
 def _view_hook(services: Services, notebook: Any, context: dict[str, Any]) -> None:
     from controlled_copy.governance.card import context_options, documents_of
-    from controlled_copy.governance.rules import DEFAULT_ROLE
-    from controlled_copy.governance.seed import WORKSPACE_KIND, scenarios
+    from controlled_copy.governance.seed import WORKSPACE_KIND, default_role, scenarios
 
     if "viewer" in context:
         _superseded_banner(services, context)
@@ -45,7 +44,7 @@ def _view_hook(services: Services, notebook: Any, context: dict[str, Any]) -> No
     context["extra"]["governance"] = {
         "sites": options["sites"],
         "roles": roles,
-        "default_role": DEFAULT_ROLE if DEFAULT_ROLE in roles else (roles[0] if roles else ""),
+        "default_role": default_role() if default_role() in roles else (roles[0] if roles else ""),
         "today": datetime.now(UTC).date().isoformat(),
         "scenarios": scenarios() if notebook.kind == WORKSPACE_KIND else [],
         "has_metadata": any(d.origin != "none" for d in documents_of(rows)),
