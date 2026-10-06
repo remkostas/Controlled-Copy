@@ -37,6 +37,7 @@ LABELS = {
     "deepseek/deepseek-v4-pro": "DeepSeek V4 Pro",
     "x-ai/grok-4.7": "Grok 4.7",
     "moonshotai/kimi-k2.6": "Kimi K2.6",
+    "z-ai/glm-5.2": "GLM 5.2",
 }
 VENDORS = {
     "openai": "OpenAI",
@@ -45,6 +46,7 @@ VENDORS = {
     "deepseek": "DeepSeek",
     "x-ai": "xAI",
     "moonshotai": "Moonshot AI",
+    "z-ai": "Z.ai",
 }
 
 

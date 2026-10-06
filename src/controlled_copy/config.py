@@ -55,7 +55,10 @@ class Settings(BaseSettings):
     feature_model_picker: bool = False
     # Models a visitor may choose with the model picker: only models measured on the
     # evaluation sets (D-040), comma-separated OpenRouter IDs.
-    model_choices: str = "openai/gpt-6-luna,openai/gpt-6-luna-pro,google/gemini-3.5-flash-lite"
+    model_choices: str = (
+        "openai/gpt-6-luna,openai/gpt-6-luna-pro,openai/gpt-6-sol,google/gemini-3.7-flash,"
+        "google/gemini-3.5-flash-lite,anthropic/claude-sonnet-5.5,z-ai/glm-5.2"
+    )
 
     retention_hours: int = Field(default=168, gt=0)
     purge_interval_seconds: int = Field(default=3600, gt=0)

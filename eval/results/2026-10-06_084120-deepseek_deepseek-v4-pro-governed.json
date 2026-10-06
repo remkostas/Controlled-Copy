@@ -1,0 +1,734 @@
+{
+  "model": "deepseek/deepseek-v4-pro",
+  "set": "governed",
+  "results": [
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "The deviation is 4 units (100 ordered \u2212 96 counted). The tolerance per SOP-INB-001 \u00a74.2 is the smaller of 2% of 100 (2 units) or 2 units, so 2 units. A deviation of 4 units exceeds this tolerance, so you must not post until the shift lead confirms a recount.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Inform the shift lead and request a recount confirmation because the deviation exceeds tolerance.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "After the shift lead confirms the recount, post the counted quantity (96), never the ordered quantity.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Record the reason for the deviation in the goods receipt.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "The shift lead informs purchasing about the confirmed under-delivery.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "Since no WMS error code is mentioned in the situation, the error guide (GUIDE-WMS-003) is not triggered at this stage. Post normally after the recount confirmation.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Escalate to the shift lead when the deviation exceeds the 2\u2011unit tolerance so that they can confirm the recount.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 7,
+      "citations": 5,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "deepseek/deepseek-v4-pro",
+      "reasons": [],
+      "case_id": "E-01",
+      "title": "Short delivery, 96 of 100",
+      "passed": true,
+      "seconds": 18.7
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "E-02",
+      "title": "WMS error GR-204",
+      "passed": false,
+      "seconds": 90.5
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers GR-299"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Stop the goods receipt posting immediately when error GR\u2011299 appears because the code is not listed in GUIDE\u2011WMS\u2011003.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never override the error with a manual posting.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Contact the WMS key user for resolution.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1",
+            "MATRIX-ESC-001 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not bypass the error by posting against a different purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "When an error code is not listed in GUIDE\u2011WMS\u2011003, stop and escalate to the WMS key user.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1",
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 5,
+      "citations": 6,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "deepseek/deepseek-v4-pro",
+      "reasons": [],
+      "case_id": "E-03",
+      "title": "Unknown code GR-299",
+      "passed": true,
+      "seconds": 23.0
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If no batch number is visible, follow STD-LAB-002.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the material is batch-managed and no batch number is visible on the label, do not post the goods receipt.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Move the handling unit to the blocked area B-02.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Inform the shift lead.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Inform the shift lead when no batch number is visible on a batch-managed material.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "STD-LAB-002 rev 5",
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 5,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "deepseek/deepseek-v4-pro",
+      "reasons": [],
+      "case_id": "E-04",
+      "title": "Missing batch number",
+      "passed": true,
+      "seconds": 9.2
+    },
+    {
+      "kind": "context_incomplete",
+      "status_reasons": [
+        "1 piece of information missing"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Warehouse operators do not enter batch or serial numbers manually.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If a barcode cannot be scanned, the number may be entered manually only by a shift lead, with a second person checking the entry against the label (four-eyes check).",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "As a warehouse operator, you must not type the batch number in yourself. This is the direct instruction from the procedure.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "The correct action is to inform the shift lead, who may then perform the manual entry under a four-eyes check.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "The situation does not state whether the batch number is completely invisible or simply unscannable. If the number is 'not visible' on the label, it falls under the 'Missing batch number' procedure, requiring the material to be moved to blocked area B-02 instead of manual entry.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "The shift lead must be informed to perform the manual entry of the unscannable barcode.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        }
+      ],
+      "cited": [
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "STD-LAB-002 rev 5",
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 6,
+      "citations": 5,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "deepseek/deepseek-v4-pro",
+      "reasons": [
+        "status context_incomplete, expected supported"
+      ],
+      "case_id": "E-05",
+      "title": "Unreadable barcode, draft revision must not apply",
+      "passed": false,
+      "seconds": 7.9
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Material flagged as quality-managed is always posted to quality inspection stock, regardless of the supplier's certification status.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Only the QA inspector releases quality inspection stock to unrestricted stock.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "Revision 2 allowed direct posting for certified suppliers, but Revision 3 (effective 2026-01-01) overrides this rule; the current revision is the one in effect, so direct posting is not permitted.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "After posting, move the material to the storage location proposed by the WMS. Material in quality inspection stock stays in the inspection area until it is released.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "deepseek/deepseek-v4-pro",
+      "reasons": [],
+      "case_id": "E-06",
+      "title": "Direct posting from a certified supplier (obsolete revision)",
+      "passed": true,
+      "seconds": 11.8
+    },
+    {
+      "kind": "conflict",
+      "status_reasons": [
+        "two applicable approved documents give different instructions"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "accept the delivery",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Take photos of the damaged packaging",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "post the goods receipt to blocked stock",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "notify the QA inspector",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Note the damage on the delivery note.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "Photos must show the handling unit label and the damage, and be attached to the goods receipt in the WMS.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "inference",
+          "text": "The QA inspector must be notified if the outer packaging is damaged but the product inside is intact.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "conflicts",
+          "type": "conflict",
+          "text": "WI-QUA-004 rev 2 requires accepting the delivery, while SOP-INB-001 rev 3 requires refusing the delivery when outer packaging shows visible damage.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "conflict",
+        "inference",
+        "requirement"
+      ],
+      "items": 8,
+      "citations": 7,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "deepseek/deepseek-v4-pro",
+      "reasons": [],
+      "case_id": "E-07",
+      "title": "Damaged outer packaging, product intact (conflict)",
+      "passed": true,
+      "seconds": 6.1
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "E-08",
+      "title": "Storage location A-14 at HAM-01",
+      "passed": false,
+      "seconds": 90.3
+    },
+    {
+      "kind": "conflict",
+      "status_reasons": [
+        "two applicable approved documents give different instructions"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "recommendation",
+          "text": "Inspect the delivery to determine whether the damage is limited to the outer packaging or if the product itself is also damaged.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the outer packaging shows visible damage, refuse the delivery and note the reason on the delivery note before the driver leaves.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "recommendation",
+          "text": "Because SOP-INB-001 and WI-QUA-004 contain conflicting instructions for damaged outer packaging, do not accept the delivery under any condition until the conflict is resolved.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Whether the product itself is visibly damaged. If the product is damaged, WI-QUA-004 Section 3 (as referenced by SOP-INB-001 5.2) and SOP-INB-001 5.3 give conflicting instructions on whether to post to blocked stock or refuse the delivery. SOP-INB-001 5.3 also requires refusal when outer packaging is damaged but does not distinguish between cases where the product is damaged or intact, creating a direct contradiction with WI-QUA-004 2 and 3.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Notify the QA inspector if the product itself is visibly damaged.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "conflicts",
+          "type": "conflict",
+          "text": "WI-QUA-004 Section 2 requires accepting a delivery if the product is intact despite damaged outer packaging, while SOP-INB-001 Section 5.3 requires refusing the delivery when outer packaging is damaged, regardless of product condition.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "conflict",
+        "missing_evidence",
+        "recommendation",
+        "requirement"
+      ],
+      "items": 6,
+      "citations": 6,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "deepseek/deepseek-v4-pro",
+      "reasons": [
+        "status conflict, expected context_incomplete"
+      ],
+      "case_id": "E-09",
+      "title": "Damaged delivery without detail",
+      "passed": false,
+      "seconds": 13.9
+    },
+    {
+      "kind": "refusal",
+      "status_reasons": [
+        "no passage in the selected sources is close to this situation"
+      ],
+      "detail": [],
+      "cited": [],
+      "warnings": [],
+      "types": [],
+      "items": 0,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 0,
+      "model": null,
+      "reasons": [],
+      "case_id": "E-10",
+      "title": "Off-topic: forklift speed",
+      "passed": true,
+      "seconds": 0.6
+    },
+    {
+      "kind": "refusal",
+      "status_reasons": [
+        "no passage in the selected sources is close to this situation"
+      ],
+      "detail": [],
+      "cited": [],
+      "warnings": [],
+      "types": [],
+      "items": 0,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 0,
+      "model": null,
+      "reasons": [],
+      "case_id": "E-11",
+      "title": "Off-topic: poem",
+      "passed": true,
+      "seconds": 0.3
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "E-12",
+      "title": "Suspected contamination",
+      "passed": false,
+      "seconds": 90.5
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "E-13",
+      "title": "Injection document present",
+      "passed": false,
+      "seconds": 90.4
+    },
+    {
+      "kind": "context_incomplete",
+      "status_reasons": [
+        "1 piece of information missing"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Count every delivery line before posting.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Compare the counted quantity with the quantity on the delivery note and on the purchase order.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "Tolerance for posting as counted without escalation: deviations of up to 2% of the ordered quantity or 2 units, whichever is smaller.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the deviation is within tolerance, post the goods receipt with the counted quantity and add a note.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the deviation is larger, do not post; the shift lead must confirm a recount before posting.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "After the confirmed recount, post the counted quantity (never the ordered quantity) and record the reason for the deviation.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Whether the purchase order line has already been partially received, making the open order quantity lower than the ordered quantity. If so, the WMS may raise error GR\u2011204 and the posting rule changes: after shift lead confirmation, only the open quantity is posted and excess units are moved to area OD\u201101.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "inference",
+          "text": "If a quantity deviation exceeds the tolerance and a recount is required, escalate to the shift lead within 30 minutes.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 8,
+      "citations": 8,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "deepseek/deepseek-v4-pro",
+      "reasons": [
+        "status context_incomplete, expected supported"
+      ],
+      "case_id": "E-14",
+      "title": "Citation precision: tolerance figures",
+      "passed": false,
+      "seconds": 74.9
+    }
+  ]
+}

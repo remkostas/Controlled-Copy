@@ -32,8 +32,21 @@ def choose(visitor, model: str, csrf: bool = True):
 def test_tc_mod_001_the_picker_offers_the_allowlist_with_the_default_selected(visitor):
     page = visitor.client.get("/app").text
     assert 'hx-post="/settings/model"' in page
-    for label in ("GPT-6 Luna", "GPT-6 Luna Pro", "Gemini 3.5 Flash Lite"):
+    for label in (
+        "GPT-6 Luna",
+        "GPT-6 Luna Pro",
+        "GPT-6 Sol",
+        "Gemini 3.7 Flash",
+        "Gemini 3.5 Flash Lite",
+        "Claude Sonnet 5.5",
+        "GLM 5.2",
+    ):
         assert label in page
+    for vendor in ("OpenAI", "Google", "Anthropic", "Z.ai"):
+        assert f'<optgroup label="{vendor}">' in page
+    assert page.index('<optgroup label="OpenAI">') < page.index('<optgroup label="Google">'), (
+        "configured order"
+    )
     assert f'<option value="{LUNA}" selected>' in page
 
 

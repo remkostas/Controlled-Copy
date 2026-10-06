@@ -1,0 +1,287 @@
+{
+  "model": "qwen/qwen3.5-397b-a17b",
+  "set": "holdout",
+  "results": [
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "H-01",
+      "title": "Small shortage within tolerance",
+      "passed": false,
+      "seconds": 90.3
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "do not post. Move the handling unit to the over-delivery area OD-01 and inform purchasing.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never: post against another open line of the same purchase order.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "Since the WMS shows error code GR-101, the operator must follow GUIDE-WMS-003 instead of attempting a standard goods receipt posting.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "GUIDE-WMS-003 rev 1"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 3,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "qwen/qwen3.5-397b-a17b",
+      "reasons": [],
+      "case_id": "H-02",
+      "title": "WMS error GR-101",
+      "passed": true,
+      "seconds": 55.8
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "H-03",
+      "title": "Code GR-512 (documented)",
+      "passed": false,
+      "seconds": 90.3
+    },
+    {
+      "kind": "error 502",
+      "error": "The model returned an answer in an unexpected format twice. Please try again.",
+      "reasons": [
+        "status 502"
+      ],
+      "case_id": "H-04",
+      "title": "Torn stretch wrap, parts intact (conflict)",
+      "passed": false,
+      "seconds": 85.2
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "H-05",
+      "title": "Wet cartons",
+      "passed": false,
+      "seconds": 94.4
+    },
+    {
+      "kind": "refusal",
+      "status_reasons": [
+        "no passage in the selected sources is close to this situation"
+      ],
+      "detail": [],
+      "cited": [],
+      "warnings": [],
+      "types": [],
+      "items": 0,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 0,
+      "model": null,
+      "reasons": [],
+      "case_id": "H-06",
+      "title": "Off-topic: football",
+      "passed": true,
+      "seconds": 0.3
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "H-07",
+      "title": "Barcode with the draft revision in mind",
+      "passed": false,
+      "seconds": 90.3
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "H-08",
+      "title": "Chemical smell",
+      "passed": false,
+      "seconds": 90.3
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "H-09",
+      "title": "Damage without detail",
+      "passed": false,
+      "seconds": 90.3
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers A-12",
+        "no applicable approved instruction was found"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "missing_evidence",
+          "text": "No applicable approved document covers: A-12.",
+          "cites": []
+        },
+        {
+          "section": "required_actions",
+          "type": "recommendation",
+          "text": "Do not put the material away in aisle A-12 until a valid storage location is confirmed by the shift lead or WMS key user.",
+          "cites": []
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "Putting the material away in an unrecorded location like A-12 is prohibited because the system does not recognize it.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "The situation does not state if A-12 is a system-proposed location, a manually selected alternative, or an unauthorized area, which determines if P3 or P2 applies.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1",
+            "GUIDE-WMS-003 rev 1"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1"
+      ],
+      "warnings": [
+        "WI-STO-007 rev 1"
+      ],
+      "types": [
+        "inference",
+        "missing_evidence",
+        "recommendation"
+      ],
+      "items": 4,
+      "citations": 3,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "qwen/qwen3.5-397b-a17b",
+      "reasons": [],
+      "case_id": "H-10",
+      "title": "Aisle A-12 at HAM-01",
+      "passed": true,
+      "seconds": 52.0
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers GR-777"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the code is not listed in this guide, stop and contact the WMS key user (see MATRIX-ESC-001).",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never override an error with a manual posting.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never bypass a WMS error by posting against a different purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "Since GR-777 is not covered by any approved document, the operator must stop the receiving process immediately.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Contact the WMS key user for unknown error codes not solved by GUIDE-WMS-003.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2",
+            "GUIDE-WMS-003 rev 1"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 5,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "qwen/qwen3.5-397b-a17b",
+      "reasons": [],
+      "case_id": "H-11",
+      "title": "Unknown code GR-777",
+      "passed": true,
+      "seconds": 54.9
+    }
+  ]
+}

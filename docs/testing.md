@@ -164,7 +164,7 @@ Replaces the persona switcher planned earlier (never built; Remko asked for a mo
 
 | Req | Requirement | TC | Type | Input | Expected |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| FR-MOD-01 | The picker offers the allowlist, default selected | TC-MOD-001 | integration | Open the workspace with `FEATURE_MODEL_PICKER=true` | GPT-6 Luna, GPT-6 Luna Pro, Gemini 3.5 Flash Lite; the primary model selected |
+| FR-MOD-01 | The picker offers the allowlist, default selected | TC-MOD-001 | integration | Open the workspace with `FEATURE_MODEL_PICKER=true` | The seven evaluated models grouped by provider in configured order; GPT-6 Luna selected |
 | FR-MOD-02 | Only allowlisted models can be chosen, with CSRF | TC-MOD-002 | integration | Post a Mistral ID, an empty value, no CSRF token, a valid model | 422, 422, 403, saved |
 | FR-MOD-03 | The chosen model writes answers, Briefings and cards, and is shown | TC-MOD-003 | integration | Choose a model, ask, build a card | Calls go to that model; the answer and output show its name |
 | FR-MOD-04 | The fallback still answers; choices are per visitor | TC-MOD-004 | integration | Chosen model fails; two visitors choose differently | Fallback answers and is marked "(fallback)"; each visitor keeps their own choice |
