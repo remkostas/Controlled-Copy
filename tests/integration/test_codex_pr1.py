@@ -191,3 +191,57 @@ def test_healthz_reports_a_database_that_cannot_be_opened(settings, tmp_path):
 def test_pages_ask_search_engines_not_to_index_the_demo(visitor):
     for path in ("/", "/app", "/healthz"):
         assert visitor.client.get(path).headers["x-robots-tag"] == "noindex, nofollow"
+
+
+def test_tc_lim_002_the_daily_limit_also_counts_dollars(settings):
+    """Codex Stage 3 review S3-1: with the model picker every call can go to the most
+    expensive model, so the day is also limited in USD, from the cost the provider reports."""
+    from fastapi.testclient import TestClient
+
+    from controlled_copy.app import create_app
+    from controlled_copy.providers.fake import FakeProvider
+    from tests.conftest import Visitor
+    from tests.helpers.responders import quote_passage_containing
+
+    fake = FakeProvider(cost_per_call=0.03)
+    app = create_app(settings.model_copy(update={"max_usd_per_day": 0.05}), fake, run_purge=False)
+    with TestClient(app) as client:
+        visitor = Visitor(client).login()
+        visitor.paste("Doc", "Deviations of up to 2% of the ordered quantity are posted as counted.")
+        fake.responder = quote_passage_containing("Deviations of up to 2% of the ordered quantity")
+        assert visitor.ask("What is the tolerance?").status_code == 200  # 0.03 spent
+        assert visitor.ask("And the tolerance again?").status_code == 200  # 0.06 spent
+        refused = visitor.ask("Once more?")
+        assert refused.status_code == 503 and "daily budget" in refused.json()["error"]
+        page = visitor.client.get("/app")
+        assert page.status_code == 200, "viewing still works"
+
+
+def test_tc_src_005_the_character_limit_is_rechecked_inside_the_write(visitor, services, db):
+    """Codex PR #1 re-check M4: two uploads can both pass the check before embedding; the
+    insert transaction must still refuse the one that would cross the limit."""
+    from controlled_copy.storage.repo import CapacityReached, NewSource
+
+    visitor.paste("First", "a" * 60)
+    sid = db.execute("SELECT session_id FROM notebook WHERE id = ?", (visitor.notebook_id,)).fetchone()[0]
+    notebook = services.repo.get_notebook(sid, visitor.notebook_id)
+    late = NewSource(
+        notebook=notebook,
+        title="Arrived in parallel",
+        kind="paste",
+        bytes=50,
+        text="b" * 50,
+        pages=None,
+        page_starts=None,
+        warnings=[],
+        metadata=None,
+        metadata_origin="none",
+        file_path=None,
+        chunks=[],
+        vectors=[],
+        vector_model="fake",
+    )
+    with pytest.raises(CapacityReached, match="at most 100 characters"):
+        services.repo.insert_source(late, char_limit=100)
+    count = db.execute("SELECT COUNT(*) FROM source WHERE notebook_id = ?", (visitor.notebook_id,))
+    assert count.fetchone()[0] == 1

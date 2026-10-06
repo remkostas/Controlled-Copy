@@ -17,7 +17,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from client import EVAL, AppClient, eval_settings, fetch_document
+from client import EVAL, AppClient, eval_settings, fetch_document, provenance, provenance_line
 
 PAGE_RE = re.compile(r"page (\d+)")
 
@@ -153,14 +153,16 @@ def write_report(set_name: str, model: str, results: list[dict[str, Any]], extra
     stamp = datetime.now(UTC).strftime("%Y-%m-%d_%H%M")
     slug = model.replace("/", "_")
     base = EVAL / "results" / f"{stamp}-{slug}-{set_name}"
+    info = provenance(EVAL / "cases_generic.json")
     base.with_suffix(".json").write_text(
-        json.dumps({"model": model, "set": set_name, "results": results}, indent=2) + "\n"
+        json.dumps({"model": model, "set": set_name, "provenance": info, "results": results}, indent=2) + "\n"
     )
     passed = sum(1 for r in results if r["passed"])
     lines = [
         f"# Evaluation: {set_name} set",
         "",
         f"Run {stamp} UTC, generation model `{model}`, embeddings `baai/bge-m3`. {passed} of {len(results)} cases pass.",
+        provenance_line(info),
         "",
         "| Case | Title | Result | Outcome | Citations | Cited pages | Seconds | Reasons |",
         "| :--- | :--- | :--- | :--- | ---: | :--- | ---: | :--- |",

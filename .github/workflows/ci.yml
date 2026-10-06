@@ -93,10 +93,20 @@ jobs:
       - name: Container logs (content-free) on failure
         if: failure()
         run: docker compose logs --tail 100
-      - name: Image scan (fixable HIGH and CRITICAL fail the build)
+      - name: App image scan (fixable HIGH and CRITICAL fail the build)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
+          version: v0.75.0
           image-ref: controlled-copy:latest
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Caddy image scan (the internet-facing container)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.75.0
+          image-ref: caddy:2.11
           scanners: vuln
           severity: CRITICAL,HIGH
           ignore-unfixed: true

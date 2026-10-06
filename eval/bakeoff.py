@@ -26,7 +26,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from client import EVAL, ROOT, eval_settings, fetch_document
+from client import EVAL, ROOT, eval_settings, fetch_document, provenance, provenance_line
 from controlled_copy.answering import prompts
 from controlled_copy.answering.answer import AnswerOut
 from controlled_copy.answering.citations import CitationNumbering, verify_statements
@@ -343,11 +343,13 @@ def main() -> int:
     )
     chunks = load_corpora()
     stamp = datetime.now(UTC).strftime("%Y-%m-%d_%H%M")
-    out: dict[str, Any] = {"run": stamp, "chunks": len(chunks)}
+    info = provenance(EVAL / "cases_generic.json")
+    out: dict[str, Any] = {"run": stamp, "chunks": len(chunks), "provenance": info}
     lines = [
         f"# Model bake-off ({stamp} UTC)",
         "",
-        f"Corpus: NIST AI 100-1 plus the synthetic Inbound Operations corpus, {len(chunks)} chunks.",
+        f"Corpus: NIST AI 100-1 plus the synthetic Inbound Operations corpus, {len(chunks)} chunks. "
+        + provenance_line(info),
         "",
     ]
     if not args.skip_embeddings:

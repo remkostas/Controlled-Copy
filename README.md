@@ -71,7 +71,7 @@ Open http://127.0.0.1:8000 and enter your access code.
 With Docker Compose, Caddy terminates TLS in front of the app:
 
 ```
-cp .env.example .env        # fill in the required values; set APP_MODE=deploy on a server
+cp .env.example .env        # fill in the required values; Compose runs deploy mode by default
 docker compose build --pull && docker compose up -d
 ```
 

@@ -11,7 +11,7 @@ One small Linux server with Docker, the app container and Caddy in front of it. 
 
 ## 2. DNS
 
-An `A` record for the site name pointing at the server, not proxied, so Caddy can complete the ACME challenge.
+An `A` record for the site name pointing at the server, not proxied, so Caddy can complete the ACME challenge. No `AAAA` record: Caddy publishes on IPv4 only, and an IPv6 address would send the certificate check and IPv6 visitors to a closed port.
 
 ## 3. Code and settings
 
@@ -26,14 +26,14 @@ Set at least these values in `.env`:
 | Variable | Value |
 | :--- | :--- |
 | `OPENROUTER_API_KEY` | A key with a credit limit and privacy settings that deny training |
-| `APP_ACCESS_CODE` | 12 or more characters; what visitors type |
+| `APP_ACCESS_CODE` | 12 or more characters (deploy mode refuses shorter ones); what visitors type |
 | `APP_SECRET_KEY` | The 64 characters printed above |
-| `APP_MODE` | `deploy` (Compose reads it from `.env`; the example says `local`) |
 | `SITE_ADDRESS` | The site name, for example `demo.example.org` |
 | `PUBLISH_ADDRESS` | `0.0.0.0` |
-| `FEATURE_GOVERNANCE`, `FEATURE_MODEL_PICKER` | `true` to switch the optional layers on |
+| `FEATURE_GOVERNANCE` | `true` for the governed-documents layer (Stage 2) |
+| `FEATURE_MODEL_PICKER` | `true` for the model picker (Stage 3; ignored before that layer is merged) |
 
-In deploy mode the app refuses to start without a strong access code and secret key, with debug on, or with the fake model provider.
+Compose runs the app in deploy mode unless `.env` sets `APP_MODE` (leave it out on a server). In deploy mode the app refuses to start without an access code of at least 12 characters and a secret key of at least 32, with debug on, or with the fake model provider.
 
 ## 4. Start
 
@@ -53,10 +53,12 @@ sudo ufw status verbose
 sudo ss -tlnp
 sudo sshd -T | grep -E "^(passwordauthentication|permitrootlogin)"
 docker compose ps --format "{{.Name}} {{.Ports}}"
-docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed controlled-copy:latest
+docker save controlled-copy:latest -o /tmp/controlled-copy.tar
+docker run --rm -v /tmp/controlled-copy.tar:/image.tar:ro aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa image --input /image.tar --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed
+rm /tmp/controlled-copy.tar
 ```
 
-Expected: only 22, 80 and 443 open; password and root login off; only Caddy publishes ports; no fixable HIGH or CRITICAL findings.
+Expected: only 22, 80 and 443 open; password and root login off; only Caddy publishes ports; no fixable HIGH or CRITICAL findings. The scanner is pinned by digest (the same Trivy version as CI) and reads a saved copy of the image, so it never gets the Docker socket.
 
 Then run the live checks from any machine with the development dependencies installed:
 
@@ -69,7 +71,8 @@ TC-LIVE-001 checks health, headers, TLS and the HTTP redirect without model call
 ## 6. Operating it
 
 - **Update:** `git pull && docker compose build --pull && docker compose up -d --wait`. Rebuild at least monthly so the base images and Debian packages pick up security fixes.
+- **Uptime:** an external monitor (any uptime service) on `https://<site>/healthz`. Compose restarts a container that exits, not one that is up but unhealthy, so the monitor is what tells you.
 - **Logs:** `docker compose logs --tail 100 app`. Logs are content-free (IDs, sizes, durations); Docker keeps at most 30 MB per container.
 - **Data:** the SQLite database and uploads live in the `app-data` volume. Sessions not seen for `RETENTION_HOURS` (default 7 days) are purged hourly with everything in them. The demo holds synthetic data only, so there is no backup; for real data, back up the volume and keep the backup inside the same retention promise.
-- **Costs:** model calls are limited per visitor per hour and per day (`MODEL_CALLS_PER_VISITOR_HOUR`, `MODEL_CALLS_PER_DAY`); the credit limit on the OpenRouter key is the final stop. Larger models in `MODEL_CHOICES` cost more per call.
+- **Costs:** model calls are limited per visitor per hour and per day (`MODEL_CALLS_PER_VISITOR_HOUR`, `MODEL_CALLS_PER_DAY`), the day is also limited in dollars from the cost OpenRouter reports per call (`MAX_USD_PER_DAY`, default 5), and no request routes to an endpoint above `MAX_PRICE_PROMPT_PER_MILLION` / `MAX_PRICE_COMPLETION_PER_MILLION`. The credit limit on the OpenRouter key is the last stop, not the first. Larger models in `MODEL_CHOICES` (model picker) cost more per call.
 - **Remove everything:** `docker compose down -v`, then revoke the OpenRouter key.

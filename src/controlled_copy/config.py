@@ -69,6 +69,8 @@ class Settings(BaseSettings):
     max_situation_chars: int = Field(default=2000, gt=0)
     model_calls_per_visitor_hour: int = 120
     model_calls_per_day: int = 3000
+    # Daily spend limit in USD over all visitors, from the cost OpenRouter reports per call.
+    max_usd_per_day: float = Field(default=5.0, gt=0)
     access_attempts_per_hour: int = 10
     provider_timeout_seconds: float = Field(default=45.0, gt=0)
     # Highest endpoint price a generation request may route to, USD per million tokens.
@@ -124,8 +126,8 @@ class Settings(BaseSettings):
         if self.app_mode is AppMode.DEPLOY:
             if len(secret) < 32:
                 problems.append("APP_SECRET_KEY must be set and at least 32 characters in deploy mode")
-            if len(code) < 8:
-                problems.append("APP_ACCESS_CODE must be at least 8 characters in deploy mode")
+            if len(code) < 12:
+                problems.append("APP_ACCESS_CODE must be at least 12 characters in deploy mode")
             if self.app_debug:
                 problems.append("APP_DEBUG must be off in deploy mode")
             if self.model_provider == "fake":
