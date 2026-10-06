@@ -478,7 +478,7 @@ select {
   color: var(--accent);
 }
 .model-select select {
-  max-width: 14rem;
+  max-width: 12rem;
   height: 2rem;
   padding: 0 var(--sp-6) 0 var(--sp-3);
   border: 1px solid var(--border-chrome);
@@ -520,6 +520,7 @@ select {
   font-family: var(--font-mono);
 }
 .topbar .btn {
+  white-space: nowrap;
   min-height: 2rem;
   background: var(--surface-chrome-2);
   border-color: var(--border-chrome);
@@ -1326,6 +1327,18 @@ details.paste > summary.btn {
 /* Mobile tabs (below 900px, one panel at a time) */
 .mobile-tabs {
   display: none;
+}
+@media (max-width: 1600px) {
+  /* With the model picker the top bar is full: keep the note as an icon with a tooltip,
+     its text stays available to screen readers. */
+  .topbar:has(.model-select) .topbar__note span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
 }
 @media (max-width: 1180px) {
   :root {
