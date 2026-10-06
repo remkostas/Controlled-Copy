@@ -320,3 +320,21 @@ def test_seeding_failures_back_off(monkeypatch, settings):
     seeder.failed_at -= seeder.retry_seconds
     seeder(None, "s3")
     assert calls == ["s1", "s3"]
+
+
+def test_tc_src_011_a_card_whose_source_was_deleted_mid_generation_is_not_returned(workspace, fake):
+    """Codex PR #1 F1 for the Resolution Card: answer with what was stored."""
+    from controlled_copy.providers.fake import default_responder
+
+    visitor = workspace.visitor
+    target = workspace.source_ids[0]
+
+    def responder(request):
+        if request.schema_name == "resolution_card":
+            visitor.client.delete(f"/sources/{target}", headers=visitor.json_headers())
+        return default_responder(request)
+
+    fake.responder = responder
+    response = workspace.card("The WMS shows error GR-204 after I scan the delivery.")
+    assert response.status_code == 200
+    assert response.json()["output"] == {"kind": "tombstone"}
