@@ -11,7 +11,7 @@ python scripts/test_report.py reports/junit.xml
 
 ## 1. Conventions
 
-- **Requirement IDs:** `FR-<area>-<nn>` (functional) and `NFR-<area>-<nn>` (security, privacy, reliability, reversibility). Areas: ACC access and sessions, NB notebooks, SRC sources, IDX indexing, RET retrieval, ANS answers, FUP follow-ups, STU studio, GOV governance, EXT extension, LIM limits, RTN retention, LOG logging, SEC security, REV reversibility, UI interface.
+- **Requirement IDs:** `FR-<area>-<nn>` (functional) and `NFR-<area>-<nn>` (security, privacy, reliability, reversibility). Areas: ACC access and sessions, NB notebooks, SRC sources, IDX indexing, RET retrieval, ANS answers, FUP follow-ups, STU studio, GOV governance, EXT extension, LIM limits, RTN retention, LOG logging, SEC security, REV reversibility, UI interface, EVAL evaluation scoring.
 - **Test case IDs:** `TC-<area>-<nnn>`. Automated tests are named `test_tc_<area>_<nnn>_<behaviour>` (for example `test_tc_src_004_rejects_renamed_binary`).
 - **pytest markers:** a type (`unit`, `integration`, `api`, `e2e`, `security`, `eval`, `smoke_live`) and a stage (`stage1`, `stage2`, `stage3`). Example: `pytest -m "stage1 and not eval"` runs the core gate.
 - **Model calls:** unit, integration, api, e2e and security tests use a fake model provider (deterministic, no network, no cost). Only `eval` and `smoke_live` call the real model.
@@ -168,7 +168,13 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 
 ### Evaluation (real model, published as measured)
 
-G-01 to G-06 (generic path) and E-01 to E-14 (governed path), specified in demo-corpus-and-eval.md. Marker `eval`, run manually and before the video. Retrieval metrics (hit@k, mean reciprocal rank) from the same cases feed the model bake-off.
+G-01 to G-06 (generic path) and E-01 to E-14 (governed path), specified in demo-corpus-and-eval.md. Marker `eval`, run manually and before the video. Retrieval metrics (hit@k, mean reciprocal rank) from the same cases feed the model bake-off. Only results that record a clean commit and the case-file hash count as evidence (see `eval/results/README.md`).
+
+The scorer itself is tested offline with hand-made responses, so a pass cannot come from the right words in a quote next to a wrong statement:
+
+| Req | Requirement | TC | Type | Input | Expected |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| NFR-EVAL-01 | Expected terms must be in the answer, not only in its quotes | TC-EVAL-001 | unit | A wrong statement next to a genuine quote that holds every expected term | The case fails; the statements and quotes are kept in the result |
 
 ### Live smoke (deployed URL)
 
