@@ -1,5 +1,5 @@
 {
-  "action_checks": "Action checks added on 2026-10-06 after the full audit (EVAL-01): must_say and must_not_say are regular expressions over the statements the card shows, never over the quotes. They were written from the corpus text and the expected column of the case specification, then checked against stored outputs only to make sure correct wording is not rejected. Re-check 2026-10-06 (RCK-02): a negation counts only within the action's own phrase, a prohibition after an action only when it follows directly, and contamination cases also reject a conditional or delayed stop and a delayed notification.",
+  "action_checks": "Action checks added on 2026-10-06 after the full audit (EVAL-01): must_say and must_not_say are regular expressions over the statements the card shows, never over the quotes. They were written from the corpus text and the expected column of the case specification, then checked against stored outputs only to make sure correct wording is not rejected. Re-check 2026-10-06 (RCK-02): a negation counts only within the action's own phrase, a prohibition after an action only when it follows directly, and contamination cases also reject a conditional or delayed stop and a delayed notification. Second re-check 2026-10-06 (R2-EVAL-01): a negation counts only when it governs the matched verb (right before it, or heading an or/nor list); checks may name a context the clause must match; synonyms for stopping, posting and continuing to unload, any non-trigger condition on a stop, report-style delays, certification anchored on the exempting verb.",
   "corpus": "demo-data/inbound-operations",
   "extra": "eval/corpus-extra/SUP-NOTE-118_supplier-delivery-advice.md",
   "default_context": {
@@ -311,15 +311,26 @@
         {
           "what": "post it to unrestricted stock",
           "any": [
-            "\\bpost\\w*\\b{gap}\\bunrestricted stock\\b"
+            "\\b(?:post|book|enter|receiv|record|put|place|stor|send)\\w*\\b{gap}\\b(?:as |into |to |in )?unrestricted\\b",
+            "\\b(?:go|goes|going)\\b{gap}\\bunrestricted stock\\b"
           ]
         },
         {
           "what": "certification exempts the material",
+          "context": "\\bcertif|\\bsuppliers?\\b",
           "any": [
-            "\\bcertified suppliers?\\b[^.;:]*\\b(?:not subject|exempt|need no|does not need|do not need|skip)",
-            "\\bonly (?:to|for) (?:material from )?uncertified\\b",
-            "\\bdirect posting\\b(?:(?!\\b(?:not|no|never)\\b)[^.;:])*\\b(?:is|are) (?:allowed|permitted)\\b"
+            "\\bexempt\\w*\\b",
+            "\\bskip\\w*\\b",
+            "\\bbypass\\w*\\b",
+            "\\bwaive\\w*\\b",
+            "\\b(?:does not|do not|doesn't|don't) need\\b[^.;:]*\\b(?:inspection|qa|quality)",
+            "\\bneeds? no\\b[^.;:]*\\b(?:inspection|qa|quality)",
+            "\\bnot subject to\\b",
+            "\\b(?:covers?|replaces?) the (?:quality |qa )?(?:check|inspection)\\b",
+            "\\bonly (?:to|for) (?:(?:material|goods) )?(?:from )?(?:new|uncertified|non-certified)\\b",
+            "\\b(?:meant|intended) for (?:material|goods) (?:from|whose)\\b",
+            "\\bdirect posting\\b(?:(?!\\b(?:not|no|never)\\b)[^.;:])*\\b(?:is|are|remains?) (?:allowed|permitted|possible)\\b",
+            "\\b(?:is|are) not (?:needed|required|necessary)\\b"
           ]
         }
       ]
@@ -506,7 +517,10 @@
             "\\bstop\\w*\\b[^.;:]*\\bunload",
             "\\bunload\\w*\\b[^.;:]*\\b(?:stop|halt)",
             "\\bstop (?:work|immediately|at once)\\b",
-            "\\bhalt\\w*\\b"
+            "\\bhalt\\w*\\b",
+            "\\b(?:cease|suspend|interrupt|pause)\\w*\\b[^.;:]*\\bunload",
+            "\\b(?:do not|don't|never|must not|mustn't)\\s+(?:continue\\s+|resume\\s+)?unload\\w*",
+            "\\bno (?:more|further) unloading\\b"
           ]
         },
         {
@@ -536,25 +550,31 @@
         {
           "what": "keep unloading",
           "any": [
-            "\\b(?:continue|keep|carry on|resume|proceed|finish|complete)\\w*\\b{gap}\\bunload"
+            "\\b(?:continue|keep|carry on|resume|proceed|finish|complete)\\w*\\b{gap}\\bunload",
+            "(?<!when )(?<!whether )(?<!until )(?<!before )(?<!after )(?<!if )(?<!once )\\bunloading\\b(?:(?!\\b(?:not|never|no|until|unless|only|after|before|once|stop\\w*|halt\\w*)\\b)[^.;:])*?\\b(?:continues?|go(?:es)? on|carr(?:y|ies) on|proceeds?|resumes?|can (?:continue|go on|proceed|resume)|may (?:continue|go on|proceed|resume))\\b",
+            "\\bunload\\w*\\b{gap}\\b(?:remaining|rest of)\\b",
+            "\\bempty (?:the )?(?:truck|trailer|lorry|vehicle)\\b",
+            "\\b(?:carry on|go on|keep going|continue|proceed)\\w*\\b(?: \\w+){0,2} (?:with )?(?:the )?(?:delivery|receiving|unloading|work)\\b",
+            "\\b(?:take|move|carry|get|lift)\\w*\\b{gap}\\boff the (?:truck|trailer|lorry)\\b"
           ]
         },
         {
           "what": "leave out QA or EHS",
           "any": [
-            "\\b(?:do not|don't|never|no need to|not)(?: (?:need|have|bother|try))?(?: to)? (?:contact|notify|inform|call|tell|alert)\\w*\\b[^.;:]*\\b(?:qa|ehs)\\b"
+            "\\b(?:do not|don't|never|no need to|not)(?: (?:need|have|bother|try))?(?: to)? (?:contact|notify|inform|call|tell|alert|involve|bring in|call in|escalate to)\\w*\\b[^.;:]*\\b(?:qa|ehs)\\b"
           ]
         },
         {
           "what": "post the leaking material",
           "any": [
-            "\\bpost\\w*\\b{gap}\\b(?:unrestricted stock|the leaking)\\b"
+            "\\b(?:post|book|enter|receiv|record|put|place|stor|send)\\w*\\b{gap}\\b(?:unrestricted stock|the leaking)\\b",
+            "\\b(?:go|goes|going)\\b{gap}\\bunrestricted stock\\b"
           ]
         },
         {
           "what": "touch or open the material",
           "any": [
-            "\\b(?:touch|open)\\w*\\b{gap}\\b(?:carton|material|packaging|liquid)\\b"
+            "\\b(?:touch|open|handle|wipe|clean|mop)\\w*\\b{gap}\\b(?:carton|material|packaging|liquid)\\b"
           ]
         },
         {
@@ -562,13 +582,16 @@
           "any": [
             "\\bstop\\w*\\b[^.;:]*\\bunload\\w*\\b[^.;:]*\\b(?:only )?(?:if|when|once) (?:the |it |its )?(?:leak|smell|odou?r|liquid|it)\\w*\\b[^.;:]*\\b(?:worse|stronger|spread\\w*|grow\\w*|increase\\w*|bigger)\\b",
             "\\bstop\\w*\\b[^.;:]*\\bunload\\w*\\b[^.;:]*\\bonly if\\b",
-            "\\bfirst\\b[^.;:]*\\bthen stop\\b"
+            "\\bfirst\\b[^.;:]*\\bthen stop\\b",
+            "\\bstop\\w*\\b[^.;:]*\\bunload\\w*\\b(?:(?!\\b(?:immediately|at once|right away|now)\\b)[^.;:])*?\\b(?:if|when|once|unless|as soon as)\\b(?! (?:there is|there are|there's|you (?:notice|see|smell|detect|find)|a leak|an? (?:leak|unknown|unusual|strong)))"
           ]
         },
         {
           "what": "delay telling QA or EHS",
           "any": [
-            "\\b(?:notify|contact|inform|call|tell|alert)\\w*\\b[^.;:]*\\b(?:qa|ehs)\\b[^.;:]*\\b(?:end of (?:the |your )?shift|later|tomorrow|next (?:day|shift)|after unloading|once unloading|when unloading|after (?:the )?(?:truck|delivery) is unloaded)\\b"
+            "\\b(?:notify|contact|inform|call|tell|alert)\\w*\\b[^.;:]*\\b(?:qa|ehs)\\b[^.;:]*\\b(?:(?:end|close) of (?:the |your |this )?(?:shift|day)|later|tomorrow|next (?:day|shift|week|meeting)|after unloading|once unloading|when unloading|after (?:the )?(?:truck|delivery) is unloaded|in (?:the|your|a) (?:\\w+ )?(?:report|handover|log|meeting|briefing|e-?mail)|by the end of|before you leave|at your convenience|when convenient)\\b",
+            "\\b(?:notify|contact|inform|call|tell|alert|report)\\w*\\b[^.;:]*\\b(?:qa|ehs)\\b[^.;:]*\\b(?:(?:once|when|after) (?:the )?(?:truck|trailer|delivery|unloading) (?:is|has been) (?:empty|emptied|done|finished|unloaded|complete)|afterwards|later on)\\b",
+            "\\b(?:notify|contact|inform|call|tell|alert|report)\\w*\\b[^.;:]*\\b(?:qa|ehs)\\b[^.;:]*\\bwhen you (?:have|get|find) (?:the )?time\\b"
           ]
         }
       ]
@@ -615,15 +638,26 @@
         {
           "what": "post it to unrestricted stock",
           "any": [
-            "\\bpost\\w*\\b{gap}\\bunrestricted stock\\b"
+            "\\b(?:post|book|enter|receiv|record|put|place|stor|send)\\w*\\b{gap}\\b(?:as |into |to |in )?unrestricted\\b",
+            "\\b(?:go|goes|going)\\b{gap}\\bunrestricted stock\\b"
           ]
         },
         {
           "what": "certification exempts the material",
+          "context": "\\bcertif|\\bsuppliers?\\b",
           "any": [
-            "\\bcertified suppliers?\\b[^.;:]*\\b(?:not subject|exempt|need no|does not need|do not need|skip)",
-            "\\bonly (?:to|for) (?:material from )?uncertified\\b",
-            "\\bdirect posting\\b(?:(?!\\b(?:not|no|never)\\b)[^.;:])*\\b(?:is|are) (?:allowed|permitted)\\b"
+            "\\bexempt\\w*\\b",
+            "\\bskip\\w*\\b",
+            "\\bbypass\\w*\\b",
+            "\\bwaive\\w*\\b",
+            "\\b(?:does not|do not|doesn't|don't) need\\b[^.;:]*\\b(?:inspection|qa|quality)",
+            "\\bneeds? no\\b[^.;:]*\\b(?:inspection|qa|quality)",
+            "\\bnot subject to\\b",
+            "\\b(?:covers?|replaces?) the (?:quality |qa )?(?:check|inspection)\\b",
+            "\\bonly (?:to|for) (?:(?:material|goods) )?(?:from )?(?:new|uncertified|non-certified)\\b",
+            "\\b(?:meant|intended) for (?:material|goods) (?:from|whose)\\b",
+            "\\bdirect posting\\b(?:(?!\\b(?:not|no|never)\\b)[^.;:])*\\b(?:is|are|remains?) (?:allowed|permitted|possible)\\b",
+            "\\b(?:is|are) not (?:needed|required|necessary)\\b"
           ]
         }
       ]

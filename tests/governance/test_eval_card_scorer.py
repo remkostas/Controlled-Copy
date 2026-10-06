@@ -326,10 +326,12 @@ def test_tc_eval_009_every_case_file_check_is_well_formed():
     for name in ("cases_governed.json", "cases_governed_holdout.json"):
         for entry in json.loads((EVAL / name).read_text())["cases"]:
             for check in entry.get("must_say", []) + entry.get("must_not_say", []):
-                assert set(check) <= {"what", "any", "types"}, (entry["case_id"], check)
+                assert set(check) <= {"what", "any", "types", "context"}, (entry["case_id"], check)
                 assert check["what"] and check["any"]
                 for pattern in check["any"]:
                     re.compile(pattern.replace("{gap}", SCORER.GAP))
+                if "context" in check:
+                    re.compile(check["context"])
             # Every case that expects instructions says which ones.
             if set(entry["expected_status"]) & {"supported", "conflict"}:
                 assert entry.get("must_say"), entry["case_id"]

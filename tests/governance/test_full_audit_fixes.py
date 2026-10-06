@@ -173,7 +173,8 @@ def test_rck_07_a_documented_escalation_replaces_the_standard_line(workspace, db
     matrix = _source_id(db, workspace, "MATRIX-ESC-001")
 
     def documented(pid, quote):
-        cite = [{"passage_id": pid, "quote": quote}]
+        # The matrix row that names the role: "... unknown error codes | WMS key user | 1 hour |".
+        cite = [{"passage_id": pid, "quote": "WMS key user"}]
         return [{"type": "requirement", "text": "Contact the WMS key user.", "citations": cite}]
 
     fake.responder = _escalating(escalation=documented)
@@ -196,3 +197,41 @@ def test_rck_05_a_missing_workspace_is_set_up_by_a_post_not_a_page_load(visitor,
     assert visitor.client.post("/workspace/reset").status_code == 403, "no token, no copy"
     made = visitor.client.post("/workspace/reset", headers=visitor.json_headers())
     assert made.status_code == 200 and db.execute(count).fetchone()[0] == 1
+
+
+@pytest.mark.parametrize(
+    ("text", "quote"),
+    [
+        ("Look up the error code in the WMS guide.", "unknown error codes"),
+        ("Contact the safety officer.", "unknown error codes"),
+    ],
+    ids=["names-nobody", "role-not-in-the-quote"],
+)
+def test_r2_gov_01_a_cited_instruction_that_names_nobody_keeps_who_decides(workspace, db, fake, text, quote):
+    """Second re-check R2-GOV-01: a verified escalation requirement hides the standard line only
+    when it names a role that its own quote names too."""
+    matrix = _source_id(db, workspace, "MATRIX-ESC-001")
+
+    def cited(pid, _):
+        return [{"type": "requirement", "text": text, "citations": [{"passage_id": pid, "quote": quote}]}]
+
+    fake.responder = _escalating(escalation=cited)
+    card = workspace.card("The WMS shows the unknown error GR-299.", source_ids=[matrix]).json()["output"][
+        "card"
+    ]
+    assert card["status"] == "expert_confirmation"
+    assert card["fallback_escalation"].startswith("Stop and ask the person responsible")
+
+
+def test_r2_gov_02_the_model_is_not_told_a_covered_code_is_undocumented(workspace, db, fake):
+    """Second re-check R2-GOV-02: with only the matrix selected, the task given to the model
+    says GR-204 is covered by the unselected guide, never that no document covers it; GR-299
+    is still named as undocumented."""
+    matrix = _source_id(db, workspace, "MATRIX-ESC-001")
+    fake.responder = _escalating()
+    workspace.card("The WMS shows GR-204 and then GR-299.", source_ids=[matrix])
+    task = [r.user for r in fake.chat_calls if r.schema_name == "resolution_card"][-1]
+    undocumented = [line for line in task.splitlines() if line.startswith("No applicable approved document")]
+    assert undocumented and undocumented[0].startswith("No applicable approved document covers: GR-299.")
+    assert "GR-204" not in undocumented[0]
+    assert "GR-204 is covered by GUIDE-WMS-003 rev 1, which is not among the selected sources" in task

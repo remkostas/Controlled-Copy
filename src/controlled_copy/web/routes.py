@@ -280,9 +280,10 @@ def _prepare_visitor(request: Request, services: Services) -> None:
 def workspace(
     request: Request, services: SessionDep, nb: Annotated[str | None, Query(max_length=64)] = None
 ) -> Response:
-    """Read-only, like every GET: the first notebook is created at the checked login, and a
-    visitor without one (after deleting the last) creates it again with the CSRF-checked
-    POST on the continue page (full audit SEC-04, re-check RCK-05)."""
+    """Creates and changes nothing, like every GET (a page load only refreshes the session's
+    last-seen time): the first notebook is created at the checked login, and a visitor without
+    one (after deleting the last) creates it again with the CSRF-checked POST on the continue
+    page (full audit SEC-04, re-check RCK-05)."""
     sid = services.sid
     notebooks = services.repo.list_notebooks(sid)
     personal = [n for n in notebooks if n.kind == "personal"]
