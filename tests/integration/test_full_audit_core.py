@@ -266,15 +266,16 @@ def test_sec_02_a_disk_that_fills_during_embedding_refuses_the_write(settings, m
             return super().embed(texts, model=model)
 
     fake = FillingDisk()
+    from controlled_copy.storage.db import connect
+
     with TestClient(app_with(settings, fake, min_free_disk_mb=100)) as client:
         visitor = Visitor(client).login()
         free["bytes"] = 101 * 1024 * 1024
+        sources = "SELECT COUNT(*) FROM source"
+        before = connect(settings.db_path).execute(sources).fetchone()[0]  # a layer may seed at login
         refused = visitor.upload("note.txt", b"A short note about docks.", expect=507)
         assert "storage is full" in refused.json()["error"]
-        db = client.app.state.settings.db_path
-        from controlled_copy.storage.db import connect
-
-        assert connect(db).execute("SELECT COUNT(*) FROM source").fetchone()[0] == 0, "nothing stored"
+        assert connect(settings.db_path).execute(sources).fetchone()[0] == before, "nothing stored"
         uploads = client.app.state.settings.uploads_dir
         assert not uploads.exists() or not any(uploads.iterdir()), "the uploaded file was removed again"
 
