@@ -110,6 +110,10 @@ def build_provider(settings: Settings) -> ModelProvider:
         settings.openrouter_api_key.get_secret_value(),
         settings.openrouter_base_url,
         settings.provider_timeout_seconds,
+        max_price={
+            "prompt": settings.max_price_prompt_per_million,
+            "completion": settings.max_price_completion_per_million,
+        },
     )
 
 
