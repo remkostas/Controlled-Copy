@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from controlled_copy.app import create_app
 from controlled_copy.config import ConfigError
 from controlled_copy.providers.fake import FakeProvider
-from tests.conftest import ACCESS_CODE, Visitor, corpus_file
+from tests.conftest import Visitor, corpus_file
 from tests.helpers.responders import quote_passage_containing
 
 pytestmark = [pytest.mark.integration, pytest.mark.stage3]
@@ -104,9 +104,10 @@ def test_tc_rev_003_with_the_picker_off_there_is_no_picker_and_no_route(settings
         settings.model_copy(update={"feature_model_picker": False}), FakeProvider(), run_purge=False
     )
     with TestClient(off) as client:
-        client.post("/access", data={"code": ACCESS_CODE}, follow_redirects=False)
-        assert "/settings/model" not in client.get("/app").text
-        assert client.post("/settings/model", data={"model": LITE}).status_code in (403, 404, 405)
+        visitor = Visitor(client).login()
+        assert "/settings/model" not in visitor.page
+        # With a valid CSRF token a mounted route would answer 200 or 422; only a missing one 404/405.
+        assert choose(visitor, LITE).status_code in (404, 405)
 
 
 def test_tc_mod_003_the_resolution_card_uses_the_chosen_model_too(settings):
@@ -122,3 +123,22 @@ def test_tc_mod_003_the_resolution_card_uses_the_chosen_model_too(settings):
         assert card.status_code == 200, card.text
         assert [c.model for c in fake.chat_calls if c.schema_name == "resolution_card"] == [LITE]
         assert "gemini-3.5-flash-lite" in client.get(f"/app?nb={workspace.id}").text
+
+
+def test_tc_mod_004_choosing_the_fallback_model_keeps_a_second_route(warehouse, fake, settings):
+    assert settings.model_generation_fallback == LITE
+    fake.responder = quote_passage_containing("Deviations of up to 2% of the ordered quantity")
+    fake.failing_models = {LITE}
+    choose(warehouse, LITE)
+    answer = warehouse.ask("What is the quantity tolerance?").json()["answer"]
+    assert [c.model for c in fake.chat_calls] == [LITE, LUNA], "the default model steps in"
+    assert answer["model"] == LUNA and answer["fallback"] is True
+
+
+def test_d040_mistral_models_are_refused_at_startup(settings):
+    for update in (
+        {"model_generation_fallback": "mistralai/mistral-small-2603"},
+        {"model_choices": f"{LUNA},mistralai/mistral-small-2603"},
+    ):
+        with pytest.raises(ConfigError, match="Mistral"):
+            settings.model_copy(update=update).check_startup()

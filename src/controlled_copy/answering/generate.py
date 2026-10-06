@@ -54,7 +54,12 @@ def generate[M: BaseModel](
 ) -> tuple[M, ChatResult]:
     settings = services.settings
     primary = services.model or settings.model_generation
-    models = [primary, settings.model_generation_fallback or primary]
+    fallback = settings.model_generation_fallback or primary
+    if fallback == primary and services.model:
+        # The visitor chose the fallback model: the default model becomes the fallback, so a
+        # failing provider still has a second route.
+        fallback = settings.model_generation
+    models = [primary, fallback]
     timeout = settings.provider_timeout_seconds
     failure: ProviderError | None = None
     for attempt, model in enumerate(models, start=1):

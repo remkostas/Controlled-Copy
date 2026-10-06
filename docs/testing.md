@@ -194,5 +194,5 @@ Run: `LIVE_URL=https://<domain> LIVE_ACCESS_CODE=<code> pytest -m smoke_live tes
 
 - **Stage 1 gate:** `pytest -m "stage1 and not eval and not smoke_live"` green; TC-REV-001 green; lint clean; gitleaks clean; G-01 to G-06 run and recorded; self-audit and Codex review findings addressed.
 - **Stage 2 gate:** `pytest -m "(stage1 or stage2) and not eval and not smoke_live"` green; TC-REV-001 to TC-REV-003 green; E-01 to E-14 run and recorded.
-- **Stage 3 gate:** `pytest -m "(stage1 or stage2 or stage3) and not eval and not smoke_live"` green with every layer on; TC-REV-001 green with every layer off.
+- **Stage 3 gate:** `pytest -m "(stage1 or stage2 or stage3) and not eval and not smoke_live"` green twice: with every layer flag off (TC-REV-001; layer tests switch their own layer on) and with every layer flag on.
 - **Before the video:** TC-LIVE-001 and TC-LIVE-002 twice.

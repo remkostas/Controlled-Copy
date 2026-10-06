@@ -7,16 +7,23 @@ label and the exact verified quote, so the copy can be checked without the app.
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from collections.abc import Iterable
 from typing import Any
 
 from controlled_copy.web.views import TYPE_LABELS, model_label, time_label
 
+# Characters that start Markdown or HTML syntax. Text from documents and from the model is
+# escaped, so a pasted export cannot render links, images or HTML that a hostile source
+# steered the model into writing.
+_MARKDOWN = re.compile(r"([\\`*_\[\]<>])")
+
 
 def clean(text: Any) -> str:
-    """One line of plain text: no line breaks that would break a list item or table row."""
-    return " ".join(str(text or "").split())
+    """One line of plain, escaped text: no line breaks that would break a list item or table
+    row, no Markdown or HTML syntax."""
+    return _MARKDOWN.sub(r"\\\1", " ".join(str(text or "").split()))
 
 
 def cell(text: Any) -> str:
@@ -53,7 +60,7 @@ def citations_md(output: dict[str, Any]) -> list[str]:
     if not citations:
         return []
     lines = ["", "## Sources", ""]
-    lines += [f'[{int(c["n"])}] {clean(c.get("label"))}: "{clean(c.get("quote"))}"' for c in citations]
+    lines += [f'- [{int(c["n"])}] {clean(c.get("label"))}: "{clean(c.get("quote"))}"' for c in citations]
     return lines
 
 

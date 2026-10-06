@@ -125,8 +125,11 @@ class Split:
         return entry[0] if entry else None
 
 
-def split(documents: Sequence[Document], context: Context) -> Split:
-    """Authoritative: approved, effective on the date, matching site and role, not superseded."""
+def split(documents: Sequence[Document], context: Context, *, curated_only: bool = False) -> Split:
+    """Authoritative: approved, effective on the date, matching site and role, not superseded.
+
+    `curated_only`: the notebook is a curated workspace, so metadata an uploader asserts is
+    never authoritative there, whichever sources are selected (D-039)."""
     result = Split()
     candidates: list[Document] = []
     for doc in documents:
@@ -140,7 +143,7 @@ def split(documents: Sequence[Document], context: Context) -> Split:
     # selection holds curated documents (the Inbound Operations workspace), asserted
     # metadata is not authoritative at all (D-039); without any, it counts (D-036).
     curated = {d.id_key for d in documents if d.id_key and d.origin == "curated"}
-    has_curated = any(d.origin == "curated" for d in documents)
+    has_curated = curated_only or any(d.origin == "curated" for d in documents)
     eligible = []
     for doc in candidates:
         if doc.origin != "curated" and doc.id_key in curated:

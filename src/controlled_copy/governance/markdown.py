@@ -26,7 +26,7 @@ def card_markdown(output: dict[str, Any], created_at: str) -> str:
         f"**Situation:** {clean(card.get('situation'))}",
         "",
         "**Context:** site {} · {} · as of {}".format(
-            clean(ctx.get("site")), clean(ctx.get("role", "")).replace("_", " "), clean(ctx.get("as_of"))
+            clean(ctx.get("site")), clean(str(ctx.get("role", "")).replace("_", " ")), clean(ctx.get("as_of"))
         ),
     ]
     if card.get("identifiers"):
@@ -52,11 +52,25 @@ def card_markdown(output: dict[str, Any], created_at: str) -> str:
         ]
         lines += ["", *table(["Used", "Status", "Effective", "Site"], rows)]
     if card.get("consulted"):
-        names = ", ".join(clean(d.get("label")) for d in card["consulted"])
+        names = ", ".join(clean(_labelled(d)) for d in card["consulted"])
         lines += ["", f"Also given to the model, not cited: {names}"]
     if excluded:
         rows = [[_labelled(d), d.get("reason")] for d in excluded]
         lines += ["", *table(["Not applied", "Reason"], rows)]
     lines += citations_md(output)
+    # The same notes as the HTML card, so a copy says what was weakened or left out.
+    downgraded, dropped = int(output.get("downgraded", 0)), int(output.get("dropped", 0))
+    if downgraded or dropped:
+        lines.append("")
+    if downgraded:
+        lines.append(
+            f"{downgraded} item(s) shown with a weaker type because their quote did not verify "
+            "against an applicable approved document.  "
+        )
+    if dropped:
+        lines.append(
+            f"{dropped} item(s) not shown: a conflict needs verified quotes from two documents, "
+            "an inference needs one verified quote."
+        )
     lines += footer_md(output, created_at)
     return "\n".join(lines).strip() + "\n"

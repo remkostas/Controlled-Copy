@@ -52,7 +52,9 @@ jobs:
           echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tgz" | sha256sum -c -
           tar -xzf gitleaks.tgz -C /usr/local/bin gitleaks 2>/dev/null || sudo tar -xzf gitleaks.tgz -C /usr/local/bin gitleaks
           rm gitleaks.tgz
-      - run: python -m pytest -m "stage1 and not eval and not smoke_live" --junitxml=reports/junit-stage1.xml
+      # Everything with every layer flag off: the core tests, plus layer tests that switch their
+      # own layer on through fixtures (they prove a layer works next to a layer-off core).
+      - run: python -m pytest -m "(stage1 or stage2 or stage3) and not eval and not smoke_live" --junitxml=reports/junit-stage1.xml
       - run: python scripts/test_report.py reports/junit-stage1.xml > reports/test-report.md
         if: always()
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

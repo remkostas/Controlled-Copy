@@ -18,6 +18,7 @@ from typing import Any
 from controlled_copy.answering.citations import short_locator
 from controlled_copy.errors import PROVIDER_UNAVAILABLE
 from controlled_copy.governance import rules
+from controlled_copy.governance.seed import WORKSPACE_KIND
 from controlled_copy.limits import DAILY_LIMIT_MESSAGE
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError
@@ -155,7 +156,7 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
     if services.budget.read_only():
         raise StudioError(DAILY_LIMIT_MESSAGE, 503)
 
-    split = rules.split(documents_of(rows), card.context)
+    split = rules.split(documents_of(rows), card.context, curated_only=notebook.kind == WORKSPACE_KIND)
     texts = {row["id"]: row["text"] for row in rows}
     found = rules.identifiers(situation)
     authoritative_ids = set(split.authoritative_ids())

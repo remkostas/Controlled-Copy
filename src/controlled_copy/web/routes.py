@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import re
 from typing import Annotated, Any
 
 from fastapi import APIRouter, File, Form, Query, Request, UploadFile
@@ -385,6 +386,7 @@ def add_source(
         if typed is not None:
             # Typed metadata replaces the file's own front matter; both are asserted by the uploader.
             extracted.metadata, extracted.metadata_origin = typed, "asserted"
+            extracted.warnings = [w for w in extracted.warnings if w != frontmatter.MALFORMED]
         source_id = pipeline.store(services, notebook, extracted, extracted.raw)
     except UserFacingError as exc:
         log_event("source_rejected", session=services.sid, notebook=notebook_id, status=str(exc.status))
@@ -528,7 +530,7 @@ def output_as_markdown(
         return PlainTextResponse("Not found.", status_code=404)
     headers = {"Cache-Control": "no-store"}
     if download:
-        name = "resolution-card" if row["template"] == "resolution-card" else row["template"]
+        name = re.sub(r"[^a-z0-9-]", "", str(row["template"]).lower()) or "output"
         headers["Content-Disposition"] = f'attachment; filename="{name}-{row["created_at"][:10]}.md"'
     return Response(text, media_type="text/markdown; charset=utf-8", headers=headers)
 
