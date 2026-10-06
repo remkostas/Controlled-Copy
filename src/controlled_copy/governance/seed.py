@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from dataclasses import dataclass, replace
 from functools import cache
 from pathlib import Path
@@ -17,7 +18,6 @@ from typing import Any
 import numpy as np
 
 from controlled_copy.ingestion import pipeline
-from controlled_copy.ingestion.frontmatter import split_front_matter
 from controlled_copy.logs import log_event
 from controlled_copy.services import Services
 from controlled_copy.storage.db import transaction
@@ -50,9 +50,7 @@ def corpus() -> tuple[str, tuple[SeedDocument, ...]]:
         extracted = pipeline.extract_upload(
             path.name, data, max_pages=150, timeout=30, memory_mb=512, title_limit=200
         )
-        metadata, _, _ = split_front_matter(data.decode("utf-8"))
-        extracted.metadata = metadata
-        extracted.metadata_origin = "curated"
+        extracted.metadata_origin = "curated"  # front matter parsed by extract_upload
         documents.append(SeedDocument(path.name, extracted))
     return digest.hexdigest()[:16], tuple(documents)
 
@@ -135,19 +133,44 @@ def seed_workspace(services: Services, sid: str) -> OwnedNotebook:
     return notebook
 
 
-def ensure_workspace(services: Services, sid: str) -> None:
-    """Workspace hook: every visitor gets their own copy on the first visit."""
-    if workspace_of(services, sid) is None:
+class WorkspaceSeeder:
+    """Workspace hook: every visitor gets their own copy on the first visit. After a failure
+    (for example a cold vector cache while the provider is down) page loads skip seeding for
+    a minute instead of each waiting on, and paying for, another embedding attempt.
+    One instance per app, so the cooldown never leaks between apps."""
+
+    retry_seconds = 60.0
+
+    def __init__(self) -> None:
+        self.failed_at: float | None = None
+
+    def __call__(self, services: Services, sid: str) -> None:
+        if workspace_of(services, sid) is not None:
+            return
+        if self.failed_at is not None and time.monotonic() - self.failed_at < self.retry_seconds:
+            return
         try:
             seed_workspace(services, sid)
         except CapacityReached:
             pass  # a parallel first visit seeded it
         except Exception as exc:
+            self.failed_at = time.monotonic()
             log_event("workspace_seed_failed", session=sid, error_type=type(exc).__name__)
+        else:
+            self.failed_at = None
 
 
-def reset_workspace(services: Services, sid: str) -> OwnedNotebook:
+def reset_workspace(services: Services, sid: str) -> tuple[OwnedNotebook, list[str]]:
+    """A fresh copy of the workspace, and the uploaded files the old copy leaves behind."""
     existing = workspace_of(services, sid)
+    files: list[str] = []
     if existing is not None:
-        services.repo.delete_notebook(sid, existing.id)
-    return seed_workspace(services, sid)
+        files = services.repo.delete_notebook(sid, existing.id) or []
+    try:
+        return seed_workspace(services, sid), files
+    except CapacityReached:
+        # A parallel page load seeded the new copy first; that copy is the reset result.
+        notebook = workspace_of(services, sid)
+        if notebook is None:
+            raise
+        return notebook, files

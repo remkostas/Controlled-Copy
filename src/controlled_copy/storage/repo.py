@@ -109,8 +109,17 @@ class NewSource:
 
 
 class Repo:
-    def __init__(self, conn: sqlite3.Connection) -> None:
+    def __init__(self, conn: sqlite3.Connection, visible_kinds: tuple[str, ...] | None = None) -> None:
+        """`visible_kinds` limits what a visitor can open: personal notebooks plus the kinds of
+        loaded layers. None (maintenance, tests) sees every kind."""
         self.conn = conn
+        self.visible_kinds = visible_kinds
+
+    def _kinds(self, column: str) -> tuple[str, tuple[str, ...]]:
+        if self.visible_kinds is None:
+            return "", ()
+        marks = ", ".join("?" for _ in self.visible_kinds)
+        return f" AND {column} IN ({marks})", self.visible_kinds
 
     # Sessions -----------------------------------------------------------------
     def create_session(self) -> str:
@@ -131,10 +140,12 @@ class Repo:
 
     # Notebooks ----------------------------------------------------------------
     def list_notebooks(self, sid: str) -> list[OwnedNotebook]:
+        """Layer notebooks first, then personal ones in creation order."""
+        clause, kinds = self._kinds("kind")
         rows = self.conn.execute(
-            "SELECT * FROM notebook WHERE session_id = ? "
-            "ORDER BY kind = 'ops_workspace' DESC, created_at, rowid",
-            (sid,),
+            f"SELECT * FROM notebook WHERE session_id = ?{clause} "  # noqa: S608 - placeholders only
+            "ORDER BY kind = 'personal', created_at, rowid",
+            (sid, *kinds),
         ).fetchall()
         return [_notebook(row) for row in rows]
 
@@ -149,8 +160,10 @@ class Repo:
         return _notebook(row) if row is not None else None
 
     def _owned_notebook(self, sid: str, notebook_id: str) -> sqlite3.Row | None:
+        clause, kinds = self._kinds("kind")
         return self.conn.execute(
-            "SELECT * FROM notebook WHERE id = ? AND session_id = ?", (notebook_id, sid)
+            f"SELECT * FROM notebook WHERE id = ? AND session_id = ?{clause}",  # noqa: S608 - placeholders only
+            (notebook_id, sid, *kinds),
         ).fetchone()
 
     def create_notebook(self, sid: str, title: str, kind: str = "personal", limit: int | None = None) -> str:
@@ -217,10 +230,11 @@ class Repo:
 
     def owned_source(self, sid: str, source_id: str, with_text: bool = False) -> sqlite3.Row | None:
         columns = f"{SOURCE_COLUMNS}, s.text" if with_text else SOURCE_COLUMNS
+        clause, kinds = self._kinds("n.kind")
         return self.conn.execute(
             f"SELECT {columns} FROM source s JOIN notebook n ON n.id = s.notebook_id "  # noqa: S608 - fixed columns
-            "WHERE s.id = ? AND n.session_id = ?",
-            (source_id, sid),
+            f"WHERE s.id = ? AND n.session_id = ?{clause}",
+            (source_id, sid, *kinds),
         ).fetchone()
 
     def sources_by_ids(

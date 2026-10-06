@@ -1,5 +1,8 @@
 """NFR-REV-02 and NFR-REV-03: the layer's database changes are additive and switch off cleanly."""
 
+import html
+import re
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -68,3 +71,24 @@ def test_tc_rev_003_switching_the_layer_off_hides_it(settings):
         assert "Resolution Card" not in page
         assert "Reset workspace" not in page
         assert client.post("/workspace/reset").status_code in (403, 404, 405)
+
+
+def test_tc_rev_003_layer_data_is_hidden_after_switching_off(settings):
+    on = create_app(settings, FakeProvider(), run_purge=False)
+    with TestClient(on) as client:
+        client.post("/access", data={"code": ACCESS_CODE}, follow_redirects=False)
+        page = client.get("/app").text
+        workspace = re.search(r'<option value="([^"]+)"[^>]*>\s*Inbound Operations', page).group(1)
+        source = re.search(
+            r'name="source_ids" value="([^"]+)"', client.get(f"/app?nb={workspace}").text
+        ).group(1)
+        cookies = dict(client.cookies)
+    off = create_app(
+        settings.model_copy(update={"feature_governance": False}), FakeProvider(), run_purge=False
+    )
+    with TestClient(off, cookies=cookies) as client:
+        page = client.get(f"/app?nb={workspace}")
+        assert page.status_code == 200 and "Inbound Operations" not in page.text
+        assert client.get(f"/sources/{source}").status_code == 404
+        csrf = re.search(r'"X-CSRF-Token": "([^"]+)"', html.unescape(page.text)).group(1)
+        assert client.delete(f"/notebooks/{workspace}", headers={"X-CSRF-Token": csrf}).status_code == 404

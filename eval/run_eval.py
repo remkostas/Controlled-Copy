@@ -167,6 +167,9 @@ def check_card(
     for phrase in case.get("forbidden_text", []):
         if phrase.lower() in shown:
             reasons.append(f"shows the forbidden text '{phrase}'")
+    for pattern in case.get("forbidden_patterns", []):
+        if re.search(pattern, shown, re.IGNORECASE):
+            reasons.append(f"shows text matching the forbidden pattern {pattern!r}")
     must = case.get("quote_must_contain")
     if must and not any(must.lower() in normalised(c["quote"]) for c in citations):
         reasons.append(f"no quote contains '{must}'")

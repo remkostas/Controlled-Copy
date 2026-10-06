@@ -13,33 +13,29 @@ from controlled_copy.governance import rules
 from controlled_copy.governance.card import CardInput, context_options, run_card
 from controlled_copy.governance.seed import reset_workspace
 from controlled_copy.logs import log_event
+from controlled_copy.purge import remove_uploads
 from controlled_copy.studio.actions import StudioError
 from controlled_copy.web.deps import WriteDep, wants_json
 from controlled_copy.web.routes import json_or_redirect, notice, owned_notebook, render_output
 
 router = APIRouter()
-DEFAULT_ROLE = "warehouse_operator"
-
-
-def _pick(value: str, options: list[str], fallback: str) -> str:
-    """The submitted value if the workspace knows it, else the preferred or first option."""
-    if value in options:
-        return value
-    if fallback in options or not options:
-        return fallback
-    return options[0]
 
 
 def default_context(rows: list, site: str, role: str, as_of: str) -> rules.Context:
-    """The context bar's values, falling back to the workspace's own sites and roles."""
+    """The context the visitor chose. Empty fields fall back to the workspace's own options;
+    a chosen site or role is never replaced, so documents for another site or role stay
+    excluded even when none of the selected sources mentions the chosen value."""
     options = context_options(rows)
-    chosen_site = _pick(site, options["sites"], fallback=site or "all")
-    chosen_role = _pick(role, options["roles"], fallback=DEFAULT_ROLE)
+    if not site:
+        site = options["sites"][0] if options["sites"] else "all"
+    if not role:
+        roles = options["roles"]
+        role = rules.DEFAULT_ROLE if rules.DEFAULT_ROLE in roles or not roles else roles[0]
     try:
         when = date.fromisoformat(as_of) if as_of else date.today()
     except ValueError as exc:
         raise StudioError("Enter the date as YYYY-MM-DD.", 422) from exc
-    return rules.Context(site=chosen_site, role=chosen_role, as_of=when)
+    return rules.Context(site=site, role=role, as_of=when)
 
 
 @router.post("/notebooks/{notebook_id}/studio/resolution-card")
@@ -56,10 +52,10 @@ def resolution_card(
     notebook = owned_notebook(services, notebook_id)
     if notebook is None:
         return notice(request, "Notebook not found.", 404, "#studio-status")
-    selected = list(source_ids or [])
+    rows = services.repo.sources_by_ids(notebook, list(source_ids or []), with_text=True)
     try:
-        context = default_context(services.repo.sources_by_ids(notebook, selected), site, role, as_of)
-        stored = run_card(services, notebook, CardInput(situation, context), selected)
+        context = default_context(rows, site.strip(), role.strip(), as_of.strip())
+        stored = run_card(services, notebook, CardInput(situation, context), rows)
     except UserFacingError as exc:
         return notice(request, exc.message, exc.status, "#studio-status")
     if wants_json(request):
@@ -71,10 +67,13 @@ def resolution_card(
 def reset(request: Request, services: WriteDep) -> Response:
     sid = services.sid
     try:
-        notebook = reset_workspace(services, sid)
+        notebook, files = reset_workspace(services, sid)
+    except UserFacingError as exc:
+        return notice(request, exc.message, exc.status, "#toast")
     except Exception as exc:
         log_event("workspace_reset_failed", session=sid, error_type=type(exc).__name__)
         return notice(request, "The workspace could not be reset. Please try again.", 502, "#toast")
     services.repo.checkpoint()
-    log_event("workspace_reset", session=sid, notebook=notebook.id)
+    remove_uploads(services.settings, files)
+    log_event("workspace_reset", session=sid, notebook=notebook.id, files=len(files))
     return json_or_redirect(request, {"notebook_id": notebook.id}, f"/app?nb={notebook.id}")

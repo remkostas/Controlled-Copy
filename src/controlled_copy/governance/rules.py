@@ -15,7 +15,9 @@ from datetime import date
 from typing import Any
 
 # Error codes and document IDs (GR-204, SOP-INB-001) and location codes (A-14, OD-01, Q-01).
-IDENTIFIER = re.compile(r"\b(?:[A-Z]{2,}(?:-[A-Z0-9]+)*-\d{2,}|[A-Z]{1,3}-\d{2,3})\b")
+IDENTIFIER = re.compile(r"\b(?:[A-Z]{2,}(?:-[A-Z0-9]+)*-\d{2,}|[A-Z]{1,3}-\d{2,3})\b", re.IGNORECASE)
+REVISION_PART = re.compile(r"\d+|[A-Za-z]+")
+DEFAULT_ROLE = "warehouse_operator"
 
 STATUS_PRECEDENCE = ("conflict", "expert_confirmation", "context_incomplete", "supported")
 STATUS_LABELS = {
@@ -54,11 +56,15 @@ class Document:
         return self.title
 
     @property
-    def revision_number(self) -> float:
-        try:
-            return float(self.revision or 0)
-        except ValueError:
-            return 0.0
+    def revision_key(self) -> tuple[tuple[int, int | str], ...]:
+        return revision_key(self.revision)
+
+
+def revision_key(revision: Any) -> tuple[tuple[int, int | str], ...]:
+    """Order revisions part by part: numbers numerically ('1.10' after '1.9'), letters
+    alphabetically ('B' after 'A'), a number before a letter in the same position."""
+    parts = REVISION_PART.findall(str(revision or ""))
+    return tuple((0, int(p)) if p.isdigit() else (1, p.upper()) for p in parts)
 
 
 def _parse_date(value: Any) -> date | None:
@@ -115,16 +121,25 @@ def split(documents: Sequence[Document], context: Context) -> Split:
             result.excluded[doc.source_id] = (doc, reason)
         else:
             candidates.append(doc)
+    # Metadata an uploader asserts never overrides a curated controlled document.
+    curated = {d.document_id for d in candidates if d.document_id and d.origin == "curated"}
+    eligible = []
     for doc in candidates:
+        if doc.origin != "curated" and doc.document_id in curated:
+            reason = f"asserted by uploader, but {doc.document_id} is a curated controlled document"
+            result.excluded[doc.source_id] = (doc, reason)
+        else:
+            eligible.append(doc)
+    for doc in eligible:
         newer = [
             other
-            for other in candidates
+            for other in eligible
             if other.document_id
             and other.document_id == doc.document_id
-            and other.revision_number > doc.revision_number
+            and other.revision_key > doc.revision_key
         ]
         if newer:
-            best = max(newer, key=lambda other: other.revision_number)
+            best = max(newer, key=lambda other: other.revision_key)
             result.excluded[doc.source_id] = (doc, f"superseded by {best.label}")
         else:
             result.authoritative.append(doc)
@@ -153,12 +168,13 @@ def _exclusion_reason(doc: Document, context: Context) -> str | None:
 
 
 def identifiers(text: str) -> list[str]:
-    return list(dict.fromkeys(match.group(0) for match in IDENTIFIER.finditer(text)))
+    """Codes in the text, upper-cased ('gr-299' is GR-299), in order of first appearance."""
+    return list(dict.fromkeys(match.group(0).upper() for match in IDENTIFIER.finditer(text)))
 
 
 def documented_in(identifier: str, texts: dict[str, str]) -> list[str]:
     """Source IDs whose text contains the identifier as a whole token."""
-    pattern = re.compile(rf"(?<![A-Za-z0-9-]){re.escape(identifier)}(?![A-Za-z0-9])")
+    pattern = re.compile(rf"(?<![A-Za-z0-9-]){re.escape(identifier)}(?![A-Za-z0-9])", re.IGNORECASE)
     return [source_id for source_id, text in texts.items() if pattern.search(text)]
 
 
@@ -215,8 +231,13 @@ def result_status(
     authoritative_evidence: int,
     only_unknown_sources: bool,
     missing: int,
+    unverified: int = 0,
 ) -> tuple[str, list[str]]:
-    """One primary status by precedence, with the reasons that produced it."""
+    """One primary status by precedence, with the reasons that produced it.
+
+    `authoritative_evidence` counts requirements with a verified quote from an applicable
+    approved document; `unverified` counts requirements shown as missing evidence because
+    their quote did not verify."""
     reasons: list[str] = []
     if conflict:
         reasons.append("two applicable approved documents give different instructions")
@@ -231,4 +252,10 @@ def result_status(
         return "expert_confirmation", reasons
     if missing:
         return "context_incomplete", [f"{missing} piece{'s' if missing != 1 else ''} of information missing"]
+    if unverified:
+        return "supported", [
+            "backed by an applicable approved instruction; "
+            f"{unverified} statement{'s' if unverified != 1 else ''} without a verified quote "
+            "marked as missing evidence"
+        ]
     return "supported", ["every required action is backed by an applicable approved instruction"]

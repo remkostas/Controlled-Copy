@@ -33,6 +33,7 @@ MIGRATIONS = [
 
 def _view_hook(services: Services, notebook: Any, context: dict[str, Any]) -> None:
     from controlled_copy.governance.card import context_options, documents_of
+    from controlled_copy.governance.rules import DEFAULT_ROLE
     from controlled_copy.governance.seed import WORKSPACE_KIND, scenarios
 
     if "viewer" in context:
@@ -44,9 +45,7 @@ def _view_hook(services: Services, notebook: Any, context: dict[str, Any]) -> No
     context["extra"]["governance"] = {
         "sites": options["sites"],
         "roles": roles,
-        "default_role": "warehouse_operator"
-        if "warehouse_operator" in roles
-        else (roles[0] if roles else ""),
+        "default_role": DEFAULT_ROLE if DEFAULT_ROLE in roles else (roles[0] if roles else ""),
         "today": date.today().isoformat(),
         "scenarios": scenarios() if notebook.kind == WORKSPACE_KIND else [],
         "has_metadata": any(d.origin != "none" for d in documents_of(rows)),
@@ -71,15 +70,15 @@ def _superseded_banner(services: Services, context: dict[str, Any]) -> None:
         if this
         and d.document_id == this.document_id
         and d.status == "approved"
-        and d.revision_number > this.revision_number
+        and d.revision_key > this.revision_key
     ]
     if newer:
-        source["superseded_by"] = max(newer, key=lambda d: d.revision_number).label
+        source["superseded_by"] = max(newer, key=lambda d: d.revision_key).label
 
 
 def register(registry: Registry, settings: Settings) -> None:
     from controlled_copy.governance.routes import router
-    from controlled_copy.governance.seed import ensure_workspace
+    from controlled_copy.governance.seed import WORKSPACE_KIND, WorkspaceSeeder
 
     registry.migrations.extend(MIGRATIONS)
     registry.routers.append(router)
@@ -95,5 +94,6 @@ def register(registry: Registry, settings: Settings) -> None:
     )
     registry.topbar_partials.append("governance/reset_button.html")
     registry.output_partials["resolution-card"] = "governance/card_output.html"
-    registry.workspace_hooks.append(ensure_workspace)
+    registry.notebook_kinds.append(WORKSPACE_KIND)
+    registry.workspace_hooks.append(WorkspaceSeeder())
     registry.view_hooks.append(_view_hook)

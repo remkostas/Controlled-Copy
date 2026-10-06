@@ -11,11 +11,11 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import date
 from functools import cache
 from pathlib import Path
 from typing import Any
 
+from controlled_copy.answering.citations import short_locator
 from controlled_copy.errors import PROVIDER_UNAVAILABLE
 from controlled_copy.governance import rules
 from controlled_copy.limits import DAILY_LIMIT_MESSAGE
@@ -84,7 +84,7 @@ def _warnings(
                 "source_id": passage.source_id,
                 "label": doc.label,
                 "reason": reason,
-                "locator": passage.locator.split(" › ")[-1],
+                "locator": short_locator(passage.locator),
                 "excerpt": excerpt[:280] + ("…" if len(excerpt) > 280 else ""),
                 "start": passage.char_start,
                 "end": passage.char_end,
@@ -127,16 +127,14 @@ def _task(card: CardInput, identifiers: list[str], undocumented: list[str]) -> s
     return "\n".join(lines)
 
 
-def run_card(
-    services: Services, notebook: OwnedNotebook, card: CardInput, selected_ids: list[str]
-) -> StoredOutput:
+def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows: list[Any]) -> StoredOutput:
+    """`rows`: the selected sources of `notebook`, with text (Repo.sources_by_ids)."""
     settings = services.settings
     situation = card.situation.strip()
     if not situation:
         raise StudioError("Describe the situation first.", 422)
     if len(situation) > settings.max_situation_chars:
         raise StudioError(f"Situations are limited to {settings.max_situation_chars:,} characters.", 422)
-    rows = services.repo.sources_by_ids(notebook, selected_ids, with_text=True)
     if not rows:
         raise StudioError("Select at least one source first.", 422)
     if services.budget.read_only():
@@ -168,7 +166,9 @@ def run_card(
             evidence = list(auth.passages)
             for source_id in referenced_documents(split, evidence):
                 evidence += search([source_id], top_k=1).passages
-            result = run_template(services, card_template(), evidence, task=_task(card, found, not_covered))
+            result = run_template(
+                services, card_template(), evidence, task=_task(card, found, not_covered), keep_uncited=True
+            )
             output, citations = result.output, result.citations
             context_sources += [p.source_id for p in evidence]
         else:
@@ -181,9 +181,11 @@ def run_card(
         raise StudioError(PROVIDER_UNAVAILABLE, 502) from exc
 
     source_of = {c["n"]: c["source_id"] for c in citations}
-    downgraded = 0
+    downgraded = 0  # shown with a weaker type than the model gave
+    dropped = 0  # not shown: a conflict without two documents, an inference without a quote
     conflict = False
-    evidence_items = 0
+    requirements = 0  # requirements with a verified quote from an applicable approved document
+    unverified = 0  # requirements shown as missing evidence because no quote verified
     missing = 0
     for section in output["sections"]:
         kept = []
@@ -191,27 +193,30 @@ def run_card(
             cited = [source_of[c["n"]] for c in item.get("cites", []) if c["n"] in source_of]
             if section["key"] == "conflicts":
                 documents = {
-                    split.document(s).document_id
-                    for s in cited
-                    if s in authoritative_ids and split.document(s)
+                    doc.document_id or doc.source_id
+                    for doc in (split.document(s) for s in cited if s in authoritative_ids)
+                    if doc is not None
                 }
                 if len(documents) >= 2:
                     conflict = True
                     kept.append({**item, "type": "conflict"})
                 else:
-                    downgraded += 1
+                    dropped += 1
                 continue
             shown = rules.apply_type_rules(item, cited, authoritative_ids)
             if shown is None:
-                downgraded += 1
+                dropped += 1
                 continue
-            downgraded += 1 if "downgraded" in shown else 0
             grounded = bool(set(cited) & authoritative_ids)
-            evidence_items += 1 if grounded else 0
-            # Missing information counts towards the status only when the model listed it as such
-            # and cited the passage that needs it; a downgraded requirement does not count.
-            listed = shown["type"] == "missing_evidence" and "downgraded" not in shown
-            missing += 1 if listed and grounded else 0
+            if "downgraded" in shown:
+                downgraded += 1
+                unverified += 1 if shown["type"] == "missing_evidence" else 0
+            elif shown["type"] == "requirement" and grounded:
+                requirements += 1
+            elif shown["type"] == "missing_evidence" and grounded:
+                # Missing information counts only when the model listed it as such and cited
+                # the passage that needs it.
+                missing += 1
             kept.append(shown)
         section["items"] = kept
 
@@ -223,13 +228,15 @@ def run_card(
     status, reasons = rules.result_status(
         conflict=conflict,
         undocumented=not_covered,
-        authoritative_evidence=evidence_items,
+        authoritative_evidence=requirements,
         only_unknown_sources=only_unknown,
         missing=missing,
+        unverified=unverified,
     )
     cited_ids = {c["source_id"] for c in citations}
     output["card"] = _card_block(card, split, rows, found, not_covered, warnings, status, reasons, cited_ids)
     output["downgraded"] = downgraded
+    output["dropped"] = dropped
     output.update(kind="ok", template=TEMPLATE_ID, title="Resolution Card", source_count=len(rows))
     log_event(
         "resolution_card",
@@ -238,6 +245,7 @@ def run_card(
         status=status,
         items=sum(len(s["items"]) for s in output["sections"]),
         downgraded=downgraded,
+        dropped=dropped,
         warnings=len(warnings),
         removed=int(output.get("removed", 0)),
     )
@@ -299,6 +307,7 @@ def _refusal(card: CardInput, split: rules.Split, rows: list[Any]) -> dict[str, 
         "citations": [],
         "removed": 0,
         "downgraded": 0,
+        "dropped": 0,
         "source_count": len(rows),
         "model": None,
     }
@@ -329,7 +338,3 @@ def _store(
     lineage = {row["id"] for row in rows} | {c["source_id"] for c in citations} | set(context_sources)
     output_id = services.repo.add_output(notebook, TEMPLATE_ID, card.situation.strip(), output, lineage, "ok")
     return StoredOutput(output_id, output)
-
-
-def today() -> date:
-    return date.today()

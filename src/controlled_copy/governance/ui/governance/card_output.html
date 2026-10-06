@@ -55,4 +55,4 @@
   </table>
   {% endif %}
 </section>
-{% if o.removed or o.extra.downgraded %}<p class="muted">{% if o.removed %}{{ o.removed }} item(s) removed because no quote could be verified. {% endif %}{% if o.extra.downgraded %}{{ o.extra.downgraded }} item(s) downgraded by the statement-type rules.{% endif %}</p>{% endif %}
+{% if o.removed or o.extra.downgraded or o.extra.dropped %}<p class="muted">{% if o.removed %}{{ o.removed }} item(s) removed because no quote could be verified. {% endif %}{% if o.extra.downgraded %}{{ o.extra.downgraded }} item(s) shown with a weaker type because their quote did not verify against an applicable approved document. {% endif %}{% if o.extra.dropped %}{{ o.extra.dropped }} item(s) not shown: a conflict needs verified quotes from two documents, an inference needs one verified quote.{% endif %}</p>{% endif %}

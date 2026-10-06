@@ -46,6 +46,8 @@ class Registry:
     workspace_hooks: list[Callable[[Any, str], None]] = field(default_factory=list)
     # Called with (services, notebook_row, context dict) to extend the workspace view.
     view_hooks: list[Callable[[Any, Any, dict[str, Any]], None]] = field(default_factory=list)
+    # Notebook kinds a layer owns. Visitors see them only while the layer is loaded.
+    notebook_kinds: list[str] = field(default_factory=list)
     loaded: list[str] = field(default_factory=list)
 
 

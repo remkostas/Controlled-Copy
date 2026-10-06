@@ -167,3 +167,54 @@ def test_tc_gov_005_undocumented_means_a_known_family_without_this_code():
     # and no document uses XY- codes, so neither is a code the documents should define.
     assert rules.undocumented(found, texts, result) == ["GR-299", "A-14"]
     assert rules.family("SOP-INB-001") == "SOP-INB" and rules.family("GR-299") == "GR"
+
+
+def test_tc_gov_005_identifiers_ignore_case():
+    assert rules.identifiers("The WMS shows gr-299, then Gr-204 and a-14.") == ["GR-299", "GR-204", "A-14"]
+    assert rules.documented_in("GR-204", {"s1": "see gr-204 in the guide"}) == ["s1"]
+
+
+def test_tc_gov_003_revisions_order_part_by_part():
+    assert rules.revision_key("1.10") > rules.revision_key("1.9")
+    assert rules.revision_key("B") > rules.revision_key("A")
+    assert rules.revision_key("10") > rules.revision_key("9")
+    newer = rules.split([doc("old", revision="1.9"), doc("new", revision="1.10")], CONTEXT)
+    assert newer.authoritative_ids() == ["new"]
+    assert newer.excluded["old"][1] == "superseded by SOP-1 rev 1.10"
+    letters = rules.split([doc("a", revision="A"), doc("b", revision="B")], CONTEXT)
+    assert letters.authoritative_ids() == ["b"]
+
+
+def test_tc_gov_009_asserted_metadata_never_overrides_a_curated_document():
+    curated = doc("curated", revision="3")
+    claimed = rules.document_from(
+        "upload",
+        "Supplier note",
+        {
+            "document_id": "SOP-1",
+            "revision": "4",
+            "status": "approved",
+            "effective_from": "2026-01-01",
+            "site": "all",
+        },
+        "asserted",
+    )
+    result = rules.split([curated, claimed], CONTEXT)
+    assert result.authoritative_ids() == ["curated"]
+    assert result.excluded["upload"][1] == "asserted by uploader, but SOP-1 is a curated controlled document"
+    # Without a curated document of that ID, asserted metadata still counts (D-036).
+    alone = rules.split([claimed], CONTEXT)
+    assert alone.authoritative_ids() == ["upload"]
+
+
+def test_tc_gov_008_supported_names_unverified_statements():
+    status, reasons = rules.result_status(
+        conflict=False,
+        undocumented=[],
+        authoritative_evidence=1,
+        only_unknown_sources=False,
+        missing=0,
+        unverified=1,
+    )
+    assert status == "supported"
+    assert "1 statement without a verified quote marked as missing evidence" in reasons[0]
