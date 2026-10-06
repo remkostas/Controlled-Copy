@@ -22,13 +22,13 @@ Source: `junit-stage2-false.xml`. One row per test case ID; a TC passes only if 
 | FR-FUP-03 | TC-FUP-003 | 1 | pass |
 | FR-GOV-01 | TC-GOV-001 | 1 | pass |
 | FR-GOV-02 | TC-GOV-002 | 1 | pass |
-| FR-GOV-03 | TC-GOV-003 | 1 | pass |
+| FR-GOV-03 | TC-GOV-003 | 4 | pass |
 | FR-GOV-04 | TC-GOV-004 | 1 | pass |
-| FR-GOV-05 | TC-GOV-005 | 2 | pass |
+| FR-GOV-05 | TC-GOV-005 | 3 | pass |
 | FR-GOV-05 | TC-GOV-006 | 2 | pass |
 | FR-GOV-06 | TC-GOV-007 | 3 | pass |
-| FR-GOV-07 | TC-GOV-008 | 6 | pass |
-| FR-GOV-08 | TC-GOV-009 | 1 | pass |
+| FR-GOV-07 | TC-GOV-008 | 8 | pass |
+| FR-GOV-08 | TC-GOV-009 | 4 | pass |
 | FR-GOV-09 | TC-GOV-010 | 2 | pass |
 | FR-IDX-01 | TC-IDX-001 | 3 | pass |
 | FR-IDX-02 | TC-IDX-002 | 1 | pass |
@@ -57,7 +57,7 @@ Source: `junit-stage2-false.xml`. One row per test case ID; a TC passes only if 
 | FR-SRC-09 | TC-SRC-011 | 5 | pass |
 | FR-SRC-10 | TC-SRC-012 | 2 | pass |
 | FR-SRC-11 | TC-SRC-013 | 2 | pass |
-| FR-STU-01 | TC-STU-001 | 3 | pass |
+| FR-STU-01 | TC-STU-001 | 4 | pass |
 | FR-STU-02 | TC-STU-002 | 2 | pass |
 | FR-STU-03 | TC-STU-003 | 3 | pass |
 | FR-UI-01 | TC-UI-001 | 1 | pass |
@@ -66,7 +66,7 @@ Source: `junit-stage2-false.xml`. One row per test case ID; a TC passes only if 
 | NFR-LOG-01 | TC-LOG-001 | 1 | pass |
 | NFR-REV-01 | TC-REV-001 | 1 | pass |
 | NFR-REV-02 | TC-REV-002 | 2 | pass |
-| NFR-REV-03 | TC-REV-003 | 1 | pass |
+| NFR-REV-03 | TC-REV-003 | 2 | pass |
 | NFR-SEC-01 | TC-SEC-001 | 1 | pass |
 | NFR-SEC-02 | TC-SEC-002 | 6 | pass |
 | NFR-SEC-03 | TC-SEC-003 | 2 | pass |
