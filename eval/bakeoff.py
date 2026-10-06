@@ -38,7 +38,7 @@ from controlled_copy.providers.openrouter import OpenRouterProvider
 from controlled_copy.retrieval.search import Passage, fts_query, rrf
 
 EMBEDDING_MODELS = ["baai/bge-m3", "qwen/qwen3-embedding-8b", "openai/text-embedding-3-small"]
-GENERATION_MODELS = ["openai/gpt-6-luna", "mistralai/mistral-small-2603", "google/gemini-3.5-flash-lite"]
+GENERATION_MODELS = ["openai/gpt-6-luna", "openai/gpt-6-luna-pro", "google/gemini-3.5-flash-lite"]
 GENERATION_CASES = ["G-01", "G-02", "G-03", "G-04", "G-05", "E-14"]
 
 

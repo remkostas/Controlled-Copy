@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     openrouter_api_key: SecretStr | None = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     model_generation: str = "openai/gpt-6-luna"
-    model_generation_fallback: str = "mistralai/mistral-small-2603"
+    model_generation_fallback: str = "openai/gpt-6-luna-pro"
     model_embedding: str = "baai/bge-m3"
 
     feature_governance: bool = False
