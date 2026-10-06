@@ -142,9 +142,6 @@ class Settings(BaseSettings):
         ):
             if getattr(self, name) <= 0:
                 problems.append(f"{name.upper()} must be positive")
-        models = [self.model_generation, self.model_generation_fallback, *self.model_choice_list]
-        if any(m.lower().startswith("mistralai/") for m in models):
-            problems.append("Mistral models are not used in this project (D-040)")
         if self.feature_model_picker:
             choices = self.model_choice_list
             if len(set(choices)) != len(choices):

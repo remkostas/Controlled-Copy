@@ -148,10 +148,9 @@ def test_tc_mod_004_choosing_the_fallback_model_keeps_a_second_route(warehouse, 
     assert answer["model"] == LUNA and answer["fallback"] is True
 
 
-def test_d040_mistral_models_are_refused_at_startup(settings):
-    for update in (
-        {"model_generation_fallback": "mistralai/mistral-small-2603"},
-        {"model_choices": f"{LUNA},mistralai/mistral-small-2603"},
-    ):
-        with pytest.raises(ConfigError, match="Mistral"):
-            settings.model_copy(update=update).check_startup()
+def test_d040_mistral_may_be_offered_but_is_not_the_default(settings):
+    """Remko, 2026-10-06: Mistral may be used, just not as the main model."""
+    assert not settings.model_generation.startswith("mistralai/")
+    assert not settings.model_generation_fallback.startswith("mistralai/")
+    widened = settings.model_copy(update={"model_choices": f"{LUNA},mistralai/mistral-small-2603"})
+    widened.check_startup()  # a Mistral model in the allowlist is accepted

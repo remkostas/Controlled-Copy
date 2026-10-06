@@ -38,6 +38,7 @@ LABELS = {
     "x-ai/grok-4.7": "Grok 4.7",
     "moonshotai/kimi-k2.6": "Kimi K2.6",
     "z-ai/glm-5.2": "GLM 5.2",
+    "mistralai/mistral-small-2603": "Mistral Small",
 }
 VENDORS = {
     "openai": "OpenAI",
@@ -47,6 +48,7 @@ VENDORS = {
     "x-ai": "xAI",
     "moonshotai": "Moonshot AI",
     "z-ai": "Z.ai",
+    "mistralai": "Mistral",
 }
 
 
