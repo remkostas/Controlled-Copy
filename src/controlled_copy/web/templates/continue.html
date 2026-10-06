@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ product_name }}{% endblock %}
+{% block content %}
+<main class="cover">
+  <article class="sheet">
+    <div class="sheet__title sheet__brand">{{ icon('brand') }}<h1>{{ product_name }}</h1></div>
+    <p class="sheet__lede">You arrived from another site. Open your workspace to continue.</p>
+    <p><a class="btn btn--primary" href="/app">Open the workspace</a></p>
+  </article>
+</main>
+{% endblock %}

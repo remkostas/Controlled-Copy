@@ -9,7 +9,14 @@ from typing import Any, Protocol
 
 
 class ProviderError(Exception):
-    """The provider failed (network, HTTP error, no endpoint). Message has no content."""
+    """The provider failed (network, HTTP error, no endpoint). Message has no content.
+
+    `cost_usd`: what the provider reported for a call that was billed but failed after the
+    response arrived (for example malformed output), so the daily budget still counts it."""
+
+    def __init__(self, message: str = "", *, cost_usd: float | None = None) -> None:
+        super().__init__(message)
+        self.cost_usd = cost_usd
 
 
 class ProviderTransient(ProviderError):

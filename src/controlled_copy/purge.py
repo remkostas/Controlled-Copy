@@ -32,8 +32,9 @@ def remove_uploads(settings: Settings, names: list[str]) -> None:
 
 def purge(settings: Settings, repo: Repo, now: datetime | None = None) -> PurgeResult:
     sessions, files = repo.purge_expired(settings.retention_hours, now)
-    if sessions:
-        repo.checkpoint()
+    # Every run, not only after deletions: it also completes a checkpoint that a busy reader
+    # blocked after an earlier deletion.
+    repo.checkpoint()
     remove_uploads(settings, files)
     uploads = settings.uploads_dir
     orphans = 0

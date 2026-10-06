@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import secrets
 import sqlite3
+import time
 from collections.abc import Collection, Iterable, Sequence
 from dataclasses import dataclass, fields
 from datetime import UTC, datetime, timedelta
@@ -19,6 +20,7 @@ from typing import Any, NamedTuple
 import numpy as np
 
 from controlled_copy.errors import UserFacingError
+from controlled_copy.logs import log_event
 from controlled_copy.storage.db import transaction, utcnow
 
 TOMBSTONE = "source_deleted"
@@ -46,6 +48,20 @@ class Stored(NamedTuple):
 
     id: str
     status: str
+
+
+def visitor_storage_full(limit_mb: int) -> CapacityReached:
+    return CapacityReached(
+        f"You have added the most this demo stores per visitor ({limit_mb:,} MB). "
+        "Delete a source or notebook to add another.",
+        409,
+    )
+
+
+def storage_full() -> CapacityReached:
+    return CapacityReached(
+        "The demo's storage is full right now. Viewing still works; please try again later.", 507
+    )
 
 
 def characters_full(limit: int) -> CapacityReached:
@@ -246,6 +262,24 @@ class Repo:
         ).fetchone()
         return int(row["n"])
 
+    def session_bytes(self, sid: str) -> int:
+        row = self.conn.execute(
+            "SELECT COALESCE(SUM(s.bytes), 0) AS n FROM source s JOIN notebook n ON n.id = s.notebook_id "
+            "WHERE n.session_id = ?",
+            (sid,),
+        ).fetchone()
+        return int(row["n"])
+
+    def total_bytes(self) -> int:
+        return int(self.conn.execute("SELECT COALESCE(SUM(bytes), 0) AS n FROM source").fetchone()["n"])
+
+    def check_storage(self, sid: str, new_bytes: int, visitor_limit_mb: int, total_limit_mb: int) -> None:
+        """Raise CapacityReached if `new_bytes` more would exceed the visitor's or the demo's limit."""
+        if self.session_bytes(sid) + new_bytes > visitor_limit_mb * 1024 * 1024:
+            raise visitor_storage_full(visitor_limit_mb)
+        if self.total_bytes() + new_bytes > total_limit_mb * 1024 * 1024:
+            raise storage_full()
+
     def count_chars(self, notebook: OwnedNotebook) -> int:
         row = self.conn.execute(
             "SELECT COALESCE(SUM(length(text)), 0) AS n FROM source WHERE notebook_id = ?",
@@ -277,7 +311,13 @@ class Repo:
             (notebook_id, *ids),
         ).fetchall()
 
-    def insert_source(self, new: NewSource, limit: int | None = None, char_limit: int | None = None) -> str:
+    def insert_source(
+        self,
+        new: NewSource,
+        limit: int | None = None,
+        char_limit: int | None = None,
+        storage_limits_mb: tuple[int, int] | None = None,
+    ) -> str:
         if len(new.chunks) != len(new.vectors):
             raise ValueError("every chunk needs exactly one vector")
         source_id = new_id()
@@ -286,6 +326,8 @@ class Repo:
                 raise sources_full(limit)
             if char_limit is not None and self.count_chars(new.notebook) + len(new.text) > char_limit:
                 raise characters_full(char_limit)
+            if storage_limits_mb is not None:
+                self.check_storage(new.notebook.session_id, new.bytes, *storage_limits_mb)
             self.conn.execute(
                 "INSERT INTO source (id, notebook_id, title, kind, bytes, pages, page_starts_json, "
                 "warnings_json, metadata_json, metadata_origin, text, file_path, created_at) "
@@ -374,9 +416,26 @@ class Repo:
         ).fetchone()
         return int(row["n"]) == len(wanted)
 
-    def checkpoint(self) -> None:
-        """Fold the write-ahead log into the database so deleted pages do not linger in it."""
-        self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    def checkpoint(self, attempts: int = 5) -> bool:
+        """Fold the write-ahead log into the database so deleted pages do not linger in it.
+
+        A reader holding an older snapshot blocks a complete checkpoint; it is retried briefly,
+        and an incomplete one is reported (the hourly purge retries). Returns True when the log
+        was fully folded and truncated."""
+        # A checkpoint waits on readers through the busy handler; keep that wait short here so
+        # a deletion never hangs on another visitor's read (the connection default is 15 s).
+        previous = self.conn.execute("PRAGMA busy_timeout").fetchone()[0]
+        self.conn.execute("PRAGMA busy_timeout = 100")
+        try:
+            for attempt in range(attempts):
+                busy = self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()[0]
+                if not busy:
+                    return True
+                time.sleep(0.05 * (attempt + 1))
+        finally:
+            self.conn.execute(f"PRAGMA busy_timeout = {int(previous)}")
+        log_event("checkpoint_incomplete")
+        return False
 
     # Chunks and vectors -------------------------------------------------------
     # Chunk-level helpers take source IDs that callers got from sources_by_ids or

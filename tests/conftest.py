@@ -44,6 +44,7 @@ def settings(tmp_path: Path) -> Settings:
         evidence_floor=0.05,
         provider_timeout_seconds=5,
         pdf_parse_timeout_seconds=10,
+        min_free_disk_mb=0,  # tests must not depend on the free space of the machine running them
     )
 
 
