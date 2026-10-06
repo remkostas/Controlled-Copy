@@ -97,6 +97,8 @@ class SecurityHeadersMiddleware:
                 add("permissions-policy", "camera=(), microphone=(), geolocation=(), payment=()")
                 add("cross-origin-opener-policy", "same-origin")
                 add("cross-origin-resource-policy", "same-origin")
+                # A demo behind an access code: search engines should not list its pages.
+                add("x-robots-tag", "noindex, nofollow")
                 if is_static:
                     add("cache-control", "public, max-age=31536000, immutable")
                 else:

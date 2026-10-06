@@ -172,3 +172,22 @@ def test_tc_src_005_f6_a_notebook_holds_a_bounded_amount_of_text(settings):
         assert fake.embed_calls == embeds, "refused before any embedding call"
         visitor.client.delete(f"/sources/{visitor.sources[0]}", headers=visitor.json_headers())
         visitor.paste("Fits again", "d" * 60)
+
+
+def test_healthz_reports_a_database_that_cannot_be_opened(settings, tmp_path):
+    from fastapi.testclient import TestClient
+
+    from controlled_copy.app import create_app
+    from controlled_copy.providers.fake import FakeProvider
+
+    app = create_app(settings, FakeProvider(), run_purge=False)
+    with TestClient(app) as client:
+        assert client.get("/healthz").json() == {"status": "ok"}
+        app.state.settings = settings.model_copy(update={"data_dir": tmp_path / "missing" / "dir"})
+        broken = client.get("/healthz")
+        assert broken.status_code == 503 and broken.json() == {"status": "database unavailable"}
+
+
+def test_pages_ask_search_engines_not_to_index_the_demo(visitor):
+    for path in ("/", "/app", "/healthz"):
+        assert visitor.client.get(path).headers["x-robots-tag"] == "noindex, nofollow"
