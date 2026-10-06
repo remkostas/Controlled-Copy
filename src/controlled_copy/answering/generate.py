@@ -17,8 +17,10 @@ from typing import Any
 from pydantic import BaseModel, ValidationError
 
 from controlled_copy.errors import PROVIDER_UNAVAILABLE, UserFacingError
+from controlled_copy.limits import worst_case_usd
 from controlled_copy.logs import log_event
 from controlled_copy.providers.base import (
+    MAX_COMPLETION_TOKENS,
     ChatResult,
     ProviderBadOutput,
     ProviderError,
@@ -76,10 +78,18 @@ def generate[M: BaseModel](
         fallback = settings.model_generation
     models = [primary, fallback]
     timeout = settings.provider_timeout_seconds
+    # Each attempt reserves the most it can cost: this prompt and schema at the prompt price
+    # cap, the whole output allowance at the completion cap.
+    reserve = worst_case_usd(
+        len(json.dumps(messages).encode()) + len(json.dumps(schema).encode()),
+        settings.max_price_prompt_per_million,
+        MAX_COMPLETION_TOKENS,
+        settings.max_price_completion_per_million,
+    )
     failure: ProviderError | None = None
     for attempt, model in enumerate(models, start=1):
         call_id = services.budget.consume(
-            services.session_id, schema_name, reserve_usd=settings.usd_reserve_per_generation
+            services.session_id, schema_name, reserve_usd=reserve
         )  # LimitExceeded is user-facing
         started = time.monotonic()
         try:

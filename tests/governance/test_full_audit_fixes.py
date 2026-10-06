@@ -122,3 +122,77 @@ def test_gov_03_expert_confirmation_without_a_documented_escalation_names_who_de
     assert card["fallback_escalation"].startswith("Stop and ask the person responsible")
     page = visitor.client.get(f"/app?nb={visitor.notebook_id}").text
     assert "standard escalation, not taken from the documents" in page
+
+
+def _source_id(db, workspace, document_id):
+    return db.execute(
+        "SELECT id FROM source WHERE notebook_id = ? AND metadata_json LIKE ?",
+        (workspace.id, f"%{document_id}%"),
+    ).fetchone()[0]
+
+
+def _escalating(text="Escalate.", needle="unknown error codes", escalation=None):
+    def build(request):
+        pid, quote = passage_with(request, needle)
+        required = [{"type": "requirement", "text": text, "citations": [{"passage_id": pid, "quote": quote}]}]
+        return empty_card(required_actions=required, escalation=escalation(pid, quote) if escalation else [])
+
+    return card_responder(build)
+
+
+def test_rck_08_a_code_only_an_unselected_document_covers_is_documented(workspace, db, fake):
+    """Full audit re-check RCK-08: with only the matrix selected, GR-204 is documented by
+    GUIDE-WMS-003 (applicable, not selected) and must not be called undocumented; the card
+    still asks for confirmation, because the evidence does not cover it. GR-299 stays
+    undocumented."""
+    matrix = _source_id(db, workspace, "MATRIX-ESC-001")
+    fake.responder = _escalating()
+    card = workspace.card("The WMS shows GR-204 and then GR-299.", source_ids=[matrix]).json()["output"][
+        "card"
+    ]
+    assert card["undocumented"] == ["GR-299"]
+    assert card["status"] == "expert_confirmation"
+    assert "GR-204 is covered by GUIDE-WMS-003 rev 1, which is not selected" in card["reasons"]
+    assert "no applicable approved document covers GR-299" in card["reasons"]
+
+
+def test_rck_07_an_uncited_recommendation_does_not_hide_who_decides(workspace, db, fake):
+    """Full audit re-check RCK-07: a recommendation without a quote in the escalation section
+    names nobody from the documents, so the standard line is still shown."""
+    matrix = _source_id(db, workspace, "MATRIX-ESC-001")
+    vague = [{"type": "recommendation", "text": "Gather more information before deciding.", "citations": []}]
+    fake.responder = _escalating(escalation=lambda pid, quote: vague)
+    card = workspace.card("The WMS shows the unknown error GR-299.", source_ids=[matrix]).json()["output"][
+        "card"
+    ]
+    assert card["status"] == "expert_confirmation"
+    assert card["fallback_escalation"].startswith("Stop and ask the person responsible")
+
+
+def test_rck_07_a_documented_escalation_replaces_the_standard_line(workspace, db, fake):
+    matrix = _source_id(db, workspace, "MATRIX-ESC-001")
+
+    def documented(pid, quote):
+        cite = [{"passage_id": pid, "quote": quote}]
+        return [{"type": "requirement", "text": "Contact the WMS key user.", "citations": cite}]
+
+    fake.responder = _escalating(escalation=documented)
+    card = workspace.card("The WMS shows the unknown error GR-299.", source_ids=[matrix]).json()["output"][
+        "card"
+    ]
+    assert card["status"] == "expert_confirmation"
+    assert card["fallback_escalation"] is None
+
+
+def test_rck_05_a_missing_workspace_is_set_up_by_a_post_not_a_page_load(visitor, db):
+    """Full audit re-check RCK-05: pages never write. When the visitor has no copy of the
+    governed workspace, the page offers a CSRF-checked button that makes one."""
+    count = "SELECT COUNT(*) FROM notebook WHERE kind = 'ops_workspace'"
+    db.execute("DELETE FROM notebook WHERE kind = 'ops_workspace'")
+    db.commit()
+    page = visitor.client.get("/app")
+    assert page.status_code == 200 and "Set up the Inbound Operations demo" in page.text
+    assert db.execute(count).fetchone()[0] == 0, "the page load wrote nothing"
+    assert visitor.client.post("/workspace/reset").status_code == 403, "no token, no copy"
+    made = visitor.client.post("/workspace/reset", headers=visitor.json_headers())
+    assert made.status_code == 200 and db.execute(count).fetchone()[0] == 1

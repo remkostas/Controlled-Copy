@@ -348,19 +348,25 @@ def result_status(
     missing: int,
     unverified: int = 0,
     asserted_only: bool = False,
+    unselected_only: Sequence[tuple[str, Sequence[str]]] = (),
 ) -> tuple[str, list[str]]:
     """One primary status by precedence, with the reasons that produced it.
 
     `authoritative_evidence` counts requirements with a verified quote from an applicable
     approved document; `unverified` counts requirements shown as missing evidence because
     their quote did not verify; `asserted_only` says that every one of them rests on
-    document-control metadata an uploader asserted, which the status then names."""
+    document-control metadata an uploader asserted, which the status then names.
+    `unselected_only` lists codes that an applicable approved document of the notebook covers
+    but none of the selected ones, with those documents' labels: documented, yet not in the
+    evidence, so the card still asks for confirmation (full audit re-check RCK-08)."""
     reasons: list[str] = []
     if conflict:
         reasons.append("two applicable approved documents give different instructions")
         return "conflict", reasons
     if undocumented:
         reasons.append("no applicable approved document covers " + ", ".join(undocumented))
+    for code, labels in unselected_only:
+        reasons.append(f"{code} is covered by {', '.join(labels)}, which is not selected")
     if only_unknown_sources:
         reasons.append("only sources without document-control metadata match")
     if authoritative_evidence == 0:

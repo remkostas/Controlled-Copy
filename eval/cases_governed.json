@@ -1,5 +1,5 @@
 {
-  "action_checks": "Action checks added on 2026-10-06 after the full audit (EVAL-01): must_say and must_not_say are regular expressions over the statements the card shows, never over the quotes. They were written from the corpus text and the expected column of the case specification, then checked against stored outputs only to make sure correct wording is not rejected.",
+  "action_checks": "Action checks added on 2026-10-06 after the full audit (EVAL-01): must_say and must_not_say are regular expressions over the statements the card shows, never over the quotes. They were written from the corpus text and the expected column of the case specification, then checked against stored outputs only to make sure correct wording is not rejected. Re-check 2026-10-06 (RCK-02): a negation counts only within the action's own phrase, a prohibition after an action only when it follows directly, and contamination cases also reject a conditional or delayed stop and a delayed notification.",
   "corpus": "demo-data/inbound-operations",
   "extra": "eval/corpus-extra/SUP-NOTE-118_supplier-delivery-advice.md",
   "default_context": {
@@ -313,6 +313,14 @@
           "any": [
             "\\bpost\\w*\\b{gap}\\bunrestricted stock\\b"
           ]
+        },
+        {
+          "what": "certification exempts the material",
+          "any": [
+            "\\bcertified suppliers?\\b[^.;:]*\\b(?:not subject|exempt|need no|does not need|do not need|skip)",
+            "\\bonly (?:to|for) (?:material from )?uncertified\\b",
+            "\\bdirect posting\\b(?:(?!\\b(?:not|no|never)\\b)[^.;:])*\\b(?:is|are) (?:allowed|permitted)\\b"
+          ]
         }
       ]
     },
@@ -528,7 +536,7 @@
         {
           "what": "keep unloading",
           "any": [
-            "\\b(?:continue|keep|carry on|resume|proceed)\\w*\\b{gap}\\bunload"
+            "\\b(?:continue|keep|carry on|resume|proceed|finish|complete)\\w*\\b{gap}\\bunload"
           ]
         },
         {
@@ -547,6 +555,20 @@
           "what": "touch or open the material",
           "any": [
             "\\b(?:touch|open)\\w*\\b{gap}\\b(?:carton|material|packaging|liquid)\\b"
+          ]
+        },
+        {
+          "what": "make the stop conditional or later",
+          "any": [
+            "\\bstop\\w*\\b[^.;:]*\\bunload\\w*\\b[^.;:]*\\b(?:only )?(?:if|when|once) (?:the |it |its )?(?:leak|smell|odou?r|liquid|it)\\w*\\b[^.;:]*\\b(?:worse|stronger|spread\\w*|grow\\w*|increase\\w*|bigger)\\b",
+            "\\bstop\\w*\\b[^.;:]*\\bunload\\w*\\b[^.;:]*\\bonly if\\b",
+            "\\bfirst\\b[^.;:]*\\bthen stop\\b"
+          ]
+        },
+        {
+          "what": "delay telling QA or EHS",
+          "any": [
+            "\\b(?:notify|contact|inform|call|tell|alert)\\w*\\b[^.;:]*\\b(?:qa|ehs)\\b[^.;:]*\\b(?:end of (?:the |your )?shift|later|tomorrow|next (?:day|shift)|after unloading|once unloading|when unloading|after (?:the )?(?:truck|delivery) is unloaded)\\b"
           ]
         }
       ]
@@ -594,6 +616,14 @@
           "what": "post it to unrestricted stock",
           "any": [
             "\\bpost\\w*\\b{gap}\\bunrestricted stock\\b"
+          ]
+        },
+        {
+          "what": "certification exempts the material",
+          "any": [
+            "\\bcertified suppliers?\\b[^.;:]*\\b(?:not subject|exempt|need no|does not need|do not need|skip)",
+            "\\bonly (?:to|for) (?:material from )?uncertified\\b",
+            "\\bdirect posting\\b(?:(?!\\b(?:not|no|never)\\b)[^.;:])*\\b(?:is|are) (?:allowed|permitted)\\b"
           ]
         }
       ]

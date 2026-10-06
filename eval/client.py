@@ -25,8 +25,9 @@ EVAL = ROOT / "eval"
 
 
 def provenance(case_file: Path) -> dict[str, Any]:
-    """Which code and which cases produced a result: the commit, whether tracked files had
-    uncommitted changes, and a hash of the case file. Written into every result file."""
+    """Which code and which cases produced a result: the commit, whether the tree had
+    uncommitted changes or untracked files, and a hash of the case file. Written into every
+    result file."""
 
     def git(*args: str) -> str:
         try:
@@ -42,9 +43,20 @@ def provenance(case_file: Path) -> dict[str, Any]:
             return ""
         return done.stdout.strip()
 
+    # Untracked files count where they can change a run (code, cases, corpus); earlier result
+    # files and the download cache do not (full audit re-check nit).
+    changed = git(
+        "status",
+        "--porcelain",
+        "--untracked-files=all",
+        "--",
+        ".",
+        ":(exclude)eval/results",
+        ":(exclude)eval/.cache",
+    )
     return {
         "commit": git("rev-parse", "HEAD") or "unknown",
-        "dirty": bool(git("status", "--porcelain", "--untracked-files=no")),
+        "dirty": bool(changed),
         "cases_sha256": hashlib.sha256(case_file.read_bytes()).hexdigest()[:16],
     }
 

@@ -54,14 +54,29 @@ sudo ufw status verbose
 sudo ss -tlnp
 sudo sshd -T | grep -E "^(passwordauthentication|permitrootlogin)"
 docker compose ps --format "{{.Name}} {{.Ports}}"
-for image in controlled-copy:latest caddy:2.11; do
-  docker save "$image" -o /tmp/scan.tar
-  docker run --rm -v /tmp/scan.tar:/image.tar:ro aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa image --input /image.tar --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 && echo "$image: clean"
-  rm /tmp/scan.tar
-done
 ```
 
-Expected: only 22, 80 and 443 open; password and root login off; only Caddy publishes ports; both images clean (no fixable HIGH or CRITICAL findings). The scanner is pinned by digest (the same Trivy version as CI) and reads saved copies of the images actually running here, so it never gets the Docker socket.
+Then the image scan, as one block:
+
+```
+(
+  trap 'rm -f /tmp/scan.tar' EXIT
+  failed=0
+  for image in controlled-copy:latest caddy:2.11; do
+    rm -f /tmp/scan.tar
+    if docker save "$image" -o /tmp/scan.tar \
+      && docker run --rm -v /tmp/scan.tar:/image.tar:ro aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa image --input /image.tar --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1; then
+      echo "$image: clean"
+    else
+      echo "$image: NOT CLEAN (findings above, or the save or the scan failed)"
+      failed=1
+    fi
+  done
+  exit "$failed"
+) && echo "SCAN PASSED" || echo "SCAN FAILED"
+```
+
+Expected: only 22, 80 and 443 open; password and root login off; only Caddy publishes ports; both images clean and `SCAN PASSED` (no fixable HIGH or CRITICAL findings). The scanner is pinned by digest (the same Trivy version as CI) and reads saved copies of the images actually running here, so it never gets the Docker socket. Every image is saved afresh before its scan, a failed save or scan marks that image as not clean, and the block's exit status is non-zero if either image is not clean (`tests/unit/test_deployment_guide.py` runs this block against stand-in commands).
 
 Then run the live checks from any machine with the development dependencies installed:
 
@@ -76,8 +91,8 @@ TC-LIVE-001 checks health, headers, TLS and the HTTP redirect without model call
 - **Update:** `git pull && docker compose pull --ignore-buildable && docker compose build --pull && docker compose up -d --wait`, then the image scan from section 5. Do it at least monthly so Caddy, the Python base and the Debian packages pick up security fixes (a plain `build --pull` refreshes only the app's base, not Caddy).
 - **Uptime:** an external monitor (any uptime service) on `https://<site>/healthz`. Compose restarts a container that exits, not one that is up but unhealthy, so the monitor is what tells you.
 - **Logs:** `docker compose logs --tail 100 app`. Logs are content-free (event names, hashed session IDs, route templates, sizes, durations); the app server keeps no access log, so no URLs or client addresses; Caddy writes no access log either. Docker keeps at most 30 MB per container.
-- **Storage:** raw uploads are limited per visitor and in total (`MAX_VISITOR_UPLOAD_MB`, `MAX_TOTAL_UPLOAD_MB`), and nothing is accepted when the volume has less than `MIN_FREE_DISK_MB` free; viewing keeps working.
+- **Storage:** raw uploads are limited per visitor and in total (`MAX_VISITOR_UPLOAD_MB`, `MAX_TOTAL_UPLOAD_MB`), and nothing is accepted that would leave the volume with less than `MIN_FREE_DISK_MB` free, counting the file and an estimate of what the database grows by; the check runs before any embedding call and again inside the write. Viewing keeps working.
 - **Deletion:** a deleted source is gone from every table and search index at once; its bytes leave the database file at the next completed checkpoint, which runs after each deletion and in the hourly purge (another visitor's long read can delay it).
 - **Data:** the SQLite database and uploads live in the `app-data` volume. Sessions not seen for `RETENTION_HOURS` (default 7 days) are purged hourly with everything in them. The demo holds synthetic data only, so there is no backup; for real data, back up the volume and keep the backup inside the same retention promise.
-- **Costs:** model calls are limited per visitor per hour and per day (`MODEL_CALLS_PER_VISITOR_HOUR`, `MODEL_CALLS_PER_DAY`), the day is also limited in dollars (`MAX_USD_PER_DAY`, default 5: every call reserves a conservative amount when it starts and settles to the cost OpenRouter reports; failed, timed-out and embedding calls keep their reservation), and no request routes to an endpoint above `MAX_PRICE_PROMPT_PER_MILLION` / `MAX_PRICE_COMPLETION_PER_MILLION`. The credit limit on the OpenRouter key is the last stop, not the first. Larger models in `MODEL_CHOICES` (model picker) cost more per call.
+- **Costs:** model calls are limited per visitor per hour and per day (`MODEL_CALLS_PER_VISITOR_HOUR`, `MODEL_CALLS_PER_DAY`), the day is also limited in dollars (`MAX_USD_PER_DAY`, default 5: every call reserves the most it can cost under the price caps, counting every prompt byte as a token and the full 4,000-token output allowance, and settles to the cost OpenRouter reports; calls without a reported cost keep their reservation), and no request routes to an endpoint above `MAX_PRICE_PROMPT_PER_MILLION` / `MAX_PRICE_COMPLETION_PER_MILLION` (generation) or `MAX_PRICE_EMBEDDING_PER_MILLION` (embeddings). A generation call reserves roughly 0.07 to 0.10 USD at the default caps and usually settles to well under a cent, so the reservations only hold back room while calls are in flight. The credit limit on the OpenRouter key is the last stop, not the first. Larger models in `MODEL_CHOICES` (model picker) cost more per call.
 - **Remove everything:** `docker compose down -v`, then revoke the OpenRouter key.

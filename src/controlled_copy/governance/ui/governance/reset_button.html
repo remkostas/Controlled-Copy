@@ -2,7 +2,12 @@
 <button type="button" class="btn btn--sm" hx-post="/workspace/reset"
   hx-confirm="Reset Inbound Operations to the original documents? Your uploads, chat and cards in this workspace are deleted.">{{ icon('refresh-ccw') }} Reset workspace</button>
 {% else %}
-{% for n in notebooks if n.kind == 'ops_workspace' %}
+{% set workspaces = notebooks | selectattr('kind', 'equalto', 'ops_workspace') | list %}
+{% for n in workspaces %}
 <a class="btn btn--sm" href="/app?nb={{ n.id }}">{{ icon('book-open') }} Open the Inbound Operations demo</a>
+{% else %}
+{# No copy yet (seeding failed at login, or the layer was switched on later): pages never
+   write, so the copy is made by this CSRF-checked POST (full audit re-check RCK-05). #}
+<button type="button" class="btn btn--sm" hx-post="/workspace/reset">{{ icon('book-open') }} Set up the Inbound Operations demo</button>
 {% endfor %}
 {% endif %}

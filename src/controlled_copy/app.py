@@ -114,6 +114,7 @@ def build_provider(settings: Settings) -> ModelProvider:
             "prompt": settings.max_price_prompt_per_million,
             "completion": settings.max_price_completion_per_million,
         },
+        max_price_embedding=settings.max_price_embedding_per_million,
     )
 
 
@@ -245,9 +246,9 @@ def create_app(
 
     @app.exception_handler(Exception)
     async def unexpected(request: Request, exc: Exception) -> Response:
-        log_event(
-            "unhandled_error", path=request.url.path, method=request.method, error_type=type(exc).__name__
-        )
+        error_type = type(exc).__name__
+        route = _route_label(request)
+        log_event("unhandled_error", route=route, method=request.method, error_type=error_type)
         return HTMLResponse(
             "<!doctype html><title>Error</title><p>Something went wrong. Please try again.</p>",
             status_code=500,

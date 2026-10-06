@@ -42,12 +42,20 @@ class ChatResult:
     fallback: bool = False  # set by generate(): the fallback model answered
 
 
+# Bounds the cost of every call (full audit re-check RCK-01): the most completion tokens a
+# generation may bill, and how many requests one embedding batch may send (first try plus
+# retries of transient failures, any of which might be billed).
+MAX_COMPLETION_TOKENS = 4000
+EMBED_ATTEMPTS = 3
+
+
 @dataclass(frozen=True)
 class EmbedResult:
     vectors: list[list[float]]
     model: str
     input_tokens: int = 0
     extra: dict[str, Any] = field(default_factory=dict)
+    cost_usd: float | None = None
 
 
 class ModelProvider(Protocol):

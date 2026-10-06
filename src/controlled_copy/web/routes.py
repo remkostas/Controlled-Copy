@@ -276,26 +276,27 @@ def _prepare_visitor(request: Request, services: Services) -> None:
             services.repo.create_notebook(sid, DEFAULT_NOTEBOOK_TITLE, limit=1)
 
 
-def _navigation_from_this_site(request: Request) -> bool:
-    """A GET may repair missing notebooks only for the visitor's own navigation: typed or
-    bookmarked (none), from this origin, or a client that sends no fetch metadata. A link
-    from another site (cross-site, same-site) must not write (full audit SEC-04)."""
-    return request.headers.get("sec-fetch-site") in (None, "none", "same-origin")
-
-
 @router.get("/app", response_class=HTMLResponse)
 def workspace(
     request: Request, services: SessionDep, nb: Annotated[str | None, Query(max_length=64)] = None
 ) -> Response:
+    """Read-only, like every GET: the first notebook is created at the checked login, and a
+    visitor without one (after deleting the last) creates it again with the CSRF-checked
+    POST on the continue page (full audit SEC-04, re-check RCK-05)."""
     sid = services.sid
-    if _navigation_from_this_site(request):
-        _prepare_visitor(request, services)
     notebooks = services.repo.list_notebooks(sid)
     personal = [n for n in notebooks if n.kind == "personal"]
     if not personal:
-        return render(request, "continue.html", {})
+        token = csrf_token(request.app.state.secret, sid)
+        return render(request, "continue.html", {"csrf_token": token})
     current = next((n for n in notebooks if n.id == nb), personal[0])
     return render(request, "workspace.html", workspace_context(request, services, current))
+
+
+@router.post("/app/continue")
+def continue_to_workspace(request: Request, services: WriteDep) -> Response:
+    _prepare_visitor(request, services)
+    return RedirectResponse("/app", status_code=303)
 
 
 @router.post("/notebooks")

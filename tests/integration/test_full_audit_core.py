@@ -17,9 +17,14 @@ def app_with(settings, fake, **update):
     return create_app(settings.model_copy(update=update), fake, run_purge=False)
 
 
+# Price caps of 1 USD per million tokens make one call's worst case about 0.01 USD, so the
+# tests can count a few calls against small daily limits.
+LOW_CAPS = {"max_price_prompt_per_million": 1.0, "max_price_completion_per_million": 1.0}
+
+
 def test_sec_01_billed_malformed_answers_count_against_the_dollar_limit(settings):
     fake = FakeProvider(cost_per_call=0.04, responder=lambda request: "this is not JSON")
-    with TestClient(app_with(settings, fake, max_usd_per_day=0.07)) as client:
+    with TestClient(app_with(settings, fake, max_usd_per_day=0.07, **LOW_CAPS)) as client:
         visitor = Visitor(client).login()
         visitor.paste("Doc", "Deviations of up to 2% of the ordered quantity are posted as counted.")
         failed = visitor.ask("How are deviations of the ordered quantity posted?")
@@ -40,14 +45,18 @@ def app_state_budget(client):
 
 
 def test_sec_01_a_timed_out_call_keeps_its_reservation(settings):
+    from controlled_copy.limits import worst_case_usd
+    from controlled_copy.providers.base import MAX_COMPLETION_TOKENS
+
     fake = FakeProvider(delay_seconds=2)
-    app = app_with(settings, fake, provider_timeout_seconds=0.3, usd_reserve_per_generation=0.02)
+    app = app_with(settings, fake, provider_timeout_seconds=0.3)
     with TestClient(app) as client:
         visitor = Visitor(client).login()
         visitor.paste("Doc", "Deviations of up to 2% of the ordered quantity are posted as counted.")
         assert visitor.ask("How are deviations of the ordered quantity posted?").status_code == 504
         spent = app_state_budget(client).repo.spent_usd("2000-01-01T00:00:00")
-        assert spent >= 0.04, "two timed-out attempts keep two reservations"
+        smallest = worst_case_usd(0, 3.0, MAX_COMPLETION_TOKENS, 15.0)  # the output allowance alone
+        assert spent >= 2 * smallest, "two timed-out attempts keep two worst-case reservations"
 
 
 def test_sec_01_parallel_calls_cannot_book_past_the_limit(settings, services):
@@ -59,6 +68,88 @@ def test_sec_01_parallel_calls_cannot_book_past_the_limit(settings, services):
         budget.consume(None, "answer", reserve_usd=0.02)  # 0.04 would cross 0.03 before settling
     budget.settle(first, 0.001)
     assert budget.consume(None, "answer", reserve_usd=0.02), "room again once the first call settled"
+
+
+def test_sec_01_racing_calls_on_separate_connections_stay_within_the_limit(settings, services):
+    """Full audit re-check RCK-01: two requests on their own database connections reserve at
+    the same moment. Only as many calls start as their reservations fit, and while every call
+    costs at most its reservation, the day's settled spend stays within the limit."""
+    import threading
+
+    from controlled_copy.limits import Budget
+    from controlled_copy.storage.db import connect
+    from controlled_copy.storage.repo import Repo
+
+    services.settings.max_usd_per_day = 0.05
+    reserve, cost = 0.02, 0.019  # the provider honours the caps: cost <= reservation
+    start = threading.Barrier(3)
+    outcomes: list[str] = []
+
+    def call() -> None:
+        budget = Budget(services.settings, Repo(connect(settings.db_path)))
+        start.wait()
+        try:
+            call_id = budget.consume(None, "answer", reserve_usd=reserve)
+        except LimitExceeded:
+            outcomes.append("refused")
+            return
+        budget.settle(call_id, cost)
+        outcomes.append("ran")
+
+    threads = [threading.Thread(target=call) for _ in range(3)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=10)
+    assert sorted(outcomes) == ["ran", "ran", "refused"], "0.06 of reservations do not fit in 0.05"
+    assert services.repo.spent_usd("2000-01-01T00:00:00") <= 0.05
+
+
+def test_sec_01_a_reservation_covers_the_most_a_call_can_cost(settings):
+    """The reservation is the worst case under the caps sent with the request: every prompt
+    byte as a token at the prompt cap, the whole output allowance at the completion cap."""
+    from controlled_copy.limits import worst_case_usd
+    from controlled_copy.providers.base import MAX_COMPLETION_TOKENS
+    from controlled_copy.providers.openrouter import build_chat_request
+
+    messages = [{"role": "user", "content": "Ä" * 5000}]  # two bytes per character
+    request = build_chat_request(messages, {"type": "object"}, "answer", "m", {"prompt": 3, "completion": 15})
+    assert request["max_tokens"] == MAX_COMPLETION_TOKENS
+    assert request["provider"]["max_price"] == {"prompt": 3, "completion": 15}
+    reserve = worst_case_usd(10_000, 3.0, MAX_COMPLETION_TOKENS, 15.0)
+    most = (10_000 * 3.0 + MAX_COMPLETION_TOKENS * 15.0) / 1_000_000
+    assert reserve >= most
+
+
+def test_sec_01_a_cost_above_the_reservation_is_recorded_in_full(settings, services):
+    """A provider that bills more than the caps allow: the real cost is booked and the day
+    turns read-only, it is never capped at the reservation."""
+    services.settings.max_usd_per_day = 0.05
+    call_id = services.budget.consume(None, "answer", reserve_usd=0.02)
+    services.budget.settle(call_id, 0.09)
+    assert services.repo.spent_usd("2000-01-01T00:00:00") == pytest.approx(0.09)
+    assert services.budget.read_only()
+
+
+def test_sec_01_embedding_requests_carry_a_price_cap_and_report_their_cost(settings):
+    import json
+
+    import httpx
+
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.update(json.loads(request.content))
+        usage = {"prompt_tokens": 3, "cost": 0.00002}
+        body = {"data": [{"index": 0, "embedding": [0.1, 0.2]}], "usage": usage}
+        return httpx.Response(200, json=body)
+
+    provider = _openrouter_with(handler)
+    provider.max_price_embedding = 0.1
+    result = provider.embed(["one"], model="baai/bge-m3")
+    assert seen["provider"]["max_price"] == {"prompt": 0.1}
+    assert seen["provider"]["zdr"] is True
+    assert result.cost_usd == pytest.approx(0.00002)
 
 
 def _openrouter_with(handler):
@@ -145,10 +236,10 @@ def test_sec_02_nothing_is_accepted_when_the_disk_runs_low(settings, monkeypatch
     import shutil
     from collections import namedtuple
 
-    from controlled_copy.ingestion import pipeline
+    from controlled_copy.storage import repo
 
     usage = namedtuple("usage", "total used free")
-    monkeypatch.setattr(pipeline.shutil, "disk_usage", lambda path: usage(10, 9, 5 * 1024 * 1024))
+    monkeypatch.setattr(repo.shutil, "disk_usage", lambda path: usage(10, 9, 5 * 1024 * 1024))
     assert shutil.disk_usage  # the real function is untouched outside the module
     fake = FakeProvider()
     with TestClient(app_with(settings, fake, min_free_disk_mb=100)) as client:
@@ -156,6 +247,37 @@ def test_sec_02_nothing_is_accepted_when_the_disk_runs_low(settings, monkeypatch
         embeds = fake.embed_calls  # a layer may seed its workspace at login
         assert visitor.paste("Note", "A short note about docks.", expect=507).status_code == 507
         assert fake.embed_calls == embeds, "refused before any embedding call"
+
+
+def test_sec_02_a_disk_that_fills_during_embedding_refuses_the_write(settings, monkeypatch):
+    """Full audit re-check RCK-04: free space is checked again inside the write, with what
+    the insert adds to the database, so space lost while the embeddings ran counts."""
+    from collections import namedtuple
+
+    from controlled_copy.storage import repo
+
+    usage = namedtuple("usage", "total used free")
+    free = {"bytes": 101 * 1024 * 1024}
+    monkeypatch.setattr(repo.shutil, "disk_usage", lambda path: usage(10, 9, free["bytes"]))
+
+    class FillingDisk(FakeProvider):
+        def embed(self, texts, *, model):
+            free["bytes"] = 5 * 1024 * 1024  # another process wrote to the volume meanwhile
+            return super().embed(texts, model=model)
+
+    fake = FillingDisk()
+    from controlled_copy.storage.db import connect
+
+    with TestClient(app_with(settings, fake, min_free_disk_mb=100)) as client:
+        visitor = Visitor(client).login()
+        free["bytes"] = 101 * 1024 * 1024
+        sources = "SELECT COUNT(*) FROM source"
+        before = connect(settings.db_path).execute(sources).fetchone()[0]  # a layer may seed at login
+        refused = visitor.upload("note.txt", b"A short note about docks.", expect=507)
+        assert "storage is full" in refused.json()["error"]
+        assert connect(settings.db_path).execute(sources).fetchone()[0] == before, "nothing stored"
+        uploads = client.app.state.settings.uploads_dir
+        assert not uploads.exists() or not any(uploads.iterdir()), "the uploaded file was removed again"
 
 
 def test_sec_02_the_storage_limit_is_rechecked_inside_the_write(visitor, services, db):
@@ -224,11 +346,21 @@ def test_sec_04_login_creates_the_notebook_and_a_cross_site_get_writes_nothing(m
     deleted = visitor.client.delete(f"/notebooks/{visitor.notebook_id}", headers=visitor.json_headers())
     assert deleted.status_code in (200, 303)
     assert db.execute(count).fetchone()[0] == 0
-    linked = visitor.client.get("/app", headers={"Sec-Fetch-Site": "cross-site"})
-    assert linked.status_code == 200 and "You arrived from another site" in linked.text
-    assert db.execute(count).fetchone()[0] == 0, "a link from another site writes nothing"
-    own = visitor.client.get("/app", headers={"Sec-Fetch-Site": "same-origin"})
-    assert own.status_code == 200 and db.execute(count).fetchone()[0] == 1
+    # Every GET is read-only (re-check RCK-05): with or without fetch metadata, from any origin.
+    for headers in (
+        {"Sec-Fetch-Site": "cross-site"},
+        {"Sec-Fetch-Site": "same-origin"},
+        {},
+        {"Origin": "https://evil.example"},
+    ):
+        page = visitor.client.get("/app", headers=headers)
+        assert page.status_code == 200 and 'action="/app/continue"' in page.text
+        assert db.execute(count).fetchone()[0] == 0, f"a GET wrote ({headers})"
+    forged = visitor.client.post("/app/continue", follow_redirects=False)
+    assert forged.status_code == 403 and db.execute(count).fetchone()[0] == 0, "no token, no write"
+    token = visitor.client.get("/app").text.split('name="csrf_token" value="')[1].split('"')[0]
+    done = visitor.client.post("/app/continue", data={"csrf_token": token}, follow_redirects=False)
+    assert done.status_code == 303 and db.execute(count).fetchone()[0] == 1
 
 
 def test_sec_05_the_container_entrypoint_keeps_no_urls_or_addresses(tmp_path):
@@ -284,6 +416,25 @@ def test_sec_05_rejected_requests_log_the_route_not_the_path(visitor, caplog):
         visitor.client.delete(f"/sources/{canary}")  # no CSRF token
     events = " ".join(record.getMessage() for record in caplog.records)
     assert "csrf_rejected" in events and "/sources/{source_id}" in events
+    assert canary not in events
+
+
+def test_sec_05_unexpected_errors_log_the_route_not_the_path(settings, monkeypatch, caplog):
+    """Full audit re-check RCK-06: the catch-all 500 handler logged the raw path."""
+    from controlled_copy.storage.repo import Repo
+
+    def broken(self, *args, **kwargs):
+        raise RuntimeError("simulated defect")
+
+    with TestClient(app_with(settings, FakeProvider()), raise_server_exceptions=False) as client:
+        Visitor(client).login()
+        monkeypatch.setattr(Repo, "owned_source", broken)
+        canary = "URLCANARY-private-words-4711"
+        with caplog.at_level("INFO", logger="controlled_copy"):
+            response = client.get(f"/sources/{canary}")
+    assert response.status_code == 500
+    events = " ".join(record.getMessage() for record in caplog.records)
+    assert "unhandled_error" in events and "/sources/{source_id}" in events
     assert canary not in events
 
 
