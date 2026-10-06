@@ -74,3 +74,21 @@ def test_tc_ui_004_journey_b_end_to_end(page, server_url):
     assert page.locator("#studio-outputs details.output").count() == 0
     assert page.locator(".source").count() == 8
     assert page.js_errors == []
+
+
+def test_req_01_a_refused_card_renders_and_survives_a_reload(page, server_url):
+    """Full audit REQ-01: an off-topic situation gives a refusal card, and the workspace
+    still loads afterwards."""
+    login(page, server_url)
+    page.select_option("#nb-select", label="Inbound Operations")
+    page.wait_for_selector("h1:has-text('Inbound Operations')")
+    outputs = page.locator("#studio-outputs details.output")
+    before = outputs.count()
+    page.fill("#situation", "What is the forklift speed limit in the yard?")
+    page.click(".card-form button[type=submit]")
+    outputs.nth(before).wait_for()
+    assert "Not in the selected sources" in outputs.first.inner_text()
+    page.reload()
+    page.wait_for_selector("h1:has-text('Inbound Operations')")
+    assert "Not in the selected sources" in page.locator("#studio-outputs").inner_text()
+    assert page.js_errors == []

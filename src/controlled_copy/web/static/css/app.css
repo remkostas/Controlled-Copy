@@ -1429,6 +1429,10 @@ details.paste > summary.btn {
   background: var(--surface-panel-alt);
   color: var(--text-faint);
 }
+.card-fallback {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-sm);
+}
 .card-reasons {
   margin: var(--sp-1) 0 0;
   padding-left: var(--sp-4);

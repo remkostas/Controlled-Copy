@@ -3,6 +3,7 @@
 <div class="card-result card-result--{{ c.status }}">
   <p class="card-status">{{ c.status_label }}</p>
   {% if c.reasons %}<ul class="card-reasons">{% for r in c.reasons %}<li>{{ r }}</li>{% endfor %}</ul>{% endif %}
+  {% if c.get('fallback_escalation') %}<p class="card-fallback"><strong>Who decides:</strong> {{ c.fallback_escalation }} <span class="muted">(standard escalation, not taken from the documents)</span></p>{% endif %}
 </div>
 {% for w in c.warnings %}
 <div class="notice notice--warn card-warning" role="note">
@@ -47,7 +48,8 @@
     </tbody>
   </table>
   {% endif %}
-  {% if c.consulted %}<p class="muted card-consulted">Also given to the model, not cited: {% for d in c.consulted %}{{ d.label }}{% if d.origin == 'asserted' %} <span class="origin">asserted by uploader</span>{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+  {% if c.get('consulted') %}<p class="muted card-consulted">Also given to the model, not cited: {% for d in c.consulted %}{{ d.label }}{% if d.origin == 'asserted' %} <span class="origin">asserted by uploader</span>{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+  {% if c.get('not_selected') %}<p class="muted card-not-selected">Applicable but not selected, so not used: {% for d in c.not_selected %}{{ d.label }}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
   {% if c.excluded %}
   <table class="applicability">
     <caption class="visually-hidden">Documents not applied</caption>
