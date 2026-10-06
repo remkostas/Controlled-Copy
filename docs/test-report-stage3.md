@@ -17,6 +17,7 @@ Source: `junit-stage3-layers-off.xml`. One row per test case ID; a TC passes onl
 | FR-ANS-06 | TC-ANS-006 | 2 | pass |
 | FR-ANS-07 | TC-ANS-007 | 1 | pass |
 | FR-ANS-08 | TC-ANS-008 | 1 | pass |
+| FR-ANS-09 | TC-ANS-009 | 3 | pass |
 | FR-FUP-01 | TC-FUP-001 | 2 | pass |
 | FR-FUP-02 | TC-FUP-002 | 2 | pass |
 | FR-FUP-03 | TC-FUP-003 | 1 | pass |
@@ -47,10 +48,10 @@ Source: `junit-stage3-layers-off.xml`. One row per test case ID; a TC passes onl
 | FR-NB-01 | TC-NB-001 | 1 | pass |
 | FR-NB-02 | TC-NB-002 | 1 | pass |
 | FR-NB-03 | TC-NB-003 | 2 | pass |
-| FR-OUT-01 | TC-OUT-001 | 7 | pass |
+| FR-OUT-01 | TC-OUT-001 | 9 | pass |
 | FR-OUT-02 | TC-OUT-002 | 3 | pass |
 | FR-RET-01 | TC-RET-001 | 3 | pass |
-| FR-RET-02 | TC-RET-002 | 2 | pass |
+| FR-RET-02 | TC-RET-002 | 4 | pass |
 | FR-RET-03 | TC-RET-003 | 1 | pass |
 | FR-RTN-01 | TC-RTN-001 | 3 | pass |
 | FR-SRC-01 | TC-SRC-001 | 1 | pass |
@@ -66,7 +67,7 @@ Source: `junit-stage3-layers-off.xml`. One row per test case ID; a TC passes onl
 | FR-SRC-09 | TC-SRC-011 | 10 | pass |
 | FR-SRC-10 | TC-SRC-012 | 2 | pass |
 | FR-SRC-11 | TC-SRC-013 | 2 | pass |
-| FR-STU-01 | TC-STU-001 | 4 | pass |
+| FR-STU-01 | TC-STU-001 | 6 | pass |
 | FR-STU-02 | TC-STU-002 | 6 | pass |
 | FR-STU-03 | TC-STU-003 | 3 | pass |
 | FR-UI-01 | TC-UI-001 | 1 | pass |
@@ -103,5 +104,5 @@ Source: `junit-stage3-layers-off.xml`. One row per test case ID; a TC passes onl
 | NFR-SEC-07 | TC-SEC-007 | 1 | pass |
 | NFR-UI-01 | TC-UI-003 | 1 | pass |
 
-Test cases: 98 pass, 0 partly skipped, 0 fail, 0 skipped.
+Test cases: 99 pass, 0 partly skipped, 0 fail, 0 skipped.
 Catalogue cases without a test in this run: none.
