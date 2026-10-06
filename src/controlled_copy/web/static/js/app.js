@@ -68,9 +68,38 @@
       return;
     }
 
+    const copy = event.target.closest("[data-copy-markdown]");
+    if (copy) {
+      copyMarkdown(copy);
+      return;
+    }
+
     const tab = event.target.closest(".mobile-tabs [data-tab]");
     if (tab) showTab(tab.dataset.tab);
   });
+
+  // "Copy as Markdown": fetch the visitor's own export and put it on the clipboard.
+  function toast(message, ok) {
+    const box = $("#toast");
+    if (!box) return;
+    const note = document.createElement("p");
+    note.className = ok ? "notice" : "notice notice--error";
+    note.setAttribute("role", ok ? "status" : "alert");
+    note.textContent = message;
+    box.replaceChildren(note);
+    window.setTimeout(() => box.replaceChildren(), 8000);
+  }
+
+  async function copyMarkdown(button) {
+    try {
+      const response = await fetch(button.dataset.copyMarkdown, { credentials: "same-origin" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      await navigator.clipboard.writeText(await response.text());
+      toast("Copied as Markdown.", true);
+    } catch (error) {
+      toast("Copying did not work in this browser. Use Download .md instead.", false);
+    }
+  }
 
   function showTab(name) {
     const ws = workspace();

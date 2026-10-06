@@ -44,6 +44,8 @@ class Registry:
     chat_partials: list[str] = field(default_factory=list)
     # Studio template id -> partial that renders its outputs (instead of the generic list).
     output_partials: dict[str, str] = field(default_factory=dict)
+    # Studio template id -> function(output, created_at) returning its Markdown export.
+    output_markdown: dict[str, Callable[[dict[str, Any], str], str]] = field(default_factory=dict)
     template_dirs: list[Path] = field(default_factory=list)
     # Called with (services, session_id) when a visitor opens the workspace.
     workspace_hooks: list[Callable[[Any, str], None]] = field(default_factory=list)

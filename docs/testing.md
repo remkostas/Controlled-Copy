@@ -170,6 +170,9 @@ Replaces the persona switcher planned earlier (never built; Remko asked for a mo
 | FR-MOD-04 | The fallback still answers; choices are per visitor | TC-MOD-004 | integration | Chosen model fails; two visitors choose differently | Fallback answers and is marked "(fallback)"; each visitor keeps their own choice |
 | FR-MOD-05 | The allowlist is checked; removed models fall back to the default | TC-MOD-005 | integration | Duplicate, missing primary, malformed ID; a stored choice no longer listed | Startup refused with the reason; the default model is used |
 | FR-UI-05 | Model picker in a real browser | TC-UI-005 | e2e | Choose a model, ask, reload | Confirmation shown, answer labelled, choice kept, contrast passes |
+| FR-OUT-01 | Studio outputs export as Markdown with every verified quote | TC-OUT-001 | api | Export a Briefing and a Resolution Card; download | Title, sections, typed items with citation numbers, every quote listed; card status, context, warnings, applicability; download names the file |
+| FR-OUT-02 | Only the owner exports; removed outputs are not exported | TC-OUT-002 | api | Another visitor, a wrong ID, no session, a deleted cited source, the layer switched off | 404 or the landing page; nothing exported |
+| FR-UI-06 | Copy a card as Markdown in a real browser | TC-UI-006 | e2e | Build a card, press "Copy as Markdown" | Confirmation shown; the clipboard holds the card |
 
 ### Evaluation (real model, published as measured)
 

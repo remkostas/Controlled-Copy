@@ -28,5 +28,11 @@
     {% else %}
     <p class="muted">This output cited a source that was deleted, so its content was deleted too.</p>
     {% endif %}
+    {% if o.kind == 'ok' %}
+    <p class="output__actions">
+      <button type="button" class="btn btn--sm" data-copy-markdown="{{ o.md_url }}">{{ icon('copy') }} Copy as Markdown</button>
+      <a class="btn btn--sm btn--ghost" href="{{ o.md_url }}?download=true" download>{{ icon('file-text') }} Download .md</a>
+    </p>
+    {% endif %}
   </div>
 </details>

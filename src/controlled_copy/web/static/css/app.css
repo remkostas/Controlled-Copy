@@ -486,6 +486,12 @@ select {
   background: var(--surface-chrome-2);
   color: var(--text-on-chrome);
 }
+.output__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
 .answer__model {
   font-family: var(--font-mono);
 }

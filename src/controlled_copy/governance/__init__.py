@@ -83,6 +83,12 @@ def _superseded_banner(services: Services, context: dict[str, Any]) -> None:
         source["superseded_by"] = max(newer, key=lambda d: d.revision_key).label + " (asserted by uploader)"
 
 
+def _card_markdown(output: dict[str, Any], created_at: str) -> str:
+    from controlled_copy.governance.markdown import card_markdown
+
+    return card_markdown(output, created_at)
+
+
 def register(registry: Registry, settings: Settings) -> None:
     from controlled_copy.governance.routes import router
     from controlled_copy.governance.seed import WORKSPACE_KIND, WorkspaceSeeder
@@ -102,6 +108,7 @@ def register(registry: Registry, settings: Settings) -> None:
     registry.topbar_partials.append("governance/reset_button.html")
     registry.chat_partials.append("governance/chat_note.html")
     registry.output_partials["resolution-card"] = "governance/card_output.html"
+    registry.output_markdown["resolution-card"] = _card_markdown
     registry.notebook_kinds.append(WORKSPACE_KIND)
     registry.workspace_hooks.append(WorkspaceSeeder())
     registry.view_hooks.append(_view_hook)

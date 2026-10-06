@@ -163,7 +163,14 @@ def output_view(
 ) -> dict[str, Any]:
     created = time_label(row["created_at"])
     output = json.loads(row["output_json"] or "{}")
-    base = {"id": row["id"], "open": open_, "removed": 0, "sections": [], "partial": None}
+    base = {
+        "id": row["id"],
+        "open": open_,
+        "removed": 0,
+        "sections": [],
+        "partial": None,
+        "md_url": f"/notebooks/{row['notebook_id']}/outputs/{row['id']}.md",
+    }
     if row["status"] == TOMBSTONE:
         return {**base, "kind": "tombstone", "title": "Studio output removed", "meta_label": created}
     if row["template"] not in _core_template_ids() and row["template"] not in (partials or {}):

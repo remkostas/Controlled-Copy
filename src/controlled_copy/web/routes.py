@@ -13,7 +13,7 @@ import json
 from typing import Annotated, Any
 
 from fastapi import APIRouter, File, Form, Query, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 from markupsafe import Markup
 
 from controlled_copy.answering.answer import ask
@@ -41,6 +41,7 @@ from controlled_copy.web.deps import (
     same_origin,
     wants_json,
 )
+from controlled_copy.web.markdown import output_markdown
 from controlled_copy.web.security import (
     SESSION_COOKIE,
     code_matches,
@@ -482,6 +483,31 @@ def run_studio(
     if wants_json(request):
         return JSONResponse({"output_id": stored.output_id, "output": stored.output})
     return render_output(request, services, notebook, stored.output_id)
+
+
+@router.get("/notebooks/{notebook_id}/outputs/{output_id}.md")
+def output_as_markdown(
+    request: Request,
+    notebook_id: str,
+    output_id: str,
+    services: SessionDep,
+    download: Annotated[bool, Query()] = False,
+) -> Response:
+    """A Studio output as Markdown (copy or download); only from the visitor's own notebook."""
+    notebook = owned_notebook(services, notebook_id)
+    row = services.repo.get_output(notebook, output_id) if notebook is not None else None
+    text = (
+        output_markdown(row, request.app.state.registry.output_markdown, core_templates())
+        if row is not None
+        else None
+    )
+    if text is None:
+        return PlainTextResponse("Not found.", status_code=404)
+    headers = {"Cache-Control": "no-store"}
+    if download:
+        name = "resolution-card" if row["template"] == "resolution-card" else row["template"]
+        headers["Content-Disposition"] = f'attachment; filename="{name}-{row["created_at"][:10]}.md"'
+    return Response(text, media_type="text/markdown; charset=utf-8", headers=headers)
 
 
 def render_output(request: Request, services: Services, notebook: OwnedNotebook, output_id: str) -> Response:
