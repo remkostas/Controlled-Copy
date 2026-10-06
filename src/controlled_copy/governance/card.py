@@ -15,6 +15,7 @@ information is missing (the model may also leave a missing item out).
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
@@ -36,6 +37,14 @@ from controlled_copy.studio.engine import StudioTemplate, load_template, run_tem
 TEMPLATE_ID = "resolution-card"
 MAX_WARNINGS = 3
 MAX_REFERENCED = 2
+# A role or party an escalation can name ("QA lead", "WMS key user", "EHS", "purchasing",
+# "safety officer"). Who decides only counts when the same role is in the statement and in its
+# verified quote, so it comes from the documents, not from the model (second re-check R2-GOV-01).
+ROLE = re.compile(
+    r"\b(?:[a-z]+ )?(?:lead|inspector|key user|owner|officer|manager|supervisor|coordinator)\b"
+    r"|\behs\b|\bpurchasing\b",
+    re.IGNORECASE,
+)
 # Shown when a card asks for expert confirmation but no applicable document names who
 # decides (S-26). Fixed text, never model output, and labelled as such on the card.
 FALLBACK_ESCALATION = (
@@ -135,7 +144,15 @@ def referenced_documents(split: rules.Split, passages: list[Passage]) -> list[st
     return found[:MAX_REFERENCED]
 
 
-def _task(card: CardInput, identifiers: list[str], undocumented: list[str]) -> str:
+def _task(
+    card: CardInput,
+    identifiers: list[str],
+    undocumented: list[str],
+    unselected_only: list[tuple[str, list[str]]] = (),
+) -> str:
+    """The model's task. `undocumented`: codes no applicable approved document of the notebook
+    covers. `unselected_only`: codes that one does cover but that is not selected, with its
+    labels; they are documented, only not in the evidence (second re-check R2-GOV-02)."""
     ctx = card.context
     lines = [
         f"Situation: {card.situation}",
@@ -149,6 +166,12 @@ def _task(card: CardInput, identifiers: list[str], undocumented: list[str]) -> s
             + ", ".join(undocumented)
             + ". Do not guess what they mean; say what to do when a code is not documented,"
             " if a passage says it."
+        )
+    for code, labels in unselected_only:
+        lines.append(
+            f"{code} is covered by {', '.join(labels)}, which is not among the selected sources. Do not"
+            f" say {code} is undocumented and do not state what it requires; say that this document"
+            " must be selected or consulted before acting."
         )
     return "\n".join(lines)
 
@@ -190,7 +213,6 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
         for code in rules.undocumented(found, texts, whole, applicable=split.authoritative_ids())
         if code not in not_covered
     ]
-    not_in_evidence = not_covered + [code for code, _ in unselected_only]
 
     try:
         vector = embed_query(services, situation)
@@ -212,7 +234,7 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
             evidence = list(auth.passages)
             for source_id in referenced_documents(split, evidence):
                 evidence += search([source_id], top_k=1).passages
-            task = _task(card, found, not_in_evidence)
+            task = _task(card, found, not_covered, unselected_only)
             result = run_template(services, card_template(), evidence, task=task, keep_uncited=True)
             output, citations = result.output, result.citations
             context_sources += [p.source_id for p in evidence]
@@ -250,9 +272,11 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
     output["card"] = _card_block(card, split, rows, found, not_covered, warnings, status, reasons, cited_ids)
     output["card"]["not_selected"] = [{"source_id": d.source_id, "label": d.label} for d in not_selected]
     # The standard line is left out only when a verified requirement from an applicable approved
-    # document says who decides; an uncited recommendation does not (full audit re-check RCK-07).
+    # document names who decides: an uncited recommendation does not count (full audit re-check
+    # RCK-07), nor a cited instruction that names nobody (second re-check R2-GOV-01).
     escalation = next((sec["items"] for sec in output["sections"] if sec["key"] == "escalation"), [])
-    documented = any(item.get("type") == "requirement" and item.get("cites") for item in escalation)
+    quotes = {c["n"]: c.get("quote", "") for c in citations}
+    documented = any(item.get("type") == "requirement" and _names_role(item, quotes) for item in escalation)
     if status == "expert_confirmation" and not documented:
         output["card"]["fallback_escalation"] = FALLBACK_ESCALATION
     # Applicable documents whose passages reached the model without being cited, so a
@@ -277,6 +301,13 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
         removed=int(output.get("removed", 0)),
     )
     return _store(services, notebook, card, rows, output, citations, context_sources)
+
+
+def _names_role(item: dict[str, Any], quotes: dict[int, str]) -> bool:
+    """Whether the statement names a role that its own verified quotes name too."""
+    named = {m.group(0).lower() for m in ROLE.finditer(item.get("text", ""))}
+    quoted = " ".join(quotes.get(c["n"], "") for c in item.get("cites", [])).lower()
+    return any(role in quoted for role in named)
 
 
 def _card_block(

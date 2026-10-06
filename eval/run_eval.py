@@ -130,8 +130,42 @@ def normalised(text: str) -> str:
 # Action checks (full audit EVAL-01). A case lists what a correct card must say (`must_say`)
 # and what it must not say (`must_not_say`), as regular expressions over the statements the
 # card shows, never over the quotes: a genuine quote next to a wrong instruction must fail.
-NEGATIONS = {"not", "never", "no", "don't", "cannot", "can't", "mustn't", "nor", "neither"}
+#
+# A negation counts only when it governs the matched action (second re-check R2-EVAL-01): it
+# stands in the action's own segment of the sentence, before it. A segment ends at a comma,
+# "and", "then", "so", "but", "because", "since" and similar words, and a new one starts where an
+# unmarked new subject begins ("... certified goods you can post it"). A list joined by "or" or
+# "nor" keeps its negation ("do not touch the material or resume unloading", "never touch, open
+# or move it"). So "there is no QA hold for certified goods you can post it to unrestricted
+# stock" and "no supervisor approval is needed so post against another line" still say the
+# action, while "do not override the error with a manual posting" does not.
+NEGATIONS = {
+    "not",
+    "never",
+    "no",
+    "don't",
+    "doesn't",
+    "didn't",
+    "cannot",
+    "can't",
+    "mustn't",
+    "shouldn't",
+    "won't",
+    "neither",
+    "nor",
+    "without",
+}
 NEGATION_STEMS = ("prohibit", "forbid")
+SEGMENT_BREAK = re.compile(
+    r"(?P<mark>,|\b(?:and|then|so|but|because|since|therefore|otherwise|instead|however|while|as long as)\b)"
+    r"|(?<!whether )(?<!that )(?<!if )(?P<subject>\b(?:you|we|they|operators?|staff|it) "
+    r"(?:can|may|could|might|should|must|will|need to|are allowed to|is allowed to)\b)"
+)
+# Negation words that urge the action instead of cancelling it.
+URGING = re.compile(
+    r"\b(?:do not|don't|never|not) (?:delay|wait|hesitate)\w*\b|\bwithout (?:delay|waiting|hesitation)\b"
+    r"|\bno exceptions?\b|\bno matter\b"
+)
 # Between the verb and the object of a prohibited action: no negation and no condition, so
 # "post it to inspection stock until QA releases it to unrestricted stock" is not "post it to
 # unrestricted stock".
@@ -139,53 +173,79 @@ GAP = (
     r"(?:(?!\b(?:not|never|no|until|unless|after|before|once|only|then|releas\w*|rather than|instead of)\b)"
     r"[^.;:])*?"
 )
-# A negation governs an action only within its own phrase: from the last comma or "and",
-# "or", "then", "but" up to the action. So "do not document this decision, continue
-# unloading" still says "continue unloading", while "do not bypass the error by posting
-# against another line" does not say "post against another line" (full audit re-check RCK-02).
-PHRASE_BREAK = re.compile(r",|\b(?:and|or|then|but)\b")
-# Negation words that urge the action instead of cancelling it.
-URGING = re.compile(
-    r"\b(?:do not|don't|never|not) (?:delay|wait|hesitate)\w*\b|\bwithout (?:delay|waiting|hesitation)\b"
-    r"|\bno exceptions?\b|\bno matter\b"
-)
 # A prohibited action is not said when the words right after it (at most three words of its
 # object in between) forbid it or tie it to a clearance ("direct posting is not permitted",
-# "resume unloading only after EHS clears the area"). Anything looser ("as long as the leak
-# is not spreading") does not excuse it.
+# "resume unloading only after EHS clears the area", "after EHS has cleared the area"). Anything
+# looser ("as long as the leak is not spreading") does not excuse it.
 EXCUSED_AFTER = re.compile(
     r"\w*(?:\s+[\w'-]+){0,3}?\s+(?:(?:is|are|was|be|being)\s+(?:not\s+(?:permitted|allowed)|never\s+allowed|prohibited|forbidden)\b"
-    r"|only\s+(?:after|once|when)\b[^.;:]*\b(?:clear|releas|approv)\w*"
+    r"|(?:only\s+)?(?:after|once|when)\b[^.;:]*\b(?:clear|releas|approv)\w*"
     r"|until\b[^.;:]*\b(?:clear|releas|approv)\w*)"
 )
+# "It only goes to unrestricted stock after the QA inspector releases it."
+ONLY_AFTER_CLEARANCE = re.compile(r"\b(?:after|once|when|until)\b[^.;:]*\b(?:clear|releas|approv)\w*")
 CLAUSE = re.compile(r"[.;:!?](?:\s+|$)|,?\s+but\s+")
+TOKEN = re.compile(r"[\w']+|,")
 
 
 def clauses(text: str) -> list[str]:
-    plain = normalised(text).replace("\u2019", "'").replace("\u201c", '"').replace("\u201d", '"')
+    plain = normalised(text).replace("’", "'").replace("“", '"').replace("”", '"')
     # The documents write "Never: post against another line"; that colon does not end the clause.
     plain = re.sub(r"\b(never|do not|don't|not)\s*:\s*", r"\1 ", plain)
     return [c for c in CLAUSE.split(plain) if c.strip()]
 
 
+def _list_closes(clause: str, end: int) -> bool:
+    """After a comma: whether a later "or"/"nor" closes the list the comma belongs to."""
+    for word in TOKEN.findall(clause[end:]):
+        if word in ("or", "nor"):
+            return True
+        if word in ("and", "then", "so", "but", "because", "since"):
+            return False
+    return False
+
+
 def negated(clause: str, start: int) -> bool:
-    """Whether a negation governs the action that starts at `start`: one in the same phrase,
-    before it, that does not urge it ("do not delay", "with no exceptions")."""
-    phrase = PHRASE_BREAK.split(clause[:start])[-1]
-    words = re.findall(r"[\w']+", URGING.sub(" ", phrase))
+    """Whether a negation in the action's own segment, before it, governs the action that starts
+    at `start`; one that urges it ("do not delay", "with no exceptions") does not."""
+    cut = 0
+    for brk in SEGMENT_BREAK.finditer(clause, 0, start):
+        if brk.group("mark") == "," and _list_closes(clause, brk.end()):
+            continue
+        cut = brk.start() if brk.group("subject") else brk.end()
+    words = TOKEN.findall(URGING.sub(" ", clause[cut:start]))
     return any(w in NEGATIONS or w.startswith(NEGATION_STEMS) for w in words)
 
 
-def says(texts: list[str], patterns: list[str], *, prohibited: bool, negation: bool = True) -> bool:
+def says(
+    texts: list[str],
+    patterns: list[str],
+    *,
+    prohibited: bool,
+    negation: bool = True,
+    context: str | None = None,
+) -> bool:
     """Whether any text says the action. `negation=False` for statements that name what is
-    missing or conflicting, where "does not say whether the packaging..." still names it."""
+    missing or conflicting, where "does not say whether the packaging..." still names it.
+    `context`: the check applies only to clauses that also match it."""
     for text in texts:
         for clause in clauses(text):
+            if context and not re.search(context, clause):
+                continue
             for pattern in patterns:
                 for match in re.finditer(pattern.replace("{gap}", GAP), clause):
-                    if negation and negated(clause, match.start()):
+                    start, end = match.span()
+                    if negation and negated(clause, start):
                         continue
-                    if prohibited and EXCUSED_AFTER.match(clause, match.end()):
+                    if prohibited and EXCUSED_AFTER.match(clause, end):
+                        continue
+                    before = TOKEN.findall(clause[:start])
+                    if (
+                        prohibited
+                        and before
+                        and before[-1] == "only"
+                        and ONLY_AFTER_CLEARANCE.search(clause, end)
+                    ):
                         continue
                     return True
     return False
@@ -207,11 +267,11 @@ def action_reasons(case: dict[str, Any], items: list[dict[str, Any]], backed: se
             if i["type"] in types and (i["type"] not in ACTION_TYPES or id(i) in backed)
         ]
         negation = any(t in ACTION_TYPES for t in types)
-        if not says(texts, check["any"], prohibited=False, negation=negation):
+        if not says(texts, check["any"], prohibited=False, negation=negation, context=check.get("context")):
             reasons.append(f"does not say: {check['what']}")
     shown = [i["text"] for i in items]
     for check in case.get("must_not_say", []):
-        if says(shown, check["any"], prohibited=True):
+        if says(shown, check["any"], prohibited=True, context=check.get("context")):
             reasons.append(f"says: {check['what']}")
     return reasons
 
