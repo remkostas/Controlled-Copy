@@ -24,6 +24,28 @@ class LimitExceeded(UserFacingError):
     """A model-call budget is used up."""
 
 
+# Byte-level tokenizers never make a token out of less than one byte, so the request's byte
+# count bounds its prompt tokens; the margin covers the chat template and special tokens.
+TOKEN_MARGIN = 1024
+
+
+def worst_case_usd(
+    input_bytes: int,
+    prompt_per_million: float,
+    output_tokens: int = 0,
+    completion_per_million: float = 0.0,
+    attempts: int = 1,
+) -> float:
+    """The most a call can cost under the price caps sent with it (`max_price`): every input
+    byte billed as a prompt token, the whole output allowance as completion tokens, for every
+    request the adapter may send. The daily dollar budget reserves this before the call, so
+    calls in flight together cannot take the day past its limit while the provider honours
+    the caps and the output allowance (full audit re-check RCK-01)."""
+    prompt = (input_bytes + TOKEN_MARGIN) * prompt_per_million
+    completion = output_tokens * completion_per_million
+    return attempts * (prompt + completion) / 1_000_000
+
+
 VISITOR_LIMIT_MESSAGE = (
     "You have reached the limit of {limit} model calls per hour for this demo. Please try again later."
 )
@@ -118,8 +140,9 @@ class Budget:
             return call_id
 
     def settle(self, call_id: int, cost_usd: float | None) -> None:
-        """Replace a call's reservation with the cost the provider reported. Without a
-        reported cost (timeouts, errors, providers that report none) the reservation stays."""
+        """Replace a call's reservation with the cost the provider reported, in full even if
+        it is higher (the day then turns read-only sooner). Without a reported cost (timeouts,
+        errors, providers that report none) the reservation stays."""
         if cost_usd is not None:
             with transaction(self.repo.conn):
                 self.repo.add_model_cost(call_id, float(cost_usd))

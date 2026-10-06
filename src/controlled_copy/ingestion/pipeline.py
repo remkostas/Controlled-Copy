@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import os
 import secrets
-import shutil
 import time
 from dataclasses import dataclass, field
 from pathlib import PurePath
@@ -23,10 +22,20 @@ from controlled_copy.ingestion import chunking
 from controlled_copy.ingestion.frontmatter import split_front_matter
 from controlled_copy.ingestion.pdf import extract_pdf
 from controlled_copy.ingestion.validate import IngestError, decode_text, detect_kind
+from controlled_copy.limits import worst_case_usd
 from controlled_copy.logs import log_event
-from controlled_copy.providers.base import ProviderError, call_with_deadline
+from controlled_copy.providers.base import EMBED_ATTEMPTS, ProviderError, call_with_deadline
 from controlled_copy.services import Services
-from controlled_copy.storage.repo import NewSource, OwnedNotebook, characters_full, storage_full
+from controlled_copy.storage.repo import (
+    NewSource,
+    OwnedNotebook,
+    characters_full,
+    check_free_disk,
+    estimated_growth,
+)
+
+# BGE-M3 vectors have 1024 float32 values; a bigger model is caught by the check in the write.
+VECTOR_BYTES_ESTIMATE = 4096
 
 MIN_PAGE_CHARS = 20
 KIND_EXTENSION = {"pdf": ".pdf", "md": ".md", "txt": ".txt"}
@@ -112,16 +121,26 @@ def embed_texts(services: Services, texts: list[str], kind: str = "embed") -> li
     settings = services.settings
     batch = max(1, settings.embedding_batch_size)
     batches = [texts[i : i + batch] for i in range(0, len(texts), batch)]
-    reserve = settings.usd_reserve_per_embedding
-    services.budget.check(services.session_id, calls=len(batches), reserve_usd=reserve * len(batches))
+    # Each batch reserves the most it can cost: every byte at the embedding price cap, for the
+    # first request and each retry.
+    price = settings.max_price_embedding_per_million
+    reserves = [
+        worst_case_usd(sum(len(t.encode()) for t in part), price, attempts=EMBED_ATTEMPTS) for part in batches
+    ]
+    services.budget.check(services.session_id, calls=len(batches), reserve_usd=sum(reserves))
     vectors: list[list[float]] = []
-    for part in batches:
-        # Embedding responses carry no price here: the conservative reservation stays.
-        services.budget.consume(services.session_id, kind, reserve_usd=reserve)
-        result = call_with_deadline(
-            lambda part=part: services.provider.embed(part, model=settings.model_embedding),
-            settings.provider_timeout_seconds,
-        )
+    for part, reserve in zip(batches, reserves, strict=True):
+        call_id = services.budget.consume(services.session_id, kind, reserve_usd=reserve)
+        try:
+            result = call_with_deadline(
+                lambda part=part: services.provider.embed(part, model=settings.model_embedding),
+                settings.provider_timeout_seconds,
+            )
+        except ProviderError as exc:
+            services.budget.settle(call_id, exc.cost_usd)
+            raise
+        # A reported price replaces the reservation; without one the reservation stays.
+        services.budget.settle(call_id, result.cost_usd)
         if len(result.vectors) != len(part):
             raise ProviderError("embedding count mismatch")
         vectors.extend(result.vectors)
@@ -136,9 +155,12 @@ def store(services: Services, notebook: OwnedNotebook, extracted: Extracted, raw
         raise characters_full(char_limit)  # before any embedding call; checked again on insert
     storage_limits = (settings.max_visitor_upload_mb, settings.max_total_upload_mb)
     services.repo.check_storage(notebook.session_id, extracted.bytes, *storage_limits)
-    free = shutil.disk_usage(settings.data_dir).free
-    if free - extracted.bytes < settings.min_free_disk_mb * 1024 * 1024:
-        raise storage_full()
+    # Free disk before any embedding call (the vectors' size estimated), and again inside the
+    # write with the real vectors: the disk can fill while the embeddings are computed.
+    disk_floor = (settings.data_dir, settings.min_free_disk_mb * 1024 * 1024)
+    chunk_texts = [c.text for c in extracted.chunks]
+    growth = estimated_growth(extracted.text, chunk_texts, VECTOR_BYTES_ESTIMATE * len(chunk_texts))
+    check_free_disk(disk_floor[0], extracted.bytes + growth, disk_floor[1])
     vectors = embed_texts(services, [embedding_input(extracted.title, c) for c in extracted.chunks])
     file_name: str | None = None
     uploads = services.settings.uploads_dir
@@ -170,6 +192,7 @@ def store(services: Services, notebook: OwnedNotebook, extracted: Extracted, raw
             limit=services.settings.max_sources_per_notebook,
             char_limit=char_limit,
             storage_limits_mb=storage_limits,
+            disk_floor=disk_floor,
         )
     except BaseException:
         if file_name:

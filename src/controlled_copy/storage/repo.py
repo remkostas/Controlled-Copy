@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import secrets
+import shutil
 import sqlite3
 import time
 from collections.abc import Collection, Iterable, Sequence
@@ -62,6 +63,19 @@ def storage_full() -> CapacityReached:
     return CapacityReached(
         "The demo's storage is full right now. Viewing still works; please try again later.", 507
     )
+
+
+def estimated_growth(text: str, chunk_texts: list[str], vector_bytes: int) -> int:
+    """What storing a source adds to the database, generously: the text once in the source row,
+    again in its chunks and once more in the full-text index, the vectors, and row overhead."""
+    text_bytes = max(len(text.encode()), sum(len(c.encode()) for c in chunk_texts))
+    return 3 * text_bytes + vector_bytes + 256 * len(chunk_texts)
+
+
+def check_free_disk(directory: Path, needed_bytes: int, min_free_bytes: int) -> None:
+    """Raise storage_full if writing `needed_bytes` would leave less than the floor free."""
+    if shutil.disk_usage(directory).free - needed_bytes < min_free_bytes:
+        raise storage_full()
 
 
 def characters_full(limit: int) -> CapacityReached:
@@ -302,7 +316,12 @@ class Repo:
         limit: int | None = None,
         char_limit: int | None = None,
         storage_limits_mb: tuple[int, int] | None = None,
+        disk_floor: tuple[Path, int] | None = None,
     ) -> str:
+        """`disk_floor` (data directory, bytes to keep free) is checked inside the write
+        transaction, against what this insert adds to the database. Writers take turns here,
+        so two uploads cannot both pass the floor on the same free space (full audit
+        re-check RCK-04); an uploaded file written before this call is already on disk."""
         if len(new.chunks) != len(new.vectors):
             raise ValueError("every chunk needs exactly one vector")
         source_id = new_id()
@@ -313,6 +332,10 @@ class Repo:
                 raise characters_full(char_limit)
             if storage_limits_mb is not None:
                 self.check_storage(new.notebook.session_id, new.bytes, *storage_limits_mb)
+            if disk_floor is not None:
+                vector_bytes = sum(4 * len(v) for v in new.vectors)
+                growth = estimated_growth(new.text, [c.text for c in new.chunks], vector_bytes)
+                check_free_disk(disk_floor[0], growth, disk_floor[1])
             self.conn.execute(
                 "INSERT INTO source (id, notebook_id, title, kind, bytes, pages, page_starts_json, "
                 "warnings_json, metadata_json, metadata_origin, text, file_path, created_at) "

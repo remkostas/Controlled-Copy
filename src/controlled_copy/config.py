@@ -74,17 +74,17 @@ class Settings(BaseSettings):
     max_situation_chars: int = Field(default=2000, gt=0)
     model_calls_per_visitor_hour: int = 120
     model_calls_per_day: int = 3000
-    # Daily spend limit in USD over all visitors. Each call reserves a conservative amount
-    # when it starts (so parallel and timed-out calls count) and settles to the cost the
-    # provider reports; a call without a reported cost keeps its reservation.
+    # Daily spend limit in USD over all visitors. Each call reserves the most it can cost under
+    # the price caps below when it starts (so parallel and timed-out calls count) and settles
+    # to the cost the provider reports; a call without a reported cost keeps its reservation.
     max_usd_per_day: float = Field(default=5.0, gt=0)
-    usd_reserve_per_generation: float = Field(default=0.02, ge=0)
-    usd_reserve_per_embedding: float = Field(default=0.001, ge=0)
     access_attempts_per_hour: int = 10
     provider_timeout_seconds: float = Field(default=45.0, gt=0)
-    # Highest endpoint price a generation request may route to, USD per million tokens.
+    # Highest endpoint price a request may route to, USD per million tokens. BGE-M3 costs 0.01
+    # on its zero-retention endpoints (2026-10-06), so the embedding cap leaves room.
     max_price_prompt_per_million: float = Field(default=3.0, gt=0)
     max_price_completion_per_million: float = Field(default=15.0, gt=0)
+    max_price_embedding_per_million: float = Field(default=0.1, gt=0)
     pdf_parse_timeout_seconds: float = Field(default=20.0, gt=0)
     pdf_parse_memory_mb: int = Field(default=1024, gt=0)
 
