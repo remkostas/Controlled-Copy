@@ -48,7 +48,7 @@ Source: `junit-stage1.xml`. One row per test case ID; a TC passes only if all it
 | FR-SRC-09 | TC-SRC-011 | 9 | pass |
 | FR-SRC-10 | TC-SRC-012 | 2 | pass |
 | FR-SRC-11 | TC-SRC-013 | 2 | pass |
-| FR-STU-01 | TC-STU-001 | 3 | pass |
+| FR-STU-01 | TC-STU-001 | 5 | pass |
 | FR-STU-02 | TC-STU-002 | 6 | pass |
 | FR-STU-03 | TC-STU-003 | 3 | pass |
 | FR-UI-01 | TC-UI-001 | 1 | pass |
