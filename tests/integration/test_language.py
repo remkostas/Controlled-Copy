@@ -44,7 +44,8 @@ def test_tc_ret_002_words_with_umlauts_stay_whole_in_the_search_query():
 def test_tc_ret_002_a_german_word_with_an_umlaut_is_found_by_full_text_search(visitor, services):
     visitor.paste("Wareneingang", GERMAN)
     visitor.paste("Pallets", OTHER)
-    result = retrieve(services, visitor.sources, "Wer bestätigt eine Nachzählung?")
+    # Only words with umlauts are shared with the source, so keyword hits prove they stay whole.
+    result = retrieve(services, visitor.sources, "Nachzählung bestätigt durch wen?")
     assert result.fts_hits >= 1, "the keyword half of the search must match words with umlauts"
     assert "Nachzählung" in result.passages[0].text
 
