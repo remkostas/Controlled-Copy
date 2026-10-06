@@ -99,7 +99,7 @@ The evaluation against the real model is manual: `python eval/run_eval.py generi
 
 ## Limitations
 
-A quote can exist in a passage and still not support the statement next to it; the app verifies existence, not support. Prompt injection inside a document can still bias wording within that notebook, although it cannot produce a citation the server cannot verify. There is no OCR, so scanned PDFs show a warning and contribute no text. The interface is in English; answers follow the language of the question (German was checked), and quotes stay in the language of their source.
+A quote can exist in a passage and still not support the statement next to it; the app verifies existence, not support. Prompt injection inside a document can still bias wording within that notebook, although it cannot produce a citation the server cannot verify. There is no OCR, so scanned PDFs show a warning and contribute no text. The interface is in English; answers and Resolution Cards follow the language of the question or situation (German was checked), and quotes stay in the language of their source.
 
 ## How AI tools were used
 
