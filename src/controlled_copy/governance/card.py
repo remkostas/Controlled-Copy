@@ -178,7 +178,19 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
     texts = {row["id"]: row["text"] for row in all_rows}
     found = rules.identifiers(situation)
     authoritative_ids = set(split.authoritative_ids())
-    not_covered = rules.undocumented(found, texts, whole, applicable=split.authoritative_ids())
+    # Undocumented means no applicable approved document of the notebook covers the code. A
+    # code that only unselected ones cover is documented, but not in the evidence.
+    not_covered = rules.undocumented(found, texts, whole)
+
+    def covering(code: str) -> list[str]:
+        return [d.label for d in not_selected if rules.documented_in(code, {d.source_id: texts[d.source_id]})]
+
+    unselected_only = [
+        (code, covering(code))
+        for code in rules.undocumented(found, texts, whole, applicable=split.authoritative_ids())
+        if code not in not_covered
+    ]
+    not_in_evidence = not_covered + [code for code, _ in unselected_only]
 
     try:
         vector = embed_query(services, situation)
@@ -200,9 +212,8 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
             evidence = list(auth.passages)
             for source_id in referenced_documents(split, evidence):
                 evidence += search([source_id], top_k=1).passages
-            result = run_template(
-                services, card_template(), evidence, task=_task(card, found, not_covered), keep_uncited=True
-            )
+            task = _task(card, found, not_in_evidence)
+            result = run_template(services, card_template(), evidence, task=task, keep_uncited=True)
             output, citations = result.output, result.citations
             context_sources += [p.source_id for p in evidence]
         else:
@@ -230,6 +241,7 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
         missing=counts.missing,
         unverified=counts.unverified,
         asserted_only=counts.requirements > 0 and counts.curated_requirements == 0,
+        unselected_only=unselected_only,
     )
     if status == "expert_confirmation" and counts.requirements == 0 and not_selected:
         labels = ", ".join(d.label for d in not_selected)
@@ -237,8 +249,11 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
     cited_ids = {c["source_id"] for c in citations}
     output["card"] = _card_block(card, split, rows, found, not_covered, warnings, status, reasons, cited_ids)
     output["card"]["not_selected"] = [{"source_id": d.source_id, "label": d.label} for d in not_selected]
+    # The standard line is left out only when a verified requirement from an applicable approved
+    # document says who decides; an uncited recommendation does not (full audit re-check RCK-07).
     escalation = next((sec["items"] for sec in output["sections"] if sec["key"] == "escalation"), [])
-    if status == "expert_confirmation" and not escalation:
+    documented = any(item.get("type") == "requirement" and item.get("cites") for item in escalation)
+    if status == "expert_confirmation" and not documented:
         output["card"]["fallback_escalation"] = FALLBACK_ESCALATION
     # Applicable documents whose passages reached the model without being cited, so a
     # passage that steered the wording is still listed, with its origin.

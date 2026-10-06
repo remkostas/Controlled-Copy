@@ -139,11 +139,24 @@ GAP = (
     r"(?:(?!\b(?:not|never|no|until|unless|after|before|once|only|then|releas\w*|rather than|instead of)\b)"
     r"[^.;:])*?"
 )
-# A prohibited action is not said when the rest of its clause makes it conditional or forbids
-# it ("resume unloading only after EHS clears the area", "direct posting is not permitted").
+# A negation governs an action only within its own phrase: from the last comma or "and",
+# "or", "then", "but" up to the action. So "do not document this decision, continue
+# unloading" still says "continue unloading", while "do not bypass the error by posting
+# against another line" does not say "post against another line" (full audit re-check RCK-02).
+PHRASE_BREAK = re.compile(r",|\b(?:and|or|then|but)\b")
+# Negation words that urge the action instead of cancelling it.
+URGING = re.compile(
+    r"\b(?:do not|don't|never|not) (?:delay|wait|hesitate)\w*\b|\bwithout (?:delay|waiting|hesitation)\b"
+    r"|\bno exceptions?\b|\bno matter\b"
+)
+# A prohibited action is not said when the words right after it (at most three words of its
+# object in between) forbid it or tie it to a clearance ("direct posting is not permitted",
+# "resume unloading only after EHS clears the area"). Anything looser ("as long as the leak
+# is not spreading") does not excuse it.
 EXCUSED_AFTER = re.compile(
-    r"\b(?:only after|only once|only when|until|unless|(?:is|are|be) (?:not|never)|prohibited|forbidden|"
-    r"not (?:permitted|allowed))\b"
+    r"\w*(?:\s+[\w'-]+){0,3}?\s+(?:(?:is|are|was|be|being)\s+(?:not\s+(?:permitted|allowed)|never\s+allowed|prohibited|forbidden)\b"
+    r"|only\s+(?:after|once|when)\b[^.;:]*\b(?:clear|releas|approv)\w*"
+    r"|until\b[^.;:]*\b(?:clear|releas|approv)\w*)"
 )
 CLAUSE = re.compile(r"[.;:!?](?:\s+|$)|,?\s+but\s+")
 
@@ -155,24 +168,30 @@ def clauses(text: str) -> list[str]:
     return [c for c in CLAUSE.split(plain) if c.strip()]
 
 
-def negated(clause: str, start: int, window: int | None) -> bool:
-    """A negation before the match in the same clause: within `window` words for an action
-    that must be said, anywhere before it for one that must not be said."""
-    words = re.findall(r"[\w']+", clause[:start])
-    return any(w in NEGATIONS or w.startswith(NEGATION_STEMS) for w in (words[-window:] if window else words))
+def negated(clause: str, start: int) -> bool:
+    """Whether a negation governs the action that starts at `start`: one in the same phrase,
+    before it, that does not urge it ("do not delay", "with no exceptions")."""
+    phrase = PHRASE_BREAK.split(clause[:start])[-1]
+    words = re.findall(r"[\w']+", URGING.sub(" ", phrase))
+    return any(w in NEGATIONS or w.startswith(NEGATION_STEMS) for w in words)
 
 
-def says(texts: list[str], patterns: list[str], *, prohibited: bool) -> bool:
+def says(texts: list[str], patterns: list[str], *, prohibited: bool, negation: bool = True) -> bool:
+    """Whether any text says the action. `negation=False` for statements that name what is
+    missing or conflicting, where "does not say whether the packaging..." still names it."""
     for text in texts:
         for clause in clauses(text):
             for pattern in patterns:
                 for match in re.finditer(pattern.replace("{gap}", GAP), clause):
-                    if negated(clause, match.start(), None if prohibited else 3):
+                    if negation and negated(clause, match.start()):
                         continue
-                    if prohibited and EXCUSED_AFTER.search(clause, match.end()):
+                    if prohibited and EXCUSED_AFTER.match(clause, match.end()):
                         continue
                     return True
     return False
+
+
+ACTION_TYPES = ("requirement", "inference")
 
 
 def action_reasons(case: dict[str, Any], items: list[dict[str, Any]], backed: set[int]) -> list[str]:
@@ -181,13 +200,14 @@ def action_reasons(case: dict[str, Any], items: list[dict[str, Any]], backed: se
     the situation: "4 units exceed the tolerance, so do not post"); prohibited ones in none."""
     reasons = []
     for check in case.get("must_say", []):
-        types = check.get("types", ["requirement", "inference"])
+        types = check.get("types", list(ACTION_TYPES))
         texts = [
             i["text"]
             for i in items
-            if i["type"] in types and (i["type"] not in ("requirement", "inference") or id(i) in backed)
+            if i["type"] in types and (i["type"] not in ACTION_TYPES or id(i) in backed)
         ]
-        if not says(texts, check["any"], prohibited=False):
+        negation = any(t in ACTION_TYPES for t in types)
+        if not says(texts, check["any"], prohibited=False, negation=negation):
             reasons.append(f"does not say: {check['what']}")
     shown = [i["text"] for i in items]
     for check in case.get("must_not_say", []):
