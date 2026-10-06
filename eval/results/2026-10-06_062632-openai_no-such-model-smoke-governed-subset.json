@@ -1,0 +1,116 @@
+{
+  "model": "openai/no-such-model-smoke",
+  "set": "governed",
+  "results": [
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post only the open quantity after the shift lead has confirmed the count.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Move the excess units to the over-delivery area OD-01 and inform purchasing.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never increase the purchase order quantity yourself.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never override an error with a manual posting.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "google/gemini-3.5-flash-lite",
+      "reasons": [],
+      "case_id": "E-02",
+      "title": "WMS error GR-204",
+      "passed": true,
+      "seconds": 2.1
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Material that is flagged as quality-managed in the material master is always posted to quality inspection stock, regardless of the supplier's certification status.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Only the QA inspector releases quality inspection stock to unrestricted stock.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "After posting, move the material to the storage location proposed by the WMS.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 3,
+      "citations": 3,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "google/gemini-3.5-flash-lite",
+      "reasons": [],
+      "case_id": "E-06",
+      "title": "Direct posting from a certified supplier (obsolete revision)",
+      "passed": true,
+      "seconds": 2.0
+    }
+  ]
+}
