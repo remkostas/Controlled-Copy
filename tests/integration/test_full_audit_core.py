@@ -153,8 +153,9 @@ def test_sec_02_nothing_is_accepted_when_the_disk_runs_low(settings, monkeypatch
     fake = FakeProvider()
     with TestClient(app_with(settings, fake, min_free_disk_mb=100)) as client:
         visitor = Visitor(client).login()
+        embeds = fake.embed_calls  # a layer may seed its workspace at login
         assert visitor.paste("Note", "A short note about docks.", expect=507).status_code == 507
-        assert fake.embed_calls == 0
+        assert fake.embed_calls == embeds, "refused before any embedding call"
 
 
 def test_sec_02_the_storage_limit_is_rechecked_inside_the_write(visitor, services, db):
