@@ -40,7 +40,8 @@ class SeedDocument:
 
 @cache
 def corpus() -> tuple[str, tuple[SeedDocument, ...]]:
-    """The curated documents (parsed once) and a hash that changes when any file changes."""
+    """The curated documents (parsed once) and a hash that changes when any file, or the
+    text that is embedded for it (title and chunking), changes."""
     folder = demo_data_dir() / "inbound-operations"
     digest = hashlib.sha256()
     documents = []
@@ -51,6 +52,8 @@ def corpus() -> tuple[str, tuple[SeedDocument, ...]]:
             path.name, data, max_pages=150, timeout=30, memory_mb=512, title_limit=200
         )
         extracted.metadata_origin = "curated"  # front matter parsed by extract_upload
+        for chunk in extracted.chunks:
+            digest.update(b"\0" + pipeline.embedding_input(extracted.title, chunk).encode())
         documents.append(SeedDocument(path.name, extracted))
     return digest.hexdigest()[:16], tuple(documents)
 
@@ -103,8 +106,16 @@ def workspace_of(services: Services, sid: str) -> OwnedNotebook | None:
 
 
 def seed_workspace(services: Services, sid: str) -> OwnedNotebook:
-    """Create the visitor's own copy of the curated workspace (no embedding calls once cached)."""
+    """Create the visitor's own copy of the curated workspace (no embedding calls once cached).
+    One transaction: a failure or crash halfway never leaves a partial copy behind."""
     vectors = seed_vectors(services)
+    with transaction(services.repo.conn):
+        notebook = _copy_corpus(services, sid, vectors)
+    log_event("workspace_seeded", session=sid, notebook=notebook.id, sources=len(corpus()[1]))
+    return notebook
+
+
+def _copy_corpus(services: Services, sid: str, vectors: dict[tuple[str, int], np.ndarray]) -> OwnedNotebook:
     _, documents = corpus()
     notebook_id = services.repo.create_notebook(sid, WORKSPACE_TITLE, kind=WORKSPACE_KIND, limit=1)
     notebook = services.repo.get_notebook(sid, notebook_id)
@@ -129,7 +140,6 @@ def seed_workspace(services: Services, sid: str) -> OwnedNotebook:
                 vector_model=services.settings.model_embedding,
             )
         )
-    log_event("workspace_seeded", session=sid, notebook=notebook_id, sources=len(documents))
     return notebook
 
 
@@ -161,16 +171,13 @@ class WorkspaceSeeder:
 
 
 def reset_workspace(services: Services, sid: str) -> tuple[OwnedNotebook, list[str]]:
-    """A fresh copy of the workspace, and the uploaded files the old copy leaves behind."""
-    existing = workspace_of(services, sid)
-    files: list[str] = []
-    if existing is not None:
-        files = services.repo.delete_notebook(sid, existing.id) or []
-    try:
-        return seed_workspace(services, sid), files
-    except CapacityReached:
-        # A parallel page load seeded the new copy first; that copy is the reset result.
-        notebook = workspace_of(services, sid)
-        if notebook is None:
-            raise
-        return notebook, files
+    """A fresh copy of the workspace, and the uploaded files the old copy leaves behind.
+    The vectors are loaded first and the swap is one transaction, so a failure (a cold
+    cache with the provider down, a crash) leaves the old copy and its files in place."""
+    vectors = seed_vectors(services)
+    with transaction(services.repo.conn):
+        existing = workspace_of(services, sid)
+        files = (services.repo.delete_notebook(sid, existing.id) or []) if existing is not None else []
+        notebook = _copy_corpus(services, sid, vectors)
+    log_event("workspace_seeded", session=sid, notebook=notebook.id, sources=len(corpus()[1]))
+    return notebook, files

@@ -67,6 +67,8 @@ class Settings(BaseSettings):
     model_calls_per_visitor_hour: int = 120
     model_calls_per_day: int = 3000
     access_attempts_per_hour: int = 10
+    # New sessions per client address: each one gets its own seeded copy on disk.
+    new_sessions_per_hour: int = 30
     provider_timeout_seconds: float = Field(default=45.0, gt=0)
     pdf_parse_timeout_seconds: float = Field(default=20.0, gt=0)
     pdf_parse_memory_mb: int = Field(default=1024, gt=0)
@@ -112,7 +114,12 @@ class Settings(BaseSettings):
         base = urlsplit(self.openrouter_base_url)
         if base.scheme != "https" and base.hostname not in ("localhost", "127.0.0.1"):
             problems.append("OPENROUTER_BASE_URL must use https (the API key is sent with every request)")
-        for name in ("model_calls_per_visitor_hour", "model_calls_per_day", "access_attempts_per_hour"):
+        for name in (
+            "model_calls_per_visitor_hour",
+            "model_calls_per_day",
+            "access_attempts_per_hour",
+            "new_sessions_per_hour",
+        ):
             if getattr(self, name) <= 0:
                 problems.append(f"{name.upper()} must be positive")
         if self.app_mode is AppMode.DEPLOY:

@@ -1,5 +1,7 @@
 """FR-GOV-01 to FR-GOV-09 through the app (stage 2, fake model)."""
 
+import re
+
 import pytest
 
 from tests.governance.conftest import Workspace
@@ -229,3 +231,11 @@ def test_card_renders_as_html_with_status_types_and_applicability(workspace, fak
     assert "card-result--supported" in body and "Supported by an approved instruction" in body
     assert 'class="type type--requirement"' in body
     assert "Not applied" in body and "obsolete" in body
+
+
+def test_chat_in_the_workspace_says_it_has_no_document_control(workspace):
+    assert "without document control" in workspace.page
+    personal = workspace.visitor.client.get("/app").text
+    nb = re.search(r'<option value="([^"]+)"[^>]*>\s*(?!Inbound Operations)\S', personal)
+    assert nb is not None
+    assert "without document control" not in workspace.visitor.client.get(f"/app?nb={nb.group(1)}").text

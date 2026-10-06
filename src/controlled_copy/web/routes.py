@@ -155,6 +155,7 @@ def workspace_context(
         "limits": limits_view(settings),
         "ui": {
             "topbar_partials": list(request.app.state.registry.topbar_partials),
+            "chat_partials": list(request.app.state.registry.chat_partials),
             "studio_actions": studio_actions(request),
         },
         "pending": pending,
@@ -207,9 +208,19 @@ def access(
         log_event("access", outcome="wrong_code")
         return landing_page(request, settings, "That access code is not valid.", 401)
     existing = verify_session(request.app.state.secret, request.cookies.get(SESSION_COOKIE))
-    sid = (
-        existing if existing and services.repo.session_last_seen(existing) else services.repo.create_session()
-    )
+    if existing and services.repo.session_last_seen(existing):
+        sid = existing
+    else:
+        # Every new session costs disk (and, with the governed layer, a seeded copy), so a
+        # holder of the access code cannot mint them without limit.
+        sessions = request.app.state.session_limiter
+        if sessions.blocked(client):
+            log_event("access", outcome="session_limited")
+            return landing_page(
+                request, settings, "Too many new sessions from here. Try again in an hour.", 429
+            )
+        sessions.record_failure(client)  # counts every new session
+        sid = services.repo.create_session()
     log_event("access", outcome="granted", session=sid)
     response = RedirectResponse("/app", status_code=303)
     response.set_cookie(

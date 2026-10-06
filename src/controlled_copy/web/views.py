@@ -5,11 +5,13 @@ from __future__ import annotations
 import json
 import sqlite3
 from datetime import datetime
+from functools import cache
 from typing import Any
 
 from controlled_copy.answering.citations import located_label
 from controlled_copy.answering.prompts import document_label
 from controlled_copy.storage.repo import TOMBSTONE
+from controlled_copy.studio.engine import core_templates
 
 KIND_LABELS = {"pdf": "PDF", "md": "Markdown", "txt": "Text", "paste": "Pasted text"}
 ORIGIN_LABELS = {
@@ -142,6 +144,11 @@ def turn_views(turns: list[sqlite3.Row]) -> list[dict[str, Any]]:
     ]
 
 
+@cache
+def _core_template_ids() -> frozenset[str]:
+    return frozenset(core_templates())
+
+
 def output_view(
     row: sqlite3.Row, open_: bool = False, partials: dict[str, str] | None = None
 ) -> dict[str, Any]:
@@ -150,6 +157,15 @@ def output_view(
     base = {"id": row["id"], "open": open_, "removed": 0, "sections": [], "partial": None}
     if row["status"] == TOMBSTONE:
         return {**base, "kind": "tombstone", "title": "Studio output removed", "meta_label": created}
+    if row["template"] not in _core_template_ids() and row["template"] not in (partials or {}):
+        # Made by a layer that is switched off: its status, warnings and applicability are
+        # not shown by the generic renderer, so show none of it rather than half of it.
+        return {
+            **base,
+            "kind": "unavailable",
+            "title": output.get("title", "Studio output"),
+            "meta_label": created,
+        }
     citations = {int(c["n"]): c for c in output.get("citations", [])}
     sections = []
     for section in output.get("sections", []):

@@ -198,23 +198,99 @@ def test_reset_removes_uploaded_files(workspace, settings):
     assert list(settings.uploads_dir.iterdir()) == []
 
 
-def test_reset_succeeds_when_a_parallel_page_load_seeds_first(workspace, monkeypatch):
+def test_reset_that_fails_halfway_keeps_the_old_copy_and_its_files(workspace, settings, monkeypatch):
     from controlled_copy.governance import seed
-    from controlled_copy.storage.repo import CapacityReached
 
-    real = seed.seed_workspace
-
-    def racing(services, sid):
-        real(services, sid)  # the parallel page load
-        raise CapacityReached("Notebook limit reached.")
-
-    monkeypatch.setattr(seed, "seed_workspace", racing)
     visitor = workspace.visitor
-    response = visitor.client.post(
-        "/workspace/reset", headers={**visitor.headers, "Accept": "application/json"}
+    visitor.upload("note.txt", b"A note about dock 3.", notebook_id=workspace.id)
+    real = seed._copy_corpus
+
+    def crash(services, sid, vectors):
+        real(services, sid, vectors)  # the new copy is half written ...
+        raise RuntimeError("disk full")  # ... when the reset fails
+
+    monkeypatch.setattr(seed, "_copy_corpus", crash)
+    response = visitor.client.post("/workspace/reset", headers=visitor.json_headers())
+    assert response.status_code == 502
+    workspace.refresh()
+    assert len(workspace.source_ids) == 9, "the old copy, with the upload, is untouched"
+    assert any(settings.uploads_dir.iterdir()), "its uploaded file is still there"
+
+
+def test_seeding_that_fails_halfway_leaves_no_partial_workspace(services, monkeypatch):
+    from controlled_copy.governance import seed
+    from controlled_copy.storage.repo import Repo
+
+    sid = services.repo.create_session()
+    calls = []
+    real = Repo.insert_source
+
+    def failing(self, new, limit=None):
+        calls.append(new.title)
+        if len(calls) == 3:
+            raise RuntimeError("crash")
+        return real(self, new, limit)
+
+    monkeypatch.setattr(Repo, "insert_source", failing)
+    with pytest.raises(RuntimeError):
+        seed.seed_workspace(services, sid)
+    assert seed.workspace_of(services, sid) is None, "a retry seeds a complete copy"
+
+
+def test_reset_is_limited_per_visitor(workspace, monkeypatch):
+    from controlled_copy.governance import routes
+
+    monkeypatch.setattr(routes, "RESETS_PER_HOUR", 2)
+    visitor = workspace.visitor
+    codes = [
+        visitor.client.post("/workspace/reset", headers=visitor.json_headers()).status_code for _ in range(3)
+    ]
+    assert codes == [200, 200, 429]
+
+
+def test_a_blank_site_is_refused_when_the_documents_name_sites(workspace):
+    response = workspace.card("The WMS shows error GR-204 after I scan the delivery.", site="")
+    assert response.status_code == 422
+    assert response.json()["error"] == "Choose a site first."
+
+
+def test_card_template_must_keep_the_sections_the_status_reads(monkeypatch):
+    from controlled_copy.studio import engine
+
+    real = engine.load_template
+
+    def renamed(path):
+        template = real(path)
+        sections = [
+            s.model_copy(update={"key": "conflict"}) if s.key == "conflicts" else s for s in template.sections
+        ]
+        return template.model_copy(update={"sections": sections})
+
+    monkeypatch.setattr(card_module, "load_template", renamed)
+    card_module.card_template.cache_clear()
+    try:
+        with pytest.raises(ValueError, match="conflicts"):
+            card_module.card_template()
+    finally:
+        card_module.card_template.cache_clear()
+
+
+def test_curated_warnings_come_before_uploads_and_codes_match_as_tokens():
+    curated = rules.document_from(
+        "draft", "Draft", {"document_id": "STD-LAB-002", "revision": "5", "status": "draft"}, "curated"
     )
-    assert response.status_code == 200
-    assert response.json()["notebook_id"] != workspace.id
+    uploads = [rules.document_from(f"u{i}", f"Upload {i}", None, "none") for i in range(3)]
+    split = rules.split([*uploads, curated], rules.Context("HAM-01", "warehouse_operator", date(2026, 10, 7)))
+    result = card_module.RetrievalResult(
+        query="",
+        passages=[passage(f"u{i}", "Damaged pallet GR-2040 at the dock.") for i in range(3)]
+        + [passage("draft", "For gr-204 on a damaged pallet: photograph it.")],
+        best_cosine=0.9,
+    )
+    warnings = card_module._warnings(result, split, ["GR-204"], floor=0.95)
+    assert [w["source_id"] for w in warnings] == ["draft"], (
+        "the curated draft is warned about (gr-204 matches GR-204); GR-2040 is not GR-204"
+    )
 
 
 def test_seeding_failures_back_off(monkeypatch, settings):

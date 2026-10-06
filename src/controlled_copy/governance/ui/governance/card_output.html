@@ -47,11 +47,12 @@
     </tbody>
   </table>
   {% endif %}
+  {% if c.consulted %}<p class="muted card-consulted">Also given to the model, not cited: {% for d in c.consulted %}{{ d.label }}{% if d.origin == 'asserted' %} <span class="origin">asserted by uploader</span>{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
   {% if c.excluded %}
   <table class="applicability">
     <caption class="visually-hidden">Documents not applied</caption>
     <thead><tr><th scope="col">Not applied</th><th scope="col">Reason</th></tr></thead>
-    <tbody>{% for d in c.excluded %}<tr><td>{{ d.label }}</td><td>{{ d.reason }}</td></tr>{% endfor %}</tbody>
+    <tbody>{% for d in c.excluded %}<tr><td>{{ d.label }}{% if d.origin == 'asserted' %} <span class="origin">asserted by uploader</span>{% endif %}</td><td>{{ d.reason }}</td></tr>{% endfor %}</tbody>
   </table>
   {% endif %}
 </section>

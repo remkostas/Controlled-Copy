@@ -172,6 +172,7 @@ def create_app(
     app.state.provider = provider or build_provider(settings)
     app.state.registry = registry
     app.state.access_limiter = AccessLimiter(settings.access_attempts_per_hour)
+    app.state.session_limiter = AccessLimiter(settings.new_sessions_per_hour)
     secret = (
         settings.app_secret_key.get_secret_value() if settings.app_secret_key else secrets.token_urlsafe(32)
     )

@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import date
@@ -17,6 +18,7 @@ from typing import Any
 # Error codes and document IDs (GR-204, SOP-INB-001) and location codes (A-14, OD-01, Q-01).
 IDENTIFIER = re.compile(r"\b(?:[A-Z]{2,}(?:-[A-Z0-9]+)*-\d{2,}|[A-Z]{1,3}-\d{2,3})\b", re.IGNORECASE)
 REVISION_PART = re.compile(r"\d+|[A-Za-z]+")
+REVISION_PREFIX = re.compile(r"^\s*(?:revision|rev|v)\.?\s*(?=\d)", re.IGNORECASE)
 DASHES = re.compile(r"[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]")
 DEFAULT_ROLE = "warehouse_operator"
 
@@ -67,14 +69,16 @@ class Document:
 
 def document_key(document_id: Any) -> str | None:
     """Compare document IDs as one code: 'sop-inb-001' and 'SOP\u2011INB\u2011001' are SOP-INB-001."""
-    key = DASHES.sub("-", str(document_id or "")).strip().casefold()
+    text = unicodedata.normalize("NFKC", str(document_id or ""))
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Cf")  # zero-width characters
+    key = DASHES.sub("-", text).strip().casefold()
     return key or None
 
 
 def revision_key(revision: Any) -> tuple[tuple[int, int | str], ...]:
     """Order revisions part by part: numbers numerically ('1.10' after '1.9'), letters
     alphabetically ('B' after 'A'), a number before a letter in the same position."""
-    parts = REVISION_PART.findall(str(revision or ""))
+    parts = REVISION_PART.findall(REVISION_PREFIX.sub("", str(revision or "")))
     return tuple((0, int(p)) if p.isdigit() else (1, p.upper()) for p in parts)
 
 
@@ -133,12 +137,18 @@ def split(documents: Sequence[Document], context: Context) -> Split:
         else:
             candidates.append(doc)
     # Metadata an uploader asserts never overrides a curated controlled document, also
-    # when no curated revision applies to this context (a draft, another site).
+    # when no curated revision applies to this context (a draft, another site). Where the
+    # selection holds curated documents (the Inbound Operations workspace), asserted
+    # metadata is not authoritative at all (D-039); without any, it counts (D-036).
     curated = {d.id_key for d in documents if d.id_key and d.origin == "curated"}
+    has_curated = any(d.origin == "curated" for d in documents)
     eligible = []
     for doc in candidates:
         if doc.origin != "curated" and doc.id_key in curated:
             reason = f"asserted by uploader, but {doc.document_id} is a curated controlled document"
+            result.excluded[doc.source_id] = (doc, reason)
+        elif doc.origin != "curated" and has_curated:
+            reason = "asserted by uploader; only curated documents are controlled here"
             result.excluded[doc.source_id] = (doc, reason)
         else:
             eligible.append(doc)
@@ -246,12 +256,14 @@ def result_status(
     only_unknown_sources: bool,
     missing: int,
     unverified: int = 0,
+    asserted_only: bool = False,
 ) -> tuple[str, list[str]]:
     """One primary status by precedence, with the reasons that produced it.
 
     `authoritative_evidence` counts requirements with a verified quote from an applicable
     approved document; `unverified` counts requirements shown as missing evidence because
-    their quote did not verify."""
+    their quote did not verify; `asserted_only` says that every one of them rests on
+    document-control metadata an uploader asserted, which the status then names."""
     reasons: list[str] = []
     if conflict:
         reasons.append("two applicable approved documents give different instructions")
@@ -266,10 +278,14 @@ def result_status(
         return "expert_confirmation", reasons
     if missing:
         return "context_incomplete", [f"{missing} piece{'s' if missing != 1 else ''} of information missing"]
+    asserted = (
+        ["the approval of these documents is asserted by the uploader, not checked"] if asserted_only else []
+    )
     if unverified:
         return "supported", [
+            *asserted,
             "backed by an applicable approved instruction; "
             f"{unverified} statement{'s' if unverified != 1 else ''} without a verified quote "
-            "marked as missing evidence"
+            "marked as missing evidence",
         ]
-    return "supported", ["every required action is backed by an applicable approved instruction"]
+    return "supported", [*asserted, "every required action is backed by an applicable approved instruction"]

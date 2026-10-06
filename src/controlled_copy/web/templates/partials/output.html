@@ -23,6 +23,8 @@
     </section>
     {% endfor %}
     {% if o.removed %}<p class="muted">{{ o.removed }} statement{{ '' if o.removed == 1 else 's' }} removed because the quote could not be verified.</p>{% endif %}
+    {% elif o.kind == 'unavailable' %}
+    <p class="muted">This output was made by a feature that is switched off, so it is not shown.</p>
     {% else %}
     <p class="muted">This output cited a source that was deleted, so its content was deleted too.</p>
     {% endif %}

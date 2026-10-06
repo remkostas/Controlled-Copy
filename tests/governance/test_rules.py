@@ -252,3 +252,43 @@ def test_tc_gov_008_supported_names_unverified_statements():
     )
     assert status == "supported"
     assert "1 statement without a verified quote marked as missing evidence" in reasons[0]
+
+
+def test_d039_asserted_metadata_is_not_authoritative_next_to_curated_documents():
+    curated = doc("curated", document_id="WI-1", site="all")
+    upload = rules.document_from(
+        "upload",
+        "Supplier note",
+        {
+            "document_id": "NEW-9",
+            "revision": "1",
+            "status": "approved",
+            "effective_from": "2026-01-01",
+            "site": "all",
+        },
+        "asserted",
+    )
+    result = rules.split([curated, upload], CONTEXT)
+    assert result.authoritative_ids() == ["curated"]
+    assert result.excluded["upload"][1] == "asserted by uploader; only curated documents are controlled here"
+    assert rules.split([upload], CONTEXT).authoritative_ids() == ["upload"], "alone it still counts (D-036)"
+
+
+def test_tc_gov_008_supported_on_asserted_metadata_says_so():
+    status, reasons = rules.result_status(
+        conflict=False,
+        undocumented=[],
+        authoritative_evidence=1,
+        only_unknown_sources=False,
+        missing=0,
+        asserted_only=True,
+    )
+    assert status == "supported"
+    assert reasons[0] == "the approval of these documents is asserted by the uploader, not checked"
+
+
+def test_tc_gov_003_revision_prefixes_and_lookalike_ids():
+    assert rules.revision_key("Rev 4") < rules.revision_key("5")
+    assert rules.revision_key("v1") < rules.revision_key("2")
+    assert rules.revision_key("rev. 10") == rules.revision_key("10")
+    assert rules.document_key("SOP​-INB-001") == rules.document_key("ＳＯＰ-INB-001") == "sop-inb-001"

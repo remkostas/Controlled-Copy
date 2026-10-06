@@ -4,7 +4,7 @@ is on; the core never imports this package (D-032)."""
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -46,9 +46,10 @@ def _view_hook(services: Services, notebook: Any, context: dict[str, Any]) -> No
         "sites": options["sites"],
         "roles": roles,
         "default_role": DEFAULT_ROLE if DEFAULT_ROLE in roles else (roles[0] if roles else ""),
-        "today": date.today().isoformat(),
+        "today": datetime.now(UTC).date().isoformat(),
         "scenarios": scenarios() if notebook.kind == WORKSPACE_KIND else [],
         "has_metadata": any(d.origin != "none" for d in documents_of(rows)),
+        "workspace": notebook.kind == WORKSPACE_KIND,
     }
 
 
@@ -99,6 +100,7 @@ def register(registry: Registry, settings: Settings) -> None:
         )
     )
     registry.topbar_partials.append("governance/reset_button.html")
+    registry.chat_partials.append("governance/chat_note.html")
     registry.output_partials["resolution-card"] = "governance/card_output.html"
     registry.notebook_kinds.append(WORKSPACE_KIND)
     registry.workspace_hooks.append(WorkspaceSeeder())

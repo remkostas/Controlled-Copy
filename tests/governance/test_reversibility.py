@@ -92,3 +92,35 @@ def test_tc_rev_003_layer_data_is_hidden_after_switching_off(settings):
         assert client.get(f"/sources/{source}").status_code == 404
         csrf = re.search(r'"X-CSRF-Token": "([^"]+)"', html.unescape(page.text)).group(1)
         assert client.delete(f"/notebooks/{workspace}", headers={"X-CSRF-Token": csrf}).status_code == 404
+
+
+def test_layer_outputs_are_not_half_rendered_with_the_layer_off(settings):
+    on = create_app(settings, FakeProvider(), run_purge=False)
+    with TestClient(on) as client:
+        client.post("/access", data={"code": ACCESS_CODE}, follow_redirects=False)
+        page = html.unescape(client.get("/app").text)
+        notebook = re.search(r'data-notebook-id="([^"]+)"|/notebooks/([A-Za-z0-9_-]+)/ask', page)
+        notebook_id = notebook.group(1) or notebook.group(2)
+        csrf = re.search(r'"X-CSRF-Token": "([^"]+)"', page).group(1)
+        headers = {"X-CSRF-Token": csrf, "Accept": "application/json"}
+        client.post(
+            f"/notebooks/{notebook_id}/sources",
+            data={"title": "Dock", "text": "Dock 3 opens at six."},
+            headers=headers,
+        )
+        source = re.search(
+            r'name="source_ids" value="([^"]+)"', client.get(f"/app?nb={notebook_id}").text
+        ).group(1)
+        response = client.post(
+            f"/notebooks/{notebook_id}/studio/resolution-card",
+            data={"situation": "What is the forklift speed limit?", "source_ids": [source]},
+            headers=headers,
+        )
+        assert response.status_code == 200, response.text
+        cookies = dict(client.cookies)
+    off = create_app(
+        settings.model_copy(update={"feature_governance": False}), FakeProvider(), run_purge=False
+    )
+    with TestClient(off, cookies=cookies) as client:
+        page = client.get(f"/app?nb={notebook_id}").text
+        assert "made by a feature that is switched off" in page

@@ -49,6 +49,7 @@
       <div class="chat__log" id="chat-log">
         <div class="chat__inner" id="chat-inner">
           {% include "partials/chat_intro.html" %}
+          {% for partial in ui.chat_partials %}{% include partial %}{% endfor %}
           {% if notice %}<p class="notice notice--warn" role="status">{{ icon('triangle-alert') }}<span>{{ notice }}</span></p>{% endif %}
           {% for t in turns %}{% include "partials/turn.html" %}{% endfor %}
           <article class="turn" id="pending-turn" hidden>

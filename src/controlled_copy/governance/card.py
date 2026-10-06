@@ -32,9 +32,18 @@ MAX_WARNINGS = 3
 MAX_REFERENCED = 2
 
 
+REQUIRED_SECTIONS = {"required_actions", "missing_information", "escalation", "conflicts"}
+
+
 @cache
 def card_template() -> StudioTemplate:
-    return load_template(Path(__file__).parent / "templates" / f"{TEMPLATE_ID}.json")
+    template = load_template(Path(__file__).parent / "templates" / f"{TEMPLATE_ID}.json")
+    # The status rules read these section keys; a renamed section must fail here, not
+    # silently turn conflicts into ordinary statements.
+    missing = REQUIRED_SECTIONS - {s.key for s in template.sections}
+    if missing:
+        raise ValueError(f"resolution card template lacks sections: {sorted(missing)}")
+    return template
 
 
 @dataclass(frozen=True)
@@ -70,10 +79,16 @@ def _warnings(
 ) -> list[dict[str, Any]]:
     warnings: list[dict[str, Any]] = []
     seen: set[str] = set()
-    for passage in result.passages:
-        if passage.source_id in seen or passage.source_id not in split.excluded:
+    # Curated documents first, so uploads that match closely cannot crowd out the warning
+    # about a curated draft or obsolete revision.
+    passages = sorted(
+        (p for p in result.passages if p.source_id in split.excluded),
+        key=lambda p: split.excluded[p.source_id][0].origin != "curated",
+    )
+    for passage in passages:
+        if passage.source_id in seen:
             continue
-        has_identifier = any(i in passage.text for i in identifiers)
+        has_identifier = any(rules.documented_in(i, {"p": passage.text}) for i in identifiers)
         if passage.cosine < floor and not has_identifier:
             continue
         seen.add(passage.source_id)
@@ -185,6 +200,8 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
     dropped = 0  # not shown: a conflict without two documents, an inference without a quote
     conflict = False
     requirements = 0  # requirements with a verified quote from an applicable approved document
+    curated_requirements = 0  # of those, backed by a curated document
+    curated_ids = {d.source_id for d in split.authoritative if d.origin == "curated"}
     unverified = 0  # requirements shown as missing evidence because no quote verified
     missing = 0
     for section in output["sections"]:
@@ -213,6 +230,7 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
                 unverified += 1 if shown["type"] == "missing_evidence" else 0
             elif shown["type"] == "requirement" and grounded:
                 requirements += 1
+                curated_requirements += 1 if set(cited) & curated_ids else 0
             elif shown["type"] == "missing_evidence" and grounded:
                 # Missing information counts only when the model listed it as such and cited
                 # the passage that needs it.
@@ -232,9 +250,17 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
         only_unknown_sources=only_unknown,
         missing=missing,
         unverified=unverified,
+        asserted_only=requirements > 0 and curated_requirements == 0,
     )
     cited_ids = {c["source_id"] for c in citations}
     output["card"] = _card_block(card, split, rows, found, not_covered, warnings, status, reasons, cited_ids)
+    # Applicable documents whose passages reached the model without being cited, so a
+    # passage that steered the wording is still listed, with its origin.
+    output["card"]["consulted"] = [
+        {"source_id": d.source_id, "label": d.label, "title": d.title, "origin": d.origin}
+        for d in split.authoritative
+        if d.source_id in set(context_sources) - cited_ids
+    ]
     output["downgraded"] = downgraded
     output["dropped"] = dropped
     output.update(kind="ok", template=TEMPLATE_ID, title="Resolution Card", source_count=len(rows))

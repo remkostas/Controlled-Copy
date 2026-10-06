@@ -209,3 +209,24 @@ def test_tc_sec_002_origin_must_match_scheme_too(app):
             follow_redirects=False,
         )
     assert response.status_code == 403
+
+
+def test_new_sessions_are_limited_per_client_address(settings):
+    from fastapi.testclient import TestClient
+
+    from controlled_copy.app import create_app
+    from controlled_copy.providers.fake import FakeProvider
+    from tests.conftest import ACCESS_CODE
+
+    app = create_app(
+        settings.model_copy(update={"new_sessions_per_hour": 2}), FakeProvider(), run_purge=False
+    )
+    codes = []
+    for _ in range(3):
+        with TestClient(app) as client:  # a fresh client has no cookie: a new session each time
+            codes.append(
+                client.post("/access", data={"code": ACCESS_CODE}, follow_redirects=False).status_code
+            )
+    assert codes == [303, 303, 429]
+    with TestClient(app) as client:
+        assert client.post("/access", data={"code": "wrong"}, follow_redirects=False).status_code == 401

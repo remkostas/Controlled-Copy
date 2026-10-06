@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Form, Request
@@ -12,6 +12,7 @@ from controlled_copy.errors import UserFacingError
 from controlled_copy.governance import rules
 from controlled_copy.governance.card import CardInput, context_options, run_card
 from controlled_copy.governance.seed import reset_workspace
+from controlled_copy.limits import AccessLimiter
 from controlled_copy.logs import log_event
 from controlled_copy.purge import remove_uploads
 from controlled_copy.studio.actions import StudioError
@@ -20,19 +21,24 @@ from controlled_copy.web.routes import json_or_redirect, notice, owned_notebook,
 
 router = APIRouter()
 
+RESETS_PER_HOUR = 10  # each Reset rewrites the whole copy; no model calls, but disk and locks
+
 
 def default_context(rows: list, site: str, role: str, as_of: str) -> rules.Context:
-    """The context the visitor chose. Empty fields fall back to the workspace's own options;
-    a chosen site or role is never replaced, so documents for another site or role stay
-    excluded even when none of the selected sources mentions the chosen value."""
+    """The context the visitor chose. A chosen site or role is never replaced, so documents
+    for another site or role stay excluded even when none of the selected sources mentions
+    the chosen value. A missing site is an error when the documents name sites (guessing one
+    would apply another site's instructions); a missing role falls back to the default role."""
     options = context_options(rows)
     if not site:
-        site = options["sites"][0] if options["sites"] else "all"
+        if options["sites"]:
+            raise StudioError("Choose a site first.", 422)
+        site = "all"
     if not role:
         roles = options["roles"]
         role = rules.DEFAULT_ROLE if rules.DEFAULT_ROLE in roles or not roles else roles[0]
     try:
-        when = date.fromisoformat(as_of) if as_of else date.today()
+        when = date.fromisoformat(as_of) if as_of else datetime.now(UTC).date()
     except ValueError as exc:
         raise StudioError("Enter the date as YYYY-MM-DD.", 422) from exc
     return rules.Context(site=site, role=role, as_of=when)
@@ -66,6 +72,14 @@ def resolution_card(
 @router.post("/workspace/reset")
 def reset(request: Request, services: WriteDep) -> Response:
     sid = services.sid
+    limiter = getattr(request.app.state, "reset_limiter", None)
+    if limiter is None:
+        limiter = request.app.state.reset_limiter = AccessLimiter(RESETS_PER_HOUR)
+    if limiter.blocked(sid):
+        return notice(
+            request, "The workspace was reset often in the last hour. Try again later.", 429, "#toast"
+        )
+    limiter.record_failure(sid)  # counts every attempt
     try:
         notebook, files = reset_workspace(services, sid)
     except UserFacingError as exc:
