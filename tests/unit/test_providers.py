@@ -13,7 +13,6 @@ def test_tc_idx_003_embedding_request_uses_bge_m3_with_privacy_flags_and_batches
     assert body["input"] == ["one", "two", "three"]
     assert body["provider"]["zdr"] is True
     assert body["provider"]["data_collection"] == "deny"
-    assert body["provider"]["ignore"] == ["mistral"]
 
 
 def test_tc_idx_003_embeddings_are_sent_in_batches(services, fake):
@@ -34,7 +33,6 @@ def test_tc_idx_003_chat_request_requires_schema_support_and_privacy():
     assert body["provider"] == {
         "zdr": True,
         "data_collection": "deny",
-        "ignore": ["mistral"],
         "require_parameters": True,
         "max_price": {"prompt": 3.0, "completion": 15.0},
     }
