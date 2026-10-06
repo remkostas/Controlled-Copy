@@ -6,6 +6,8 @@ Each run writes a `.json` file (every case, every check) and a `.md` summary. A 
 
 | File | Code | Cases | Result | Note |
 | :--- | :--- | :--- | :--- | :--- |
+| `2026-10-06_133647-openai_gpt-6-luna-governed` | `f396aa7`, clean | `98e1fc14eb86bcde` | 12 of 14 | Stage 3 code, with the action checks. E-09: expert confirmation instead of context incomplete; E-12: context incomplete instead of supported (it asked whether the product inside is intact), with every required action given |
+| `2026-10-06_133907-openai_gpt-6-luna-holdout` | `f396aa7`, clean | `ad8ed053143a4c64` | 11 of 11 | Stage 3 code, with the action checks |
 | `2026-10-06_132816-openai_gpt-6-luna-governed` | `f6da0bd`, clean | `98e1fc14eb86bcde` | 14 of 14 | Stage 2 code, with the action checks (EVAL-01) |
 | `2026-10-06_133025-openai_gpt-6-luna-holdout` | `f6da0bd`, clean | `ad8ed053143a4c64` | 11 of 11 | Stage 2 code, with the action checks (EVAL-01) |
 | `2026-10-06_110327-openai_gpt-6-luna-governed` | `357b1fb`, clean | `55057b723f0caf8a` | 14 of 14 | Before the action checks |
