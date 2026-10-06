@@ -1,13 +1,12 @@
 """OpenRouter adapter (OpenAI-compatible HTTP API, called with httpx).
 
 Privacy routing on every request: `provider.zdr = true` (zero-data-retention
-endpoints only), `provider.data_collection = "deny"` and `provider.ignore` for the
-Mistral provider (D-040: some open models are also served on Mistral's platform).
-Generation requests also set `require_parameters`, so they only reach providers
-that honour the JSON schema (structured outputs), and `max_price`, so a model
-added to the model picker cannot route to an expensive endpoint. No sampling parameters are sent: several
-current models reject `temperature`, and with `require_parameters` an unsupported
-parameter would rule out every endpoint.
+endpoints only) and `provider.data_collection = "deny"`. Generation requests
+also set `require_parameters`, so they only reach providers that honour the
+JSON schema (structured outputs), and `max_price`, so a model added to the model
+picker cannot route to an expensive endpoint. No sampling parameters are sent:
+several current models reject `temperature`, and with `require_parameters` an
+unsupported parameter would rule out every endpoint.
 """
 
 from __future__ import annotations
@@ -27,13 +26,13 @@ from controlled_copy.providers.base import (
     ProviderTransient,
 )
 
-PRIVACY: dict[str, Any] = {"zdr": True, "data_collection": "deny", "ignore": ["mistral"]}
+PRIVACY: dict[str, Any] = {"zdr": True, "data_collection": "deny"}
 TRANSIENT_STATUS = frozenset({408, 429, 500, 502, 503, 504})
 RETRY_BACKOFF = (1.0, 3.0)
 
 
 def build_embedding_request(texts: list[str], model: str) -> dict[str, Any]:
-    return {"model": model, "input": texts, "provider": {**PRIVACY, "ignore": list(PRIVACY["ignore"])}}
+    return {"model": model, "input": texts, "provider": dict(PRIVACY)}
 
 
 def build_chat_request(
@@ -43,7 +42,7 @@ def build_chat_request(
     model: str,
     max_price: dict[str, float] | None = None,
 ) -> dict[str, Any]:
-    provider: dict[str, Any] = {**PRIVACY, "ignore": list(PRIVACY["ignore"]), "require_parameters": True}
+    provider: dict[str, Any] = {**PRIVACY, "require_parameters": True}
     if max_price:
         provider["max_price"] = dict(max_price)
     return {
