@@ -13,6 +13,8 @@ Each run writes a `.json` file (every case, every check) and a `.md` summary. A 
 | `2026-10-06_1316-openai_gpt-6-luna-generic` | `d82528a`, clean | `26cfa0915630d06d` | 6 of 6 | Current scorer: terms counted only in the statements; statements and quotes kept |
 | `2026-10-06_1302-openai_gpt-6-luna-generic` | `3d4c88e`, clean | `26cfa0915630d06d` | 6 of 6 | Scored before the scorer stopped counting terms that appear only in quotes (EVAL-01) |
 
+Second re-check of the full-audit fixes (2026-10-06, evening): the action checks were revised again (a negation counts only in the action's own part of the sentence; more words for the same actions). Re-scoring the stored statements of all 255 cards in this folder with the revised checks changes no verdict, so every number above also stands under the current checks.
+
 ## Exploratory (code version not recorded)
 
 These runs happened during development, before result files recorded their code version. Some ran between changes to the cases, the prompts or the scorer, so they cannot be reproduced exactly. All governed and held-out runs here also predate the action checks (`must_say`, `must_not_say`). They stay here as a record of what was measured at the time, misses included, not as release evidence.
