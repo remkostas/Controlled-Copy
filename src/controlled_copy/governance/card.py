@@ -36,6 +36,11 @@ from controlled_copy.studio.engine import StudioTemplate, load_template, run_tem
 TEMPLATE_ID = "resolution-card"
 MAX_WARNINGS = 3
 MAX_REFERENCED = 2
+# Shown when a card asks for expert confirmation but no applicable document names who
+# decides (S-26). Fixed text, never model output, and labelled as such on the card.
+FALLBACK_ESCALATION = (
+    "Stop and ask the person responsible for these documents, or your supervisor, before acting."
+)
 
 
 REQUIRED_SECTIONS = {"required_actions", "missing_information", "escalation", "conflicts"}
@@ -161,18 +166,19 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
     if services.budget.read_only():
         raise StudioError(DAILY_LIMIT_MESSAGE, 503)
 
-    # The curated-document guard looks at the whole notebook, not only at what is selected.
-    notebook_docs = documents_of(services.repo.list_sources(notebook))
-    split = rules.split(
-        documents_of(rows),
-        card.context,
-        curated_only=notebook.kind == WORKSPACE_KIND,
-        curated_ids=[d.document_id for d in notebook_docs if d.origin == "curated" and d.document_id],
+    # What applies is decided over the whole notebook; the selection only chooses evidence.
+    # Deselecting a newer revision, a code guide or a curated document never changes the rules.
+    all_rows = services.repo.sources_by_ids(
+        notebook, [row["id"] for row in services.repo.list_sources(notebook)], with_text=True
     )
-    texts = {row["id"]: row["text"] for row in rows}
+    whole = rules.split(documents_of(all_rows), card.context, curated_only=notebook.kind == WORKSPACE_KIND)
+    split = whole.restricted_to(row["id"] for row in rows)
+    selected = {row["id"] for row in rows}
+    not_selected = [d for d in whole.authoritative if d.source_id not in selected]
+    texts = {row["id"]: row["text"] for row in all_rows}
     found = rules.identifiers(situation)
     authoritative_ids = set(split.authoritative_ids())
-    not_covered = rules.undocumented(found, texts, split)
+    not_covered = rules.undocumented(found, texts, whole, applicable=split.authoritative_ids())
 
     try:
         vector = embed_query(services, situation)
@@ -225,8 +231,15 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
         unverified=counts.unverified,
         asserted_only=counts.requirements > 0 and counts.curated_requirements == 0,
     )
+    if status == "expert_confirmation" and counts.requirements == 0 and not_selected:
+        labels = ", ".join(d.label for d in not_selected)
+        reasons.append(f"applicable approved documents not selected: {labels}")
     cited_ids = {c["source_id"] for c in citations}
     output["card"] = _card_block(card, split, rows, found, not_covered, warnings, status, reasons, cited_ids)
+    output["card"]["not_selected"] = [{"source_id": d.source_id, "label": d.label} for d in not_selected]
+    escalation = next((sec["items"] for sec in output["sections"] if sec["key"] == "escalation"), [])
+    if status == "expert_confirmation" and not escalation:
+        output["card"]["fallback_escalation"] = FALLBACK_ESCALATION
     # Applicable documents whose passages reached the model without being cited, so a
     # passage that steered the wording is still listed, with its origin.
     output["card"]["consulted"] = [
@@ -294,6 +307,11 @@ def _card_block(
         "used": used,
         "excluded": excluded,
         "warnings": warnings,
+        # Every card shape carries every field, refusals included (the HTML and Markdown
+        # renderers read them all).
+        "consulted": [],
+        "not_selected": [],
+        "fallback_escalation": None,
     }
 
 

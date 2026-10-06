@@ -63,16 +63,25 @@ def main() -> int:
     totals = defaultdict(int)
     for tc in sorted(by_tc, key=lambda t: (requirement_of.get(t, "~"), t)):
         outcomes = [o for _, o in by_tc[tc]]
-        overall = (
-            "fail" if "fail" in outcomes else "skipped" if all(o == "skipped" for o in outcomes) else "pass"
-        )
+        if "fail" in outcomes:
+            overall = "fail"
+        elif all(o == "skipped" for o in outcomes):
+            overall = "skipped"
+        elif "skipped" in outcomes:
+            # Some of its tests did not run: never shown as a full pass (full audit DOC-02).
+            overall = "partial"
+        else:
+            overall = "pass"
         totals[overall] += 1
-        lines.append(f"| {requirement_of.get(tc, '—')} | {tc} | {len(outcomes)} | {overall} |")
+        skipped = outcomes.count("skipped")
+        result = f"{overall} ({skipped} of {len(outcomes)} skipped)" if overall == "partial" else overall
+        lines.append(f"| {requirement_of.get(tc, '—')} | {tc} | {len(outcomes)} | {result} |")
     planned = {tc for tc in requirement_of}
     missing = sorted(planned - set(by_tc))
     lines += [
         "",
-        f"Test cases: {totals['pass']} pass, {totals['fail']} fail, {totals['skipped']} skipped.",
+        f"Test cases: {totals['pass']} pass, {totals['partial']} partly skipped, {totals['fail']} fail, "
+        f"{totals['skipped']} skipped.",
         f"Catalogue cases without a test in this run: {', '.join(missing) if missing else 'none'}.",
     ]
     print("\n".join(lines))

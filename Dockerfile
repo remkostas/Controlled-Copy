@@ -37,5 +37,6 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=4)"
 
 # Only Caddy can reach this port (internal compose network), so forwarded headers from it are trusted.
+# No access log: it would keep query strings and client addresses; the app logs content-free events.
 CMD ["python", "-m", "uvicorn", "controlled_copy.app:app", "--host", "0.0.0.0", "--port", "8000", \
-     "--proxy-headers", "--forwarded-allow-ips", "*", "--no-server-header"]
+     "--proxy-headers", "--forwarded-allow-ips", "*", "--no-server-header", "--no-access-log"]

@@ -44,6 +44,21 @@ def parse_payload[M: BaseModel](content: str, model_cls: type[M]) -> M:
         raise ProviderBadOutput("output does not match the schema") from exc
 
 
+def _log_failed(
+    services: Services, kind: str, model: str, attempt: int, exc: ProviderError, started: float
+) -> None:
+    log_event(
+        "model_call",
+        session=services.session_id,
+        kind=kind,
+        model=model,
+        attempt=attempt,
+        outcome="failed",
+        error_type=type(exc).__name__,
+        duration_ms=int((time.monotonic() - started) * 1000),
+    )
+
+
 def generate[M: BaseModel](
     services: Services,
     messages: list[dict[str, str]],
@@ -63,7 +78,9 @@ def generate[M: BaseModel](
     timeout = settings.provider_timeout_seconds
     failure: ProviderError | None = None
     for attempt, model in enumerate(models, start=1):
-        call_id = services.budget.consume(services.session_id, schema_name)  # LimitExceeded is user-facing
+        call_id = services.budget.consume(
+            services.session_id, schema_name, reserve_usd=settings.usd_reserve_per_generation
+        )  # LimitExceeded is user-facing
         started = time.monotonic()
         try:
             result = call_with_deadline(
@@ -72,21 +89,21 @@ def generate[M: BaseModel](
                 ),
                 timeout,
             )
+        except ProviderError as exc:
+            # Settle with a reported cost if the provider billed the failed call; otherwise
+            # the reservation stays (a timed-out call may still be billed).
+            services.budget.settle(call_id, exc.cost_usd)
+            failure = exc
+            _log_failed(services, schema_name, model, attempt, exc, started)
+            continue
+        # The call was billed whether or not its content is usable: settle before parsing.
+        services.budget.settle(call_id, result.cost_usd)
+        try:
             payload = parse_payload(result.content, model_cls)
         except ProviderError as exc:
             failure = exc
-            log_event(
-                "model_call",
-                session=services.session_id,
-                kind=schema_name,
-                model=model,
-                attempt=attempt,
-                outcome="failed",
-                error_type=type(exc).__name__,
-                duration_ms=int((time.monotonic() - started) * 1000),
-            )
+            _log_failed(services, schema_name, model, attempt, exc, started)
             continue
-        services.budget.add_cost(call_id, result.cost_usd)
         log_event(
             "model_call",
             session=services.session_id,

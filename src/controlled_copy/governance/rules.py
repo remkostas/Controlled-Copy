@@ -124,6 +124,17 @@ class Split:
         entry = self.excluded.get(source_id)
         return entry[0] if entry else None
 
+    def restricted_to(self, selected: Iterable[str]) -> Split:
+        """The evidence a card may use: this split, computed over the whole notebook, limited
+        to the selected sources. Deselecting a document never changes what applies (a newer
+        revision still supersedes the older one, a curated ID still guards uploads); it only
+        removes evidence."""
+        chosen = set(selected)
+        return Split(
+            authoritative=[d for d in self.authoritative if d.source_id in chosen],
+            excluded={sid: entry for sid, entry in self.excluded.items() if sid in chosen},
+        )
+
 
 def split(
     documents: Sequence[Document],
@@ -222,17 +233,24 @@ def family(identifier: str) -> str:
     return identifier.rsplit("-", 1)[0]
 
 
-def undocumented(found: Sequence[str], texts: dict[str, str], result: Split) -> list[str]:
+def undocumented(
+    found: Sequence[str], texts: dict[str, str], result: Split, applicable: Iterable[str] | None = None
+) -> list[str]:
     """Identifiers that no applicable approved document covers, from a family that the
     controlled documents define. GR-299 counts when the documents list other GR- codes; a
     reference that only an uncontrolled upload uses (a delivery note number such as
-    DN-55821) is not a code the documents are expected to define."""
+    DN-55821) is not a code the documents are expected to define.
+
+    `result` is the whole notebook's split, so the families do not depend on what is selected;
+    `applicable` (default: every authoritative document) limits which documents may cover a
+    code, for example to the selected ones."""
     controlled = [d.source_id for d in result.authoritative] + [
         d.source_id for d, _ in result.excluded.values() if d.origin != "none"
     ]
     families = {family(i) for sid in controlled for i in identifiers(texts.get(sid, ""))}
-    applicable = {sid: texts[sid] for sid in result.authoritative_ids() if sid in texts}
-    return [i for i in found if family(i) in families and not documented_in(i, applicable)]
+    covering = result.authoritative_ids() if applicable is None else list(applicable)
+    covered_texts = {sid: texts[sid] for sid in covering if sid in texts}
+    return [i for i in found if family(i) in families and not documented_in(i, covered_texts)]
 
 
 def apply_type_rules(
