@@ -21,7 +21,7 @@ Run (needs `OPENROUTER_API_KEY` in `.env`; costs a few cents):
 python eval/run_eval.py generic
 python eval/run_eval.py governed          # stage 2, needs the governed layer's code
 python eval/run_eval.py holdout
-python eval/run_eval.py governed --model google/gemini-3.5-flash-lite --cases E-07,E-09
+python eval/run_eval.py governed --model openai/gpt-6-luna-pro --fallback openai/gpt-6-luna-pro --cases E-07,E-09
 python eval/bakeoff.py
 ```
 

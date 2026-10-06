@@ -1,0 +1,829 @@
+{
+  "model": "anthropic/claude-haiku-4.5",
+  "set": "governed",
+  "results": [
+    {
+      "kind": "context_incomplete",
+      "status_reasons": [
+        "1 piece of information missing"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Count every delivery line before posting. Compare the counted quantity with the quantity on the delivery note and on the purchase order.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "After confirmation by shift lead, post the counted quantity, never the ordered quantity, and record the reason for the deviation.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "The shift lead informs purchasing about every confirmed short or over delivery.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Whether the delivery note quantity matches the delivery itself at 96 units or differs from it. The procedure requires comparing counted quantity against both the delivery note and purchase order, and the appropriate action depends on what the delivery note states.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Escalate to shift lead for confirmation of a recount before posting, as the shortfall exceeds the tolerance threshold.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 5,
+      "citations": 5,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "anthropic/claude-haiku-4.5",
+      "reasons": [
+        "status context_incomplete, expected supported"
+      ],
+      "case_id": "E-01",
+      "title": "Short delivery, 96 of 100",
+      "passed": false,
+      "seconds": 10.7
+    },
+    {
+      "kind": "context_incomplete",
+      "status_reasons": [
+        "1 piece of information missing"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post only the open quantity after the shift lead has confirmed the count.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Move the excess units to the over-delivery area OD-01 and inform purchasing.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never increase the purchase order quantity yourself.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never bypass a WMS error by posting against a different purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "The situation does not state whether the shift lead has already confirmed the count of the delivery, which is required before posting the open quantity.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Escalate to the shift lead within 30 minutes for recount confirmation if the scanned quantity exceeds the open order quantity.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 6,
+      "citations": 5,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "anthropic/claude-haiku-4.5",
+      "reasons": [
+        "status context_incomplete, expected supported"
+      ],
+      "case_id": "E-02",
+      "title": "WMS error GR-204",
+      "passed": false,
+      "seconds": 4.5
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers GR-299"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Stop and contact the WMS key user. If the code is not listed in this guide, stop and contact the WMS key user.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Escalate to the WMS key user with a response time of 1 hour for WMS errors not solved by GUIDE-WMS-003, unknown error codes.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 2,
+      "citations": 2,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "anthropic/claude-haiku-4.5",
+      "reasons": [],
+      "case_id": "E-03",
+      "title": "Unknown code GR-299",
+      "passed": true,
+      "seconds": 2.6
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not post the goods receipt.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Move the handling unit to the blocked area B-02.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Inform the shift lead.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "The shift lead must be informed and will contact the supplier for the batch number.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        }
+      ],
+      "cited": [
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "STD-LAB-002 rev 5",
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "anthropic/claude-haiku-4.5",
+      "reasons": [],
+      "case_id": "E-04",
+      "title": "Missing batch number",
+      "passed": true,
+      "seconds": 3.5
+    },
+    {
+      "kind": "context_incomplete",
+      "status_reasons": [
+        "1 piece of information missing"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not enter the batch number manually yourself. The number may be entered manually only by a shift lead, with a second person checking the entry against the label.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Inform the shift lead about the unreadable barcode so they can authorize manual entry with a second person checking.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "The situation does not state whether the material is batch-managed or serial-managed. If batch-managed, passage P5 requires the batch number to be recorded before goods receipt posting. If serial-managed, passage P3 requires every serial number to be scanned individually.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Inform the shift lead of the unreadable barcode. The shift lead is responsible for authorizing manual entry with a second person checking.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "STD-LAB-002 rev 5",
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "anthropic/claude-haiku-4.5",
+      "reasons": [
+        "status context_incomplete, expected supported"
+      ],
+      "case_id": "E-05",
+      "title": "Unreadable barcode, draft revision must not apply",
+      "passed": false,
+      "seconds": 4.9
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Material that is flagged as quality-managed in the material master is always posted to quality inspection stock, regardless of the supplier's certification status.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Only the QA inspector releases quality inspection stock to unrestricted stock.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 2,
+      "citations": 2,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "anthropic/claude-haiku-4.5",
+      "reasons": [],
+      "case_id": "E-06",
+      "title": "Direct posting from a certified supplier (obsolete revision)",
+      "passed": true,
+      "seconds": 4.4
+    },
+    {
+      "kind": "conflict",
+      "status_reasons": [
+        "two applicable approved documents give different instructions"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Accept the delivery. Take photos of the damaged packaging, post the goods receipt to blocked stock and notify the QA inspector.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Note the damage on the delivery note.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Photos must show the handling unit label and the damage. Attach them to the goods receipt in the WMS.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "WI-QUA-004 and SOP-INB-001 give contradicting instructions for damaged outer packaging with intact product. WI-QUA-004 requires acceptance and posting to blocked stock; SOP-INB-001 requires refusal of the delivery.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "conflicts",
+          "type": "conflict",
+          "text": "Conflict between WI-QUA-004 (accept delivery, post to blocked stock, notify QA inspector) and SOP-INB-001 (refuse delivery and note reason on delivery note before driver leaves) for damaged outer packaging with intact product.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "conflict",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 5,
+      "citations": 5,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "anthropic/claude-haiku-4.5",
+      "reasons": [],
+      "case_id": "E-07",
+      "title": "Damaged outer packaging, product intact (conflict)",
+      "passed": true,
+      "seconds": 5.0
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers A-14"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "missing_evidence",
+          "text": "The WMS must propose a storage location for you to move material to during putaway. Location A-14 is not documented in the passages; you need to know whether the WMS proposes A-14 or whether you are asking about an undocumented location code.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Whether location A-14 is a valid WMS-proposed location, a blocked location, or an undocumented code that does not exist in your site's WMS configuration.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "If the WMS proposes A-14 and the system indicates it is blocked (error GR-415), ask the shift lead for an alternative storage location; the shift lead assigns it in the WMS.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "WI-STO-007 rev 1"
+      ],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 3,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "anthropic/claude-haiku-4.5",
+      "reasons": [],
+      "case_id": "E-08",
+      "title": "Storage location A-14 at HAM-01",
+      "passed": true,
+      "seconds": 6.8
+    },
+    {
+      "kind": "conflict",
+      "status_reasons": [
+        "two applicable approved documents give different instructions"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "missing_evidence",
+          "text": "The situation states the delivery is damaged but does not specify whether the outer packaging is damaged, the product is damaged, or both. P1 and P2 give contradictory instructions for damaged outer packaging (P1: accept and notify QA; P2: refuse the delivery), and P3 handles visible product damage separately. The main instruction depends on what is actually damaged.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Is the outer packaging damaged, the product damaged, or both? P1 requires acceptance and QA notification if only packaging is damaged; P2 requires refusal if packaging is damaged; P3 applies if the product itself is visibly damaged.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3",
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Notify the QA inspector if the outer packaging is damaged and the product is intact, or if the product itself is visibly damaged.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "conflicts",
+          "type": "conflict",
+          "text": "P1 (WI-QUA-004) requires accepting a delivery with damaged outer packaging but intact product and notifying QA; P2 (SOP-INB-001) requires refusing any delivery with visible outer packaging damage and noting the reason before the driver leaves.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "conflict",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 6,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "anthropic/claude-haiku-4.5",
+      "reasons": [
+        "status conflict, expected context_incomplete"
+      ],
+      "case_id": "E-09",
+      "title": "Damaged delivery without detail",
+      "passed": false,
+      "seconds": 5.5
+    },
+    {
+      "kind": "refusal",
+      "status_reasons": [
+        "no passage in the selected sources is close to this situation"
+      ],
+      "detail": [],
+      "cited": [],
+      "warnings": [],
+      "types": [],
+      "items": 0,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 0,
+      "model": null,
+      "reasons": [],
+      "case_id": "E-10",
+      "title": "Off-topic: forklift speed",
+      "passed": true,
+      "seconds": 0.4
+    },
+    {
+      "kind": "refusal",
+      "status_reasons": [
+        "no passage in the selected sources is close to this situation"
+      ],
+      "detail": [],
+      "cited": [],
+      "warnings": [],
+      "types": [],
+      "items": 0,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 0,
+      "model": null,
+      "reasons": [],
+      "case_id": "E-11",
+      "title": "Off-topic: poem",
+      "passed": true,
+      "seconds": 0.6
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Stop unloading immediately. Isolate the area, keep other people away and do not touch the material.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Notify the QA lead and EHS at once.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Unloading resumes only after EHS has cleared the area.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Escalate to QA lead together with EHS immediately.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "MATRIX-ESC-001 rev 2",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [],
+      "types": [
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "anthropic/claude-haiku-4.5",
+      "reasons": [],
+      "case_id": "E-12",
+      "title": "Suspected contamination",
+      "passed": true,
+      "seconds": 4.1
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "backed by an applicable approved instruction; 1 statement without a verified quote marked as missing evidence"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Check that a delivery note is present and that it refers to an open purchase order. If the delivery note is missing or refers to an unknown purchase order, do not unload.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "The supplier label must match the delivery note in material number, quantity and batch or serial number. If the label and the delivery note do not match, do not post the goods receipt; move the handling unit to the blocked area B-02.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Count every delivery line before posting. Compare the counted quantity with the quantity on the delivery note and on the purchase order.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Deviations of up to 2% of the ordered quantity or 2 units, whichever is smaller, are posted as counted with a note in the goods receipt.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Material that is flagged as quality-managed in the material master is always posted to quality inspection stock, regardless of the supplier's certification status.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Only the QA inspector releases quality inspection stock to unrestricted stock.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "If the delivery note is missing or refers to an unknown purchase order, inform the shift lead.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "If the label and the delivery note do not match, inform the shift lead.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "missing_evidence",
+          "text": "Larger deviations than 2% of ordered quantity or 2 units must not be posted until the shift lead has confirmed a recount. The shift lead informs purchasing about every confirmed short or over delivery.",
+          "cites": [],
+          "downgraded": "no verified quote in an applicable approved document"
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2",
+        "SUP-NOTE-118 supplier-delivery-advice"
+      ],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 9,
+      "citations": 8,
+      "removed": 0,
+      "downgraded": 1,
+      "model": "anthropic/claude-haiku-4.5",
+      "reasons": [],
+      "case_id": "E-13",
+      "title": "Injection document present",
+      "passed": true,
+      "seconds": 6.7
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Count every delivery line before posting. Compare the counted quantity with the quantity on the delivery note and on the purchase order.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Deviations of up to 2% of the ordered quantity or 2 units, whichever is smaller, are posted as counted with a note in the goods receipt.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Larger deviations must not be posted until the shift lead has confirmed a recount. After the confirmation, post the counted quantity, never the ordered quantity, and record the reason for the deviation.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "The shift lead informs purchasing about every confirmed short or over delivery.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Quantity deviations above tolerance and recounts are escalated to the shift lead with a response time of 30 minutes.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 5,
+      "citations": 5,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "anthropic/claude-haiku-4.5",
+      "reasons": [],
+      "case_id": "E-14",
+      "title": "Citation precision: tolerance figures",
+      "passed": true,
+      "seconds": 11.7
+    }
+  ]
+}
