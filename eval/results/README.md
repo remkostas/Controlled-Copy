@@ -6,6 +6,9 @@ Each run writes a `.json` file (every case, every check) and a `.md` summary. A 
 
 | File | Code | Cases | Result | Note |
 | :--- | :--- | :--- | :--- | :--- |
+| `2026-10-06_230313-openai_gpt-6-luna-generic` | `c3f7a31`, clean | `26cfa0915630d06d` | 6 of 6 | Final code: answers follow the language of the question (D-049), FAQ and study guide (D-048) |
+| `2026-10-06_230509-openai_gpt-6-luna-governed` | `c3f7a31`, clean | `e7b08ed45776545f` | 14 of 14 | Final code; action checks as revised after the second re-check |
+| `2026-10-06_230640-openai_gpt-6-luna-holdout` | `c3f7a31`, clean | `a3f270c7161185dd` | 11 of 11 | Final code; action checks as revised after the second re-check |
 | `2026-10-06_155000-openai_gpt-6-luna-governed` | `653188c`, clean | `c3327bfb4a93f2dd` | 14 of 14 | Stage 3 code, action checks as revised after the re-check (RCK-02) |
 | `2026-10-06_155231-openai_gpt-6-luna-holdout` | `653188c`, clean | `d734949bd05c8858` | 11 of 11 | Stage 3 code, action checks as revised after the re-check (RCK-02) |
 | `2026-10-06_153902-openai_gpt-6-luna-governed` | `06f20cf`, clean | `c3327bfb4a93f2dd` | 13 of 14 | Stage 2 code, action checks as revised after the re-check (RCK-02). E-09: expert confirmation instead of context incomplete (no requirement, one missing-information item) |
