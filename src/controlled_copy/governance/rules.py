@@ -160,8 +160,12 @@ def _exclusion_reason(doc: Document, context: Context) -> str | None:
         return "no effective date"
     if doc.effective_from > context.as_of:
         return f"not yet effective (from {doc.effective_from.isoformat()})"
-    if doc.site and doc.site.lower() != "all" and doc.site != context.site:
-        return f"other site ({doc.site})"
+    # A document without a site applies nowhere: an omitted field must not widen it to every site.
+    site = (doc.site or "").strip()
+    if not site:
+        return "no site in document-control metadata"
+    if site.lower() != "all" and site.upper() != context.site.upper():
+        return f"other site ({site})"
     if doc.roles and context.role not in doc.roles:
         return f"not for role {context.role}"
     return None

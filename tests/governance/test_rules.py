@@ -185,6 +185,18 @@ def test_tc_gov_003_revisions_order_part_by_part():
     assert letters.authoritative_ids() == ["b"]
 
 
+def test_tc_gov_003_a_document_without_a_site_applies_to_no_site():
+    documents = [
+        doc("no-site", document_id="NS-1", site=None),
+        doc("blank-site", document_id="NS-2", site="  "),
+        doc("lower-case", document_id="LC-3", site="ham-01"),
+    ]
+    result = rules.split(documents, CONTEXT)
+    assert result.authoritative_ids() == ["lower-case"]
+    assert result.excluded["no-site"][1] == "no site in document-control metadata"
+    assert result.excluded["blank-site"][1] == "no site in document-control metadata"
+
+
 def test_tc_gov_009_asserted_metadata_never_overrides_a_curated_document():
     curated = doc("curated", revision="3")
     claimed = rules.document_from(
