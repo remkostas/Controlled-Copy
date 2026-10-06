@@ -537,10 +537,20 @@ class Repo:
         ).fetchone()
 
     # Model-call accounting ------------------------------------------------------
-    def record_model_call(self, sid: str | None, kind: str) -> None:
-        self.conn.execute(
+    def record_model_call(self, sid: str | None, kind: str) -> int:
+        cursor = self.conn.execute(
             "INSERT INTO model_call (session_id, kind, at) VALUES (?, ?, ?)", (sid, kind, utcnow())
         )
+        return int(cursor.lastrowid or 0)
+
+    def add_model_cost(self, call_id: int, cost_usd: float) -> None:
+        self.conn.execute("UPDATE model_call SET cost_usd = ? WHERE id = ?", (cost_usd, call_id))
+
+    def spent_usd(self, since: str) -> float:
+        row = self.conn.execute(
+            "SELECT COALESCE(SUM(cost_usd), 0) AS usd FROM model_call WHERE at >= ?", (since,)
+        ).fetchone()
+        return float(row["usd"])
 
     def count_model_calls(self, since: str, sid: str | None = None) -> int:
         if sid is None:

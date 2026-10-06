@@ -1,6 +1,7 @@
 # Local and server deployment: the app on an internal network, Caddy in front with TLS.
-# Copy .env.example to .env first. On a public server set APP_MODE=deploy, SITE_ADDRESS to
-# the domain and PUBLISH_ADDRESS to 0.0.0.0; locally the defaults serve https://localhost.
+# Copy .env.example to .env first. The app runs in deploy mode unless .env sets APP_MODE.
+# On a public server set SITE_ADDRESS to the domain and PUBLISH_ADDRESS to 0.0.0.0;
+# locally the defaults serve https://localhost.
 # Build with `--pull` so both images start from their newest security patches.
 x-logging: &logging
   driver: json-file

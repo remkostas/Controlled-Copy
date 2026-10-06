@@ -17,7 +17,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from client import EVAL, ROOT, AppClient, eval_settings, fetch_document
+from client import EVAL, ROOT, AppClient, eval_settings, fetch_document, provenance, provenance_line
 
 PAGE_RE = re.compile(r"page (\d+)")
 
@@ -281,12 +281,19 @@ def write_report(
     slug = model.replace("/", "_")
     name = f"{stamp}-{slug}-{set_name}{'-subset' if subset else ''}"
     json_path, md_path = EVAL / "results" / f"{name}.json", EVAL / "results" / f"{name}.md"
-    json_path.write_text(json.dumps({"model": model, "set": set_name, "results": results}, indent=2) + "\n")
+    case_file = {"governed": "cases_governed.json", "holdout": "cases_governed_holdout.json"}.get(
+        set_name, "cases_generic.json"
+    )
+    info = provenance(EVAL / case_file)
+    json_path.write_text(
+        json.dumps({"model": model, "set": set_name, "provenance": info, "results": results}, indent=2) + "\n"
+    )
     passed = sum(1 for r in results if r["passed"])
     lines = [
         f"# Evaluation: {set_name} set",
         "",
         f"Run {stamp} UTC, generation model `{model}`, embeddings `baai/bge-m3`. {passed} of {len(results)} cases pass.",
+        provenance_line(info),
         "",
     ]
     if set_name in ("governed", "holdout"):

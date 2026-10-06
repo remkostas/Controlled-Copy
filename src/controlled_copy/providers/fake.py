@@ -176,6 +176,7 @@ class FakeProvider:
     responder: Responder = default_responder
     delay_seconds: float = 0.0
     failing_models: set[str] = field(default_factory=set)
+    cost_per_call: float | None = None  # USD reported per chat call (tests of the spend limit)
     name: str = "fake"
     chat_calls: list[FakeRequest] = field(default_factory=list)
     embed_calls: int = 0
@@ -211,4 +212,5 @@ class FakeProvider:
             model=model,
             input_tokens=len(messages[-1]["content"]) // 4,
             output_tokens=len(content) // 4,
+            cost_usd=self.cost_per_call,
         )

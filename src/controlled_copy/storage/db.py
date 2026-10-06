@@ -175,6 +175,14 @@ CORE_MIGRATIONS: list[Migration] = [
         INSERT INTO chunk_fts(chunk_fts) VALUES ('optimize');
         """,
     ),
+    # The daily budget also counts dollars (S-08, Codex Stage 3 review S3-1): the cost
+    # OpenRouter reports for each generation call. Additive: a column with a default.
+    Migration(
+        "0003_model_call_cost",
+        """
+        ALTER TABLE model_call ADD COLUMN cost_usd REAL NOT NULL DEFAULT 0;
+        """,
+    ),
 ]
 
 

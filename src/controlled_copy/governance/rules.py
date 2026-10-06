@@ -199,6 +199,9 @@ def _exclusion_reason(doc: Document, context: Context) -> str | None:
         return "no site in document-control metadata"
     if site.lower() != "all" and site.upper() != context.site.upper():
         return f"other site ({site})"
+    # Deliberately asymmetric with the site rule above: a document without a site is suspect
+    # (where does it apply?), while a document without a role list applies to every role,
+    # which is how most procedures are written. A role list only narrows a document.
     if doc.roles and context.role not in doc.roles:
         return f"not for role {context.role}"
     return None
@@ -259,6 +262,64 @@ def apply_type_rules(
     if kind == "inference":
         return {**shown, "type": "inference"} if cited else None
     return {**shown, "type": kind}
+
+
+@dataclass
+class ItemCounts:
+    """What the statement-type rules made of a card's items (the inputs of the status)."""
+
+    downgraded: int = 0  # shown with a weaker type than the model gave
+    dropped: int = 0  # not shown: a conflict without two documents, an inference without a quote
+    conflict: bool = False  # a conflict with verified quotes from two applicable documents
+    requirements: int = 0  # requirements with a verified quote from an applicable approved document
+    curated_requirements: int = 0  # of those, backed by a curated document
+    unverified: int = 0  # requirements shown as missing evidence because no quote verified
+    missing: int = 0  # missing information that cites the applicable passage needing it
+
+
+def classify_items(sections: list[dict[str, Any]], source_of: dict[int, str], result: Split) -> ItemCounts:
+    """Apply the statement-type rules to the model's verified items, in place, and count.
+
+    `source_of` maps citation numbers to source IDs. Conflicts count only with verified
+    quotes from two different applicable documents; every other item goes through
+    `apply_type_rules`."""
+    authoritative = set(result.authoritative_ids())
+    curated = {d.source_id for d in result.authoritative if d.origin == "curated"}
+    counts = ItemCounts()
+    for section in sections:
+        kept = []
+        for item in section["items"]:
+            cited = [source_of[c["n"]] for c in item.get("cites", []) if c["n"] in source_of]
+            if section["key"] == "conflicts":
+                documents = {
+                    doc.document_id or doc.source_id
+                    for doc in (result.document(s) for s in cited if s in authoritative)
+                    if doc is not None
+                }
+                if len(documents) >= 2:
+                    counts.conflict = True
+                    kept.append({**item, "type": "conflict"})
+                else:
+                    counts.dropped += 1
+                continue
+            shown = apply_type_rules(item, cited, authoritative)
+            if shown is None:
+                counts.dropped += 1
+                continue
+            grounded = bool(set(cited) & authoritative)
+            if "downgraded" in shown:
+                counts.downgraded += 1
+                counts.unverified += 1 if shown["type"] == "missing_evidence" else 0
+            elif shown["type"] == "requirement" and grounded:
+                counts.requirements += 1
+                counts.curated_requirements += 1 if set(cited) & curated else 0
+            elif shown["type"] == "missing_evidence" and grounded:
+                # Missing information counts only when the model listed it as such and cited
+                # the passage that needs it.
+                counts.missing += 1
+            kept.append(shown)
+        section["items"] = kept
+    return counts
 
 
 def result_status(

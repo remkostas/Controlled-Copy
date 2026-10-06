@@ -83,12 +83,20 @@ class Budget:
 
     def read_only(self, now: datetime | None = None) -> bool:
         now = now or datetime.now(UTC)
-        return self.repo.count_model_calls(self._day_start(now)) >= self.settings.model_calls_per_day
+        day = self._day_start(now)
+        return (
+            self.repo.count_model_calls(day) >= self.settings.model_calls_per_day
+            or self.repo.spent_usd(day) >= self.settings.max_usd_per_day
+        )
 
     def check(self, sid: str | None, calls: int = 1) -> None:
         """Raise LimitExceeded if `calls` more model calls would exceed a limit."""
         now = datetime.now(UTC)
-        if self.repo.count_model_calls(self._day_start(now)) + calls > self.settings.model_calls_per_day:
+        day = self._day_start(now)
+        if self.repo.count_model_calls(day) + calls > self.settings.model_calls_per_day:
+            raise LimitExceeded(DAILY_LIMIT_MESSAGE, 503)
+        # Dollars: the next call's cost is unknown, so the limit stops calls once it is reached.
+        if self.repo.spent_usd(day) >= self.settings.max_usd_per_day:
             raise LimitExceeded(DAILY_LIMIT_MESSAGE, 503)
         if sid is not None:
             hour_ago = (now - timedelta(hours=1)).isoformat(timespec="seconds")
@@ -96,8 +104,15 @@ class Budget:
             if self.repo.count_model_calls(hour_ago, sid) + calls > limit:
                 raise LimitExceeded(VISITOR_LIMIT_MESSAGE.format(limit=limit), 429)
 
-    def consume(self, sid: str | None, kind: str) -> None:
-        """Check and record one call atomically, so parallel requests cannot overshoot."""
+    def consume(self, sid: str | None, kind: str) -> int:
+        """Check and record one call atomically, so parallel requests cannot overshoot.
+        Returns the call's ID, for `add_cost` once the provider reports the price."""
         with transaction(self.repo.conn):
             self.check(sid)
-            self.repo.record_model_call(sid, kind)
+            return self.repo.record_model_call(sid, kind)
+
+    def add_cost(self, call_id: int, cost_usd: float | None) -> None:
+        """Record what a call cost (USD, as reported by the provider; None when unknown)."""
+        if cost_usd:
+            with transaction(self.repo.conn):
+                self.repo.add_model_cost(call_id, float(cost_usd))

@@ -3,8 +3,13 @@
 Pipeline: identifiers by pattern, authoritative and excluded split by rules, retrieval
 within the authoritative set (and separately within the excluded set, only to raise
 warnings), one structured model call on authoritative passages only, quote
-verification, statement-type rules and a status chosen by precedence. The model
-never decides which document applies, and never decides the status.
+verification, statement-type rules and a status chosen by precedence.
+
+What rules decide: which documents apply, which statements may count (a requirement
+needs a verified quote from an applicable approved document, a conflict verified quotes
+from two of them) and the order of the statuses. What stays the model's reading, gated
+by those verified quotes: whether two cited passages really conflict, and whether
+information is missing (the model may also leave a missing item out).
 """
 
 from __future__ import annotations
@@ -203,48 +208,8 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
     except ProviderError as exc:  # from the query embeddings; generation errors are already user-facing
         raise StudioError(PROVIDER_UNAVAILABLE, 502) from exc
 
-    source_of = {c["n"]: c["source_id"] for c in citations}
-    downgraded = 0  # shown with a weaker type than the model gave
-    dropped = 0  # not shown: a conflict without two documents, an inference without a quote
-    conflict = False
-    requirements = 0  # requirements with a verified quote from an applicable approved document
-    curated_requirements = 0  # of those, backed by a curated document
-    curated_ids = {d.source_id for d in split.authoritative if d.origin == "curated"}
-    unverified = 0  # requirements shown as missing evidence because no quote verified
-    missing = 0
-    for section in output["sections"]:
-        kept = []
-        for item in section["items"]:
-            cited = [source_of[c["n"]] for c in item.get("cites", []) if c["n"] in source_of]
-            if section["key"] == "conflicts":
-                documents = {
-                    doc.document_id or doc.source_id
-                    for doc in (split.document(s) for s in cited if s in authoritative_ids)
-                    if doc is not None
-                }
-                if len(documents) >= 2:
-                    conflict = True
-                    kept.append({**item, "type": "conflict"})
-                else:
-                    dropped += 1
-                continue
-            shown = rules.apply_type_rules(item, cited, authoritative_ids)
-            if shown is None:
-                dropped += 1
-                continue
-            grounded = bool(set(cited) & authoritative_ids)
-            if "downgraded" in shown:
-                downgraded += 1
-                unverified += 1 if shown["type"] == "missing_evidence" else 0
-            elif shown["type"] == "requirement" and grounded:
-                requirements += 1
-                curated_requirements += 1 if set(cited) & curated_ids else 0
-            elif shown["type"] == "missing_evidence" and grounded:
-                # Missing information counts only when the model listed it as such and cited
-                # the passage that needs it.
-                missing += 1
-            kept.append(shown)
-        section["items"] = kept
+    # Rules turn the model's verified items into counts; counts give the status.
+    counts = rules.classify_items(output["sections"], {c["n"]: c["source_id"] for c in citations}, split)
 
     only_unknown = (
         not auth_relevant
@@ -252,13 +217,13 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
         and all(w["reason"].startswith("status unknown") for w in warnings)
     )
     status, reasons = rules.result_status(
-        conflict=conflict,
+        conflict=counts.conflict,
         undocumented=not_covered,
-        authoritative_evidence=requirements,
+        authoritative_evidence=counts.requirements,
         only_unknown_sources=only_unknown,
-        missing=missing,
-        unverified=unverified,
-        asserted_only=requirements > 0 and curated_requirements == 0,
+        missing=counts.missing,
+        unverified=counts.unverified,
+        asserted_only=counts.requirements > 0 and counts.curated_requirements == 0,
     )
     cited_ids = {c["source_id"] for c in citations}
     output["card"] = _card_block(card, split, rows, found, not_covered, warnings, status, reasons, cited_ids)
@@ -269,8 +234,8 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
         for d in split.authoritative
         if d.source_id in set(context_sources) - cited_ids
     ]
-    output["downgraded"] = downgraded
-    output["dropped"] = dropped
+    output["downgraded"] = counts.downgraded
+    output["dropped"] = counts.dropped
     output.update(kind="ok", template=TEMPLATE_ID, title="Resolution Card", source_count=len(rows))
     log_event(
         "resolution_card",
@@ -278,8 +243,8 @@ def run_card(services: Services, notebook: OwnedNotebook, card: CardInput, rows:
         notebook=notebook.id,
         status=status,
         items=sum(len(s["items"]) for s in output["sections"]),
-        downgraded=downgraded,
-        dropped=dropped,
+        downgraded=counts.downgraded,
+        dropped=counts.dropped,
         warnings=len(warnings),
         removed=int(output.get("removed", 0)),
     )

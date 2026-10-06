@@ -56,7 +56,7 @@ def generate[M: BaseModel](
     timeout = settings.provider_timeout_seconds
     failure: ProviderError | None = None
     for attempt, model in enumerate(models, start=1):
-        services.budget.consume(services.session_id, schema_name)  # LimitExceeded is user-facing
+        call_id = services.budget.consume(services.session_id, schema_name)  # LimitExceeded is user-facing
         started = time.monotonic()
         try:
             result = call_with_deadline(
@@ -79,6 +79,7 @@ def generate[M: BaseModel](
                 duration_ms=int((time.monotonic() - started) * 1000),
             )
             continue
+        services.budget.add_cost(call_id, result.cost_usd)
         log_event(
             "model_call",
             session=services.session_id,
