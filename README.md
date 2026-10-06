@@ -72,8 +72,10 @@ With Docker Compose, Caddy terminates TLS in front of the app:
 
 ```
 cp .env.example .env        # fill in the required values; set APP_MODE=deploy on a server
-docker compose up -d --build
+docker compose build --pull && docker compose up -d
 ```
+
+Step-by-step server setup, updates and checks: [`docs/deployment.md`](docs/deployment.md). Security policy: [`SECURITY.md`](SECURITY.md).
 
 The app refuses to start in deploy mode without a strong access code and secret key, with debug on, or with the fake model provider.
 

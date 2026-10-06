@@ -12,8 +12,8 @@ jobs:
   lint:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
       - run: pip install --require-hashes -r requirements-dev.lock && pip install --no-deps -e .
@@ -23,7 +23,7 @@ jobs:
   secrets:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - name: gitleaks (TC-SEC-007)
@@ -39,8 +39,8 @@ jobs:
     env:
       FEATURE_GOVERNANCE: "false"
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
       - run: pip install --require-hashes -r requirements-dev.lock && pip install --no-deps -e .
@@ -54,7 +54,7 @@ jobs:
       - run: python -m pytest -m "stage1 and not eval and not smoke_live" --junitxml=reports/junit-stage1.xml
       - run: python scripts/test_report.py reports/junit-stage1.xml > reports/test-report.md
         if: always()
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: test-report
@@ -66,8 +66,8 @@ jobs:
     env:
       FEATURE_GOVERNANCE: "true"
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
       - run: pip install --require-hashes -r requirements-dev.lock && pip install --no-deps -e .
@@ -75,8 +75,52 @@ jobs:
       - run: python -m pytest -m "(stage1 or stage2) and not eval and not smoke_live" --junitxml=reports/junit-stage2.xml
       - run: python scripts/test_report.py reports/junit-stage2.xml > reports/test-report-stage2.md
         if: always()
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: test-report-stage2
           path: reports/
+
+  container:
+    name: Container image, Compose stack behind Caddy, image scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - run: pip install --require-hashes -r requirements-dev.lock && pip install --no-deps -e .
+      - name: Settings for a throwaway deploy-mode stack (TC-LIVE-001 makes no model calls)
+        run: |
+          code=$(python -c "import secrets; print(secrets.token_urlsafe(16))")
+          secret=$(python -c "import secrets; print(secrets.token_urlsafe(48))")
+          {
+            echo "APP_MODE=deploy"
+            echo "APP_ACCESS_CODE=$code"
+            echo "APP_SECRET_KEY=$secret"
+            echo "OPENROUTER_API_KEY=placeholder"
+            echo "SITE_ADDRESS=http://localhost"
+            echo "PUBLISH_ADDRESS=127.0.0.1"
+          } > .env
+          echo "::add-mask::$code"
+          echo "LIVE_ACCESS_CODE=$code" >> "$GITHUB_ENV"
+      - run: docker compose build --pull
+      - run: docker compose up -d --wait --wait-timeout 180
+      - run: docker compose ps
+      - name: TC-LIVE-001 through Caddy
+        env:
+          LIVE_URL: http://localhost
+        run: python -m pytest -m smoke_live tests/live -k tc_live_001 -v
+      - name: Container logs (content-free) on failure
+        if: failure()
+        run: docker compose logs --tail 100
+      - name: Image scan (fixable HIGH and CRITICAL fail the build)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: controlled-copy:latest
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      - if: always()
+        run: docker compose down -v

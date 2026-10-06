@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import sqlite3
 from typing import Annotated, Any
 
 from fastapi import APIRouter, File, Form, Query, Request, UploadFile
@@ -27,6 +28,7 @@ from controlled_copy.plugins import StudioAction
 from controlled_copy.providers.base import ProviderError
 from controlled_copy.purge import remove_uploads
 from controlled_copy.services import Services
+from controlled_copy.storage.db import connect
 from controlled_copy.storage.repo import CapacityReached, OwnedNotebook, sources_full
 from controlled_copy.studio.actions import run_overview_template, suggested_questions, suggestions_key
 from controlled_copy.studio.engine import core_templates
@@ -245,8 +247,17 @@ def video(request: Request, settings: SettingsDep) -> Response:
 
 
 @router.get("/healthz")
-def healthz() -> dict[str, str]:
-    return {"status": "ok"}
+def healthz(settings: SettingsDep) -> Response:
+    """Liveness for the container health check: the process answers and the database opens."""
+    try:
+        conn = connect(settings.db_path)
+        try:
+            conn.execute("SELECT 1").fetchone()
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        return JSONResponse({"status": "database unavailable"}, status_code=503)
+    return JSONResponse({"status": "ok"})
 
 
 # Workspace -----------------------------------------------------------------------

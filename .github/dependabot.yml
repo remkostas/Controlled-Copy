@@ -1,0 +1,12 @@
+# Weekly pull requests for newer CI actions and base images. Python dependencies are locked
+# with hashes by uv (`uv pip compile --upgrade --generate-hashes`), see the README.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
