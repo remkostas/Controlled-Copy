@@ -263,7 +263,7 @@
         "quality inspection is not needed"
       ],
       "forbidden_patterns": [
-        "(?<!not )(?<!never )\\bpost\\w*\\b(?:(?!\\bnot\\b|\\bnever\\b)[^.])*?\\bto unrestricted stock",
+        "(?<!not )(?<!never )\\bpost\\w*\\b(?:(?!\\bnot\\b|\\bnever\\b)[^.;])*?\\bto unrestricted stock",
         "\\binspection (?:is )?not (?:needed|required)\\b"
       ]
     },
