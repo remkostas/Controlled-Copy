@@ -6,6 +6,7 @@ Each run writes a `.json` file (every case, every check) and a `.md` summary. A 
 
 | File | Code | Cases | Result | Note |
 | :--- | :--- | :--- | :--- | :--- |
+| `2026-10-06_1316-openai_gpt-6-luna-generic` | `d82528a`, clean | `26cfa0915630d06d` | 6 of 6 | Current scorer: terms counted only in the statements; statements and quotes kept |
 | `2026-10-06_1302-openai_gpt-6-luna-generic` | `3d4c88e`, clean | `26cfa0915630d06d` | 6 of 6 | Scored before the scorer stopped counting terms that appear only in quotes (EVAL-01) |
 
 ## Exploratory (code version not recorded)
