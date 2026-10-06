@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     max_paste_chars: int = Field(default=200_000, gt=0)
     max_title_chars: int = Field(default=200, gt=0)
     max_sources_per_notebook: int = Field(default=20, gt=0)
+    # Total extracted characters per notebook (S-08): bounds stored text and embedding work,
+    # which raw file sizes do not (a small PDF can extract to a lot of text).
+    max_notebook_chars: int = Field(default=2_000_000, gt=0)
     max_notebooks_per_visitor: int = Field(default=5, gt=0)
     max_question_chars: int = Field(default=1500, gt=0)
     max_situation_chars: int = Field(default=2000, gt=0)

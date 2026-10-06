@@ -436,12 +436,14 @@ def ask_question(
                 "answer": result.answer,
             }
         )
-    turn = views.turn_view(result.turn_id, result.question, result.search_query, result.answer)
+    turn = views.turn_view(result.turn_id, result.question, result.search_query, result.answer, result.status)
     return render(request, "partials/turn.html", {"t": turn})
 
 
-@router.get("/notebooks/{notebook_id}/suggestions", response_class=HTMLResponse)
-def suggestions(request: Request, notebook_id: str, services: SessionDep) -> Response:
+@router.post("/notebooks/{notebook_id}/suggestions", response_class=HTMLResponse)
+def suggestions(request: Request, notebook_id: str, services: WriteDep) -> Response:
+    """Generating questions calls the model, spends budget and writes the cache: a POST with
+    the CSRF check (S-17), never a GET another site could trigger."""
     notebook = owned_notebook(services, notebook_id)
     if notebook is None:
         return HTMLResponse('<div id="suggestions"></div>', status_code=404)

@@ -165,6 +165,16 @@ CORE_MIGRATIONS: list[Migration] = [
         CREATE INDEX model_call_session ON model_call(session_id, at);
         """,
     ),
+    # FTS5 keeps deleted terms in its index segments unless its own secure-delete option is
+    # on; PRAGMA secure_delete does not reach virtual tables (S-05; SQLite 3.42 or later).
+    # 'optimize' rewrites the index once, so terms deleted before this migration go too.
+    Migration(
+        "0002_fts_secure_delete",
+        """
+        INSERT INTO chunk_fts(chunk_fts, rank) VALUES ('secure-delete', 1);
+        INSERT INTO chunk_fts(chunk_fts) VALUES ('optimize');
+        """,
+    ),
 ]
 
 

@@ -14,7 +14,7 @@ from collections.abc import Collection, Iterable, Sequence
 from dataclasses import dataclass, fields
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import numpy as np
 
@@ -34,6 +34,24 @@ def notebooks_full(limit: int) -> CapacityReached:
 
 def sources_full(limit: int) -> CapacityReached:
     return CapacityReached(f"A notebook holds at most {limit} sources.", 409)
+
+
+def notebook_gone() -> UserFacingError:
+    return UserFacingError("This notebook was deleted.", 404)
+
+
+class Stored(NamedTuple):
+    """What a write actually stored: its ID and status (TOMBSTONE when a source it depends
+    on was deleted while it was being generated)."""
+
+    id: str
+    status: str
+
+
+def characters_full(limit: int) -> CapacityReached:
+    return CapacityReached(
+        f"A notebook holds at most {limit:,} characters of text. Delete a source to add this one.", 409
+    )
 
 
 def new_id() -> str:
@@ -214,6 +232,13 @@ class Repo:
         ).fetchone()
         return int(row["n"])
 
+    def count_chars(self, notebook: OwnedNotebook) -> int:
+        row = self.conn.execute(
+            "SELECT COALESCE(SUM(length(text)), 0) AS n FROM source WHERE notebook_id = ?",
+            (_owned(notebook),),
+        ).fetchone()
+        return int(row["n"])
+
     def owned_source(self, sid: str, source_id: str, with_text: bool = False) -> sqlite3.Row | None:
         columns = f"{SOURCE_COLUMNS}, s.text" if with_text else SOURCE_COLUMNS
         return self.conn.execute(
@@ -237,13 +262,15 @@ class Repo:
             (notebook_id, *ids),
         ).fetchall()
 
-    def insert_source(self, new: NewSource, limit: int | None = None) -> str:
+    def insert_source(self, new: NewSource, limit: int | None = None, char_limit: int | None = None) -> str:
         if len(new.chunks) != len(new.vectors):
             raise ValueError("every chunk needs exactly one vector")
         source_id = new_id()
         with transaction(self.conn):
             if limit is not None and self.count_sources(new.notebook) >= limit:
                 raise sources_full(limit)
+            if char_limit is not None and self.count_chars(new.notebook) + len(new.text) > char_limit:
+                raise characters_full(char_limit)
             self.conn.execute(
                 "INSERT INTO source (id, notebook_id, title, kind, bytes, pages, page_starts_json, "
                 "warnings_json, metadata_json, metadata_origin, text, file_path, created_at) "
@@ -402,12 +429,14 @@ class Repo:
         search_query: str | None,
         lineage: Collection[str],
         status: str,
-    ) -> str:
-        """Store a turn. `lineage` names every source the turn's text depends on."""
+    ) -> Stored:
+        """Store a turn. `lineage` names every source the turn's text depends on. Returns what
+        was stored: callers answer with that, never with text the store discarded."""
         notebook_id = _owned(notebook)
         turn_id = new_id()
         now = utcnow()
         with transaction(self.conn):
+            self._require_notebook(notebook_id)
             if not self._all_sources_exist(notebook_id, lineage):
                 # A source was deleted while the model was answering: keep no derived text.
                 question, answer, search_query, lineage, status = "", {}, None, [], TOMBSTONE
@@ -430,7 +459,12 @@ class Repo:
                     now,
                 ),
             )
-        return turn_id
+        return Stored(turn_id, status)
+
+    def _require_notebook(self, notebook_id: str) -> None:
+        """Inside a write: the notebook was not deleted while its content was generated."""
+        if self.conn.execute("SELECT 1 FROM notebook WHERE id = ?", (notebook_id,)).fetchone() is None:
+            raise notebook_gone()
 
     def list_turns(self, notebook: OwnedNotebook) -> list[sqlite3.Row]:
         """One row per turn: question, answer JSON, search query, lineage and status."""
@@ -451,11 +485,13 @@ class Repo:
         output: dict[str, Any],
         lineage: Collection[str],
         status: str,
-    ) -> str:
-        """Store a Studio output. `lineage` names every source its text depends on."""
+    ) -> Stored:
+        """Store a Studio output. `lineage` names every source its text depends on. Returns
+        what was stored (see add_turn)."""
         output_id = new_id()
         notebook_id = _owned(notebook)
         with transaction(self.conn):
+            self._require_notebook(notebook_id)
             if not self._all_sources_exist(notebook_id, lineage):
                 input_text, output, lineage, status = None, {}, [], TOMBSTONE
             self.conn.execute(
@@ -472,7 +508,7 @@ class Repo:
                     utcnow(),
                 ),
             )
-        return output_id
+        return Stored(output_id, status)
 
     def list_outputs(self, notebook: OwnedNotebook) -> list[sqlite3.Row]:
         return self.conn.execute(

@@ -40,6 +40,7 @@ class TurnResult:
     question: str
     search_query: str | None
     answer: dict[str, Any]
+    status: str = "ok"
 
 
 def history_turns(turns: list[sqlite3.Row], limit: int = 2) -> list[tuple[str, str, set[str]]]:
@@ -174,5 +175,8 @@ def _store(
 ) -> TurnResult:
     """Persist the turn with its lineage: every selected source and the sources behind the
     history used for a rewrite, so deleting any of them removes the turn (S-05)."""
-    turn_id = services.repo.add_turn(notebook, question, answer, search_query, lineage, "ok")
-    return TurnResult(turn_id, question, search_query, answer)
+    stored = services.repo.add_turn(notebook, question, answer, search_query, lineage, "ok")
+    if stored.status == TOMBSTONE:
+        # A source was deleted while the model was answering: answer with what was stored.
+        return TurnResult(stored.id, "", None, {"kind": "tombstone"}, TOMBSTONE)
+    return TurnResult(stored.id, question, search_query, answer)
