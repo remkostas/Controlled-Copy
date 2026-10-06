@@ -185,8 +185,10 @@ G-01 to G-06 (generic path) and E-01 to E-14 (governed path), specified in demo-
 
 | TC | Input | Expected |
 | :--- | :--- | :--- |
-| TC-LIVE-001 | Health endpoint, landing page, certificate | 200, valid certificate |
-| TC-LIVE-002 | Journey A and B, short version, against the live URL | Works; run twice before recording |
+| TC-LIVE-001 | Health endpoint, landing page, security headers, wrong access code; on https also HSTS, certificate and the http redirect | 200, headers present, no server banner, 401, valid certificate, redirect to https |
+| TC-LIVE-002 | Journey A (paste, cited answer, refusal), the model picker, Journey B (a card on the curated workspace, Markdown export) with the real model | Works; run twice before recording |
+
+Run: `LIVE_URL=https://<domain> LIVE_ACCESS_CODE=<code> pytest -m smoke_live tests/live` (`tests/live/test_live_smoke.py`). Without the two variables both tests skip.
 
 ## 3. Gates
 
