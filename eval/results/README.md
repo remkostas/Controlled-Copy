@@ -11,7 +11,8 @@ Each run writes a `.json` file (every case, every check) and a `.md` summary. A 
 
 ## Exploratory (code version not recorded)
 
-These runs happened during development, before result files recorded their code version. Some ran between changes to the cases, the prompts or the scorer, so they cannot be reproduced exactly. They stay here as a record of what was measured at the time, misses included, not as release evidence.
+These runs happened during development, before result files recorded their code version. Some ran between changes to the cases, the prompts or the scorer, so they cannot be reproduced exactly. All governed and held-out runs here also predate the action checks (`must_say`, `must_not_say`). They stay here as a record of what was measured at the time, misses included, not as release evidence.
 
 - `2026-10-05_2218-bakeoff`, `2026-10-06_0610-bakeoff`: the embedding and generation model comparisons.
 - `2026-10-05_2224`, `2026-10-05_2226`, `2026-10-05_2304`, `2026-10-05_2319` and `2026-10-06_0820` `-openai_gpt-6-luna-generic`: earlier generic runs.
+- Every `-governed`, `-governed-subset`, `-holdout` and `-holdout-subset` file dated 2026-10-05 or 2026-10-06 before 07:00 UTC: Resolution Card runs while the card prompt and the cases were tuned, and the first fallback comparisons (Gemini 3.5 Flash Lite, Gemini 3.8 Flash, Claude Haiku 4.5, GPT-6 Luna Pro). The `openai_no-such-model-smoke` files check that an unknown model fails cleanly; they are not quality results.

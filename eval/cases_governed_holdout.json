@@ -1,4 +1,5 @@
 {
+  "action_checks": "Action checks added on 2026-10-06 after the full audit (EVAL-01): must_say and must_not_say are regular expressions over the statements the card shows, never over the quotes. They were written from the corpus text and the expected column of the case specification, then checked against stored outputs only to make sure correct wording is not rejected.",
   "note": "Held-out paraphrases, written on 2026-10-05 after the Resolution Card prompt was tuned on E-01 to E-14 and before any run of these cases. Expectations come from the corpus text only. Correction after the first run (2026-10-05 23:51): H-03 assumed GR-512 is undocumented, but GUIDE-WMS-003 documents it (Duplicate receipt warning); the app answered correctly and the case was wrong. H-03 now expects that answer, and H-11 (GR-777, absent from every document, checked with grep) takes over the undocumented-code check.",
   "corpus": "demo-data/inbound-operations",
   "extra": "eval/corpus-extra/SUP-NOTE-118_supplier-delivery-advice.md",
@@ -26,6 +27,37 @@
       "expected_warning": null,
       "expected_statement_types": [
         "requirement"
+      ],
+      "must_say": [
+        {
+          "what": "post the counted quantity",
+          "any": [
+            "\\bcounted quantity\\b",
+            "\\bas counted\\b",
+            "\\bpost\\w*\\b[^.;:]*\\b99\\b"
+          ]
+        },
+        {
+          "what": "with a note in the goods receipt",
+          "any": [
+            "\\bnote\\b",
+            "\\brecord\\w*\\b[^.;:]*\\b(?:deviation|reason)"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "post the ordered quantity",
+          "any": [
+            "\\bpost\\w*\\b{gap}\\bordered quantity\\b"
+          ]
+        },
+        {
+          "what": "the shortfall is above tolerance",
+          "any": [
+            "\\b(?:shortfall|deviation|difference|it|this|1 unit|one unit|1 piece|one piece)\\b (?:is|exceeds|falls|lies) (?:\\w+ )?(?:above|outside|beyond|over|more than) (?:the )?tolerance"
+          ]
+        }
       ]
     },
     {
@@ -44,6 +76,35 @@
       "expected_warning": null,
       "expected_statement_types": [
         "requirement"
+      ],
+      "must_say": [
+        {
+          "what": "do not post",
+          "any": [
+            "\\b(?:not|never|cannot|can't|don't|mustn't|prohibited|forbidden)\\b[^.;:]*\\bpost"
+          ]
+        },
+        {
+          "what": "move it to OD-01",
+          "any": [
+            "\\bod-01\\b",
+            "\\bover-delivery area\\b"
+          ]
+        },
+        {
+          "what": "inform purchasing",
+          "any": [
+            "\\bpurchasing\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "post against another order line",
+          "any": [
+            "\\bpost\\w*\\b{gap}\\b(?:another|a different|other|a second) (?:open )?(?:purchase order )?line\\b"
+          ]
+        }
       ]
     },
     {
@@ -62,6 +123,37 @@
       "expected_warning": null,
       "expected_statement_types": [
         "requirement"
+      ],
+      "must_say": [
+        {
+          "what": "check the existing goods receipt",
+          "any": [
+            "\\bexisting (?:goods )?receipt\\b",
+            "\\bcheck\\w*\\b[^.;:]*\\b(?:existing|earlier|previous|duplicate)\\b"
+          ]
+        },
+        {
+          "what": "with the shift lead",
+          "any": [
+            "\\bshift lead\\b"
+          ]
+        },
+        {
+          "what": "stop before posting again",
+          "any": [
+            "\\bstop\\b",
+            "\\bbefore posting\\b",
+            "\\b(?:not|never|cannot|can't|don't|mustn't|prohibited|forbidden)\\b[^.;:]*\\b(?:post|confirm)"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "confirm the warning",
+          "any": [
+            "\\bconfirm\\w*\\b{gap}\\bwarning\\b"
+          ]
+        }
       ]
     },
     {
@@ -81,6 +173,42 @@
       "expected_warning": null,
       "expected_statement_types": [
         "requirement"
+      ],
+      "must_say": [
+        {
+          "what": "the conflict names accepting the delivery",
+          "any": [
+            "\\baccept"
+          ],
+          "types": [
+            "conflict"
+          ]
+        },
+        {
+          "what": "the conflict names refusing the delivery",
+          "any": [
+            "\\brefus",
+            "\\breject"
+          ],
+          "types": [
+            "conflict"
+          ]
+        },
+        {
+          "what": "escalate to the process owner or QA",
+          "any": [
+            "\\bprocess owner\\b",
+            "\\bqa\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "a verdict that the receipt can go ahead",
+          "any": [
+            "\\byou (?:can|may) (?:complete|post)\\b"
+          ]
+        }
       ]
     },
     {
@@ -99,6 +227,47 @@
       "expected_warning": null,
       "expected_statement_types": [
         "requirement"
+      ],
+      "must_say": [
+        {
+          "what": "move it to quarantine Q-01",
+          "any": [
+            "\\bq-01\\b",
+            "\\bquarantine\\b"
+          ]
+        },
+        {
+          "what": "post it to blocked stock",
+          "any": [
+            "\\bblocked stock\\b"
+          ]
+        },
+        {
+          "what": "notify the QA inspector",
+          "any": [
+            "\\bqa inspector\\b"
+          ]
+        },
+        {
+          "what": "do not open the wet packaging",
+          "any": [
+            "\\b(?:not|never|cannot|can't|don't|mustn't|prohibited|forbidden)\\b[^.;:]*\\bopen"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "open the packaging",
+          "any": [
+            "\\bopen\\w*\\b{gap}\\b(?:packaging|carton|box)"
+          ]
+        },
+        {
+          "what": "post it to unrestricted stock",
+          "any": [
+            "\\bpost\\w*\\b{gap}\\bunrestricted stock\\b"
+          ]
+        }
       ]
     },
     {
@@ -133,6 +302,35 @@
       "expected_warning": true,
       "expected_statement_types": [
         "requirement"
+      ],
+      "must_say": [
+        {
+          "what": "the operator does not type the number in",
+          "any": [
+            "\\b(?:not|never|cannot|can't|don't|mustn't|prohibited|forbidden)\\b[^.;:]*\\b(?:enter|type|key)\\w*",
+            "\\bonly (?:a |the )?shift lead\\b"
+          ]
+        },
+        {
+          "what": "the shift lead does it",
+          "any": [
+            "\\bshift lead\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "the operator may type it in",
+          "any": [
+            "\\b(?:you|operators?|warehouse operators?) (?:may|can|are allowed to|is allowed to) (?:(?!not\\b|never\\b)\\w+ )?(?:type|enter|key)\\b"
+          ]
+        },
+        {
+          "what": "no second check",
+          "any": [
+            "\\bno longer (?:required|needed)\\b"
+          ]
+        }
       ]
     },
     {
@@ -151,6 +349,65 @@
       "expected_warning": null,
       "expected_statement_types": [
         "requirement"
+      ],
+      "must_say": [
+        {
+          "what": "stop unloading",
+          "any": [
+            "\\bstop\\w*\\b[^.;:]*\\bunload",
+            "\\bunload\\w*\\b[^.;:]*\\b(?:stop|halt)",
+            "\\bstop (?:work|immediately|at once)\\b",
+            "\\bhalt\\w*\\b"
+          ]
+        },
+        {
+          "what": "isolate the area and keep people away",
+          "any": [
+            "\\bisolat",
+            "\\bcordon",
+            "\\bkeep (?:other |all )?(?:people|persons|others|everyone|staff) away\\b"
+          ]
+        },
+        {
+          "what": "notify the QA lead",
+          "any": [
+            "\\bqa lead\\b",
+            "\\bquality assurance lead\\b"
+          ]
+        },
+        {
+          "what": "notify EHS",
+          "any": [
+            "\\behs\\b",
+            "\\benvironment(?:al)?,? health and safety\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "keep unloading",
+          "any": [
+            "\\b(?:continue|keep|carry on|resume|proceed)\\w*\\b{gap}\\bunload"
+          ]
+        },
+        {
+          "what": "leave out QA or EHS",
+          "any": [
+            "\\b(?:do not|don't|never|no need to|not)(?: (?:need|have|bother|try))?(?: to)? (?:contact|notify|inform|call|tell|alert)\\w*\\b[^.;:]*\\b(?:qa|ehs)\\b"
+          ]
+        },
+        {
+          "what": "post the leaking material",
+          "any": [
+            "\\bpost\\w*\\b{gap}\\b(?:unrestricted stock|the leaking)\\b"
+          ]
+        },
+        {
+          "what": "touch or open the material",
+          "any": [
+            "\\b(?:touch|open)\\w*\\b{gap}\\b(?:carton|material|packaging|liquid)\\b"
+          ]
+        }
       ]
     },
     {
@@ -169,6 +426,31 @@
       "expected_warning": null,
       "expected_statement_types": [
         "missing_evidence"
+      ],
+      "must_say": [
+        {
+          "what": "asks about the packaging",
+          "any": [
+            "\\bpackaging\\b",
+            "\\bseal\\b",
+            "\\bwet\\b",
+            "\\bmoisture\\b"
+          ],
+          "types": [
+            "missing_evidence"
+          ]
+        },
+        {
+          "what": "asks about the product itself",
+          "any": [
+            "\\bproduct\\b",
+            "\\bcontents?\\b",
+            "\\bparts?\\b"
+          ],
+          "types": [
+            "missing_evidence"
+          ]
+        }
       ]
     },
     {
@@ -186,7 +468,16 @@
         "expert_confirmation"
       ],
       "expected_warning": true,
-      "expected_statement_types": []
+      "expected_statement_types": [],
+      "must_not_say": [
+        {
+          "what": "permission to put it in A-12",
+          "any": [
+            "\\b(?:can|may|should)\\b{gap}\\b(?:store|put|place)\\w*\\b{gap}\\ba-12\\b",
+            "\\ba-12\\b{gap}\\b(?:is|are) (?:for|suitable|allowed|permitted|reserved)\\b"
+          ]
+        }
+      ]
     },
     {
       "case_id": "H-11",
@@ -203,7 +494,37 @@
       ],
       "expected_warning": null,
       "expected_statement_types": [],
-      "undocumented_identifier": "GR-777"
+      "undocumented_identifier": "GR-777",
+      "must_say": [
+        {
+          "what": "stop and do not post or override",
+          "any": [
+            "\\bstop\\b",
+            "\\b(?:not|never|cannot|can't|don't|mustn't|prohibited|forbidden)\\b[^.;:]*\\b(?:post|overrid)"
+          ]
+        },
+        {
+          "what": "contact the WMS key user",
+          "any": [
+            "\\bwms key user\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "a meaning for GR-777",
+          "any": [
+            "\\bgr-777\\b (?:means|indicates|stands for|signals|refers to)\\b"
+          ]
+        },
+        {
+          "what": "override the error",
+          "any": [
+            "\\boverrid\\w*\\b{gap}\\b(?:error|warning|code)\\b",
+            "\\bmanual(?:ly)? post\\w*"
+          ]
+        }
+      ]
     }
   ]
 }

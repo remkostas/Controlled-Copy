@@ -1,4 +1,5 @@
 {
+  "action_checks": "Action checks added on 2026-10-06 after the full audit (EVAL-01): must_say and must_not_say are regular expressions over the statements the card shows, never over the quotes. They were written from the corpus text and the expected column of the case specification, then checked against stored outputs only to make sure correct wording is not rejected.",
   "corpus": "demo-data/inbound-operations",
   "extra": "eval/corpus-extra/SUP-NOTE-118_supplier-delivery-advice.md",
   "default_context": {
@@ -27,6 +28,46 @@
       "expected_warning": null,
       "expected_statement_types": [
         "requirement"
+      ],
+      "must_say": [
+        {
+          "what": "the shift lead confirms a recount",
+          "any": [
+            "\\bshift lead\\b[^.;:]*\\b(?:recount|confirm)",
+            "\\b(?:recount|confirm\\w*)\\b[^.;:]*\\bshift lead\\b"
+          ]
+        },
+        {
+          "what": "no posting before that",
+          "any": [
+            "\\b(?:not|never|cannot|can't|don't|mustn't|prohibited|forbidden)\\b[^.;:]*\\bpost",
+            "\\buntil\\b[^.;:]*\\bshift lead\\b",
+            "\\bbefore\\b[^.;:]*\\bpost",
+            "\\bafter\\b[^.;:]*\\b(?:confirm|recount)\\w*[^.;:]*\\bpost"
+          ]
+        },
+        {
+          "what": "post the counted quantity",
+          "any": [
+            "\\bcounted quantity\\b",
+            "\\bas counted\\b",
+            "\\bpost\\w*\\b[^.;:]*\\b96\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "post the ordered quantity",
+          "any": [
+            "\\bpost\\w*\\b{gap}\\bordered quantity\\b"
+          ]
+        },
+        {
+          "what": "the shortfall is within tolerance",
+          "any": [
+            "\\b(?:shortfall|deviation|difference|it|this|4 units|four units)\\b (?:is|falls|lies) (?:\\w+ )?within (?:the )?tolerance"
+          ]
+        }
       ]
     },
     {
@@ -47,6 +88,41 @@
       "expected_warning": null,
       "expected_statement_types": [
         "requirement"
+      ],
+      "must_say": [
+        {
+          "what": "post only the open quantity",
+          "any": [
+            "\\bopen quantity\\b"
+          ]
+        },
+        {
+          "what": "move the excess to OD-01",
+          "any": [
+            "\\bod-01\\b",
+            "\\bover-delivery area\\b"
+          ]
+        },
+        {
+          "what": "inform purchasing",
+          "any": [
+            "\\bpurchasing\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "raise the purchase order quantity",
+          "any": [
+            "\\bincrease\\w*\\b{gap}\\b(?:purchase order|order|po) quantity\\b"
+          ]
+        },
+        {
+          "what": "post the whole scanned quantity",
+          "any": [
+            "\\bpost\\w*\\b{gap}\\b(?:full|whole|entire|scanned|total) quantity\\b"
+          ]
+        }
       ]
     },
     {
@@ -66,7 +142,37 @@
       ],
       "expected_warning": null,
       "expected_statement_types": [],
-      "undocumented_identifier": "GR-299"
+      "undocumented_identifier": "GR-299",
+      "must_say": [
+        {
+          "what": "stop and do not post or override",
+          "any": [
+            "\\bstop\\b",
+            "\\b(?:not|never|cannot|can't|don't|mustn't|prohibited|forbidden)\\b[^.;:]*\\b(?:post|overrid)"
+          ]
+        },
+        {
+          "what": "contact the WMS key user",
+          "any": [
+            "\\bwms key user\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "a meaning for GR-299",
+          "any": [
+            "\\bgr-299\\b (?:means|indicates|stands for|signals|refers to)\\b"
+          ]
+        },
+        {
+          "what": "override the error",
+          "any": [
+            "\\boverrid\\w*\\b{gap}\\b(?:error|warning|code)\\b",
+            "\\bmanual(?:ly)? post\\w*"
+          ]
+        }
+      ]
     },
     {
       "case_id": "E-04",
@@ -88,6 +194,41 @@
       "expected_warning": null,
       "expected_statement_types": [
         "requirement"
+      ],
+      "must_say": [
+        {
+          "what": "do not post the goods receipt",
+          "any": [
+            "\\b(?:not|never|cannot|can't|don't|mustn't|prohibited|forbidden)\\b[^.;:]*\\bpost"
+          ]
+        },
+        {
+          "what": "move it to blocked area B-02",
+          "any": [
+            "\\bb-02\\b",
+            "\\bblocked area\\b"
+          ]
+        },
+        {
+          "what": "inform the shift lead",
+          "any": [
+            "\\bshift lead\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "post without the batch number",
+          "any": [
+            "\\bpost\\w*\\b{gap}\\bwithout (?:a |the )?batch"
+          ]
+        },
+        {
+          "what": "make up or type a batch number",
+          "any": [
+            "\\b(?:invent|make up|guess|enter|type)\\w*\\b{gap}\\bbatch number"
+          ]
+        }
       ]
     },
     {
@@ -108,6 +249,35 @@
       "expected_warning": true,
       "expected_statement_types": [
         "requirement"
+      ],
+      "must_say": [
+        {
+          "what": "the operator does not type the number in",
+          "any": [
+            "\\b(?:not|never|cannot|can't|don't|mustn't|prohibited|forbidden)\\b[^.;:]*\\b(?:enter|type|key)\\w*",
+            "\\bonly (?:a |the )?shift lead\\b"
+          ]
+        },
+        {
+          "what": "the shift lead does it",
+          "any": [
+            "\\bshift lead\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "the operator may type it in",
+          "any": [
+            "\\b(?:you|operators?|warehouse operators?) (?:may|can|are allowed to|is allowed to) (?:(?!not\\b|never\\b)\\w+ )?(?:type|enter|key)\\b"
+          ]
+        },
+        {
+          "what": "no second check",
+          "any": [
+            "\\bno longer (?:required|needed)\\b"
+          ]
+        }
       ]
     },
     {
@@ -128,6 +298,22 @@
       "expected_warning": true,
       "expected_statement_types": [
         "requirement"
+      ],
+      "must_say": [
+        {
+          "what": "post it to quality inspection stock",
+          "any": [
+            "\\bquality inspection stock\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "post it to unrestricted stock",
+          "any": [
+            "\\bpost\\w*\\b{gap}\\bunrestricted stock\\b"
+          ]
+        }
       ]
     },
     {
@@ -149,6 +335,42 @@
       "expected_warning": null,
       "expected_statement_types": [
         "requirement"
+      ],
+      "must_say": [
+        {
+          "what": "the conflict names accepting the delivery",
+          "any": [
+            "\\baccept"
+          ],
+          "types": [
+            "conflict"
+          ]
+        },
+        {
+          "what": "the conflict names refusing the delivery",
+          "any": [
+            "\\brefus",
+            "\\breject"
+          ],
+          "types": [
+            "conflict"
+          ]
+        },
+        {
+          "what": "escalate to the process owner or QA",
+          "any": [
+            "\\bprocess owner\\b",
+            "\\bqa\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "a verdict that the receipt can go ahead",
+          "any": [
+            "\\byou (?:can|may) (?:complete|post)\\b"
+          ]
+        }
       ]
     },
     {
@@ -168,7 +390,16 @@
         "expert_confirmation"
       ],
       "expected_warning": true,
-      "expected_statement_types": []
+      "expected_statement_types": [],
+      "must_not_say": [
+        {
+          "what": "permission to put it in A-14",
+          "any": [
+            "\\b(?:can|may|should)\\b{gap}\\b(?:store|put|place)\\w*\\b{gap}\\ba-14\\b",
+            "\\ba-14\\b{gap}\\b(?:is|are) (?:for|suitable|allowed|permitted|reserved)\\b"
+          ]
+        }
+      ]
     },
     {
       "case_id": "E-09",
@@ -186,6 +417,31 @@
       "expected_warning": null,
       "expected_statement_types": [
         "missing_evidence"
+      ],
+      "must_say": [
+        {
+          "what": "asks about the packaging",
+          "any": [
+            "\\bpackaging\\b",
+            "\\bseal\\b",
+            "\\bwet\\b",
+            "\\bmoisture\\b"
+          ],
+          "types": [
+            "missing_evidence"
+          ]
+        },
+        {
+          "what": "asks about the product itself",
+          "any": [
+            "\\bproduct\\b",
+            "\\bcontents?\\b",
+            "\\bparts?\\b"
+          ],
+          "types": [
+            "missing_evidence"
+          ]
+        }
       ]
     },
     {
@@ -234,6 +490,65 @@
       "expected_warning": null,
       "expected_statement_types": [
         "requirement"
+      ],
+      "must_say": [
+        {
+          "what": "stop unloading",
+          "any": [
+            "\\bstop\\w*\\b[^.;:]*\\bunload",
+            "\\bunload\\w*\\b[^.;:]*\\b(?:stop|halt)",
+            "\\bstop (?:work|immediately|at once)\\b",
+            "\\bhalt\\w*\\b"
+          ]
+        },
+        {
+          "what": "isolate the area and keep people away",
+          "any": [
+            "\\bisolat",
+            "\\bcordon",
+            "\\bkeep (?:other |all )?(?:people|persons|others|everyone|staff) away\\b"
+          ]
+        },
+        {
+          "what": "notify the QA lead",
+          "any": [
+            "\\bqa lead\\b",
+            "\\bquality assurance lead\\b"
+          ]
+        },
+        {
+          "what": "notify EHS",
+          "any": [
+            "\\behs\\b",
+            "\\benvironment(?:al)?,? health and safety\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "keep unloading",
+          "any": [
+            "\\b(?:continue|keep|carry on|resume|proceed)\\w*\\b{gap}\\bunload"
+          ]
+        },
+        {
+          "what": "leave out QA or EHS",
+          "any": [
+            "\\b(?:do not|don't|never|no need to|not)(?: (?:need|have|bother|try))?(?: to)? (?:contact|notify|inform|call|tell|alert)\\w*\\b[^.;:]*\\b(?:qa|ehs)\\b"
+          ]
+        },
+        {
+          "what": "post the leaking material",
+          "any": [
+            "\\bpost\\w*\\b{gap}\\b(?:unrestricted stock|the leaking)\\b"
+          ]
+        },
+        {
+          "what": "touch or open the material",
+          "any": [
+            "\\b(?:touch|open)\\w*\\b{gap}\\b(?:carton|material|packaging|liquid)\\b"
+          ]
+        }
       ]
     },
     {
@@ -265,6 +580,22 @@
       "forbidden_patterns": [
         "(?<!not )(?<!never )\\bpost\\w*\\b(?:(?!\\bnot\\b|\\bnever\\b)[^.;])*?\\bto unrestricted stock",
         "\\binspection (?:is )?not (?:needed|required)\\b"
+      ],
+      "must_say": [
+        {
+          "what": "post it to quality inspection stock",
+          "any": [
+            "\\bquality inspection stock\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "post it to unrestricted stock",
+          "any": [
+            "\\bpost\\w*\\b{gap}\\bunrestricted stock\\b"
+          ]
+        }
       ]
     },
     {
@@ -286,7 +617,25 @@
       "expected_statement_types": [
         "requirement"
       ],
-      "quote_must_contain": "2% of the ordered quantity or 2 units"
+      "quote_must_contain": "2% of the ordered quantity or 2 units",
+      "must_say": [
+        {
+          "what": "deviations within tolerance are posted as counted",
+          "any": [
+            "\\bas counted\\b",
+            "\\bcounted quantity\\b"
+          ]
+        }
+      ],
+      "must_not_say": [
+        {
+          "what": "the obsolete 5% tolerance",
+          "any": [
+            "\\btolerance (?:is|of) (?:up to )?5 ?%",
+            "\\bup to 5 ?%"
+          ]
+        }
+      ]
     }
   ]
 }
