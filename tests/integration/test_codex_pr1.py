@@ -186,3 +186,8 @@ def test_healthz_reports_a_database_that_cannot_be_opened(settings, tmp_path):
         app.state.settings = settings.model_copy(update={"data_dir": tmp_path / "missing" / "dir"})
         broken = client.get("/healthz")
         assert broken.status_code == 503 and broken.json() == {"status": "database unavailable"}
+
+
+def test_pages_ask_search_engines_not_to_index_the_demo(visitor):
+    for path in ("/", "/app", "/healthz"):
+        assert visitor.client.get(path).headers["x-robots-tag"] == "noindex, nofollow"
