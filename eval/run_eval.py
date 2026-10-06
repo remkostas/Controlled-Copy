@@ -69,17 +69,21 @@ def check_answer(
     reasons += verify_citations(app, citations, texts)
     if case["expected_pages"] and not (cited_pages(citations) & set(case["expected_pages"])):
         reasons.append(f"no citation from expected pages {case['expected_pages']}")
-    haystack = (
-        " ".join(s["text"] for s in answer["statements"]) + " " + " ".join(c["quote"] for c in citations)
-    )
-    haystack = re.sub(r"\s+", " ", haystack.lower().replace("-\n", "").replace("- ", ""))
-    found = [k for k in case["keywords"] if k.lower() in haystack]
+    # The expected terms must be in what the answer says, not only in its quotes: a quote can
+    # contain the right words while the statement next to it says something else (EVAL-01).
+    said = " ".join(s["text"] for s in answer["statements"])
+    said = re.sub(r"\s+", " ", said.lower().replace("-\n", "").replace("- ", ""))
+    found = [k for k in case["keywords"] if k.lower() in said]
     record["keywords_found"] = f"{len(found)}/{len(case['keywords'])}"
     if len(found) < case["min_keywords"]:
         reasons.append(f"only {len(found)} of {case['min_keywords']} required terms present")
     must = case.get("quote_must_contain")
     if must and not any(must.lower() in re.sub(r"\s+", " ", c["quote"].lower()) for c in citations):
         reasons.append(f"no quote contains '{must}'")
+    # The full answer is kept for a human read: whether a quote supports its statement is not
+    # checked mechanically.
+    record["said"] = [s["text"] for s in answer["statements"]]
+    record["quotes"] = [{"n": c["n"], "label": c["label"], "quote": c["quote"]} for c in citations]
     return {**record, "reasons": reasons}
 
 
