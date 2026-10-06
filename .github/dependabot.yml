@@ -1,4 +1,6 @@
-# Weekly pull requests for newer CI actions and base images. Python dependencies are locked
+# Weekly pull requests for newer CI actions and for new image versions in the Dockerfile and
+# compose.yml (for example a new Caddy minor release). Patch-level fixes within a tag arrive
+# with every `build --pull`, which the deployment guide uses. Python dependencies are locked
 # with hashes by uv (`uv pip compile --upgrade --generate-hashes`), see the README.
 version: 2
 updates:
@@ -7,6 +9,10 @@ updates:
     schedule:
       interval: weekly
   - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker-compose
     directory: /
     schedule:
       interval: weekly

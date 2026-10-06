@@ -21,6 +21,7 @@ GOOD = dict(
     ("change", "fragment"),
     [
         ({"app_access_code": None}, "APP_ACCESS_CODE"),
+        ({"app_access_code": "eleven-char"}, "at least 12 characters"),
         ({"app_secret_key": None}, "APP_SECRET_KEY"),
         ({"app_secret_key": "short"}, "APP_SECRET_KEY"),
         ({"app_debug": True}, "APP_DEBUG"),

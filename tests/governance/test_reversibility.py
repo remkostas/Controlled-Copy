@@ -124,3 +124,40 @@ def test_layer_outputs_are_not_half_rendered_with_the_layer_off(settings):
     with TestClient(off, cookies=cookies) as client:
         page = client.get(f"/app?nb={notebook_id}").text
         assert "made by a feature that is switched off" in page
+
+
+def test_tc_rev_002_the_stage_1_journey_runs_on_a_migrated_and_seeded_database(settings):
+    """Codex Stage 2 review S2-3: not only additive migrations, but the core's paste, ask,
+    delete and purge working on a database that went through the layer and its seeding."""
+    from datetime import UTC, datetime, timedelta
+
+    from controlled_copy.purge import purge
+    from controlled_copy.storage.db import connect
+    from controlled_copy.storage.repo import Repo
+    from tests.conftest import Visitor
+    from tests.helpers.responders import quote_passage_containing
+
+    on = create_app(settings, FakeProvider(), run_purge=False)
+    with TestClient(on) as client:
+        client.post("/access", data={"code": ACCESS_CODE}, follow_redirects=False)
+        assert "Inbound Operations" in client.get("/app").text  # migrated and seeded
+    fake = FakeProvider()
+    off = create_app(settings.model_copy(update={"feature_governance": False}), fake, run_purge=False)
+    with TestClient(off) as client:
+        visitor = Visitor(client).login()
+        visitor.paste("Dock rule", "Wet cartons go to quarantine area Q-01 at once.")
+        fake.responder = quote_passage_containing("Wet cartons go to quarantine area Q-01")
+        answer = visitor.ask("Where do wet cartons go?")
+        assert answer.status_code == 200 and answer.json()["answer"]["kind"] == "answer"
+        deleted = client.delete(f"/sources/{visitor.sources[0]}", headers=visitor.json_headers())
+        assert deleted.status_code == 200
+    conn = connect(settings.db_path)
+    try:
+        result = purge(
+            settings, Repo(conn), datetime.now(UTC) + timedelta(hours=settings.retention_hours + 1)
+        )
+        assert result.sessions == 2
+        assert conn.execute("SELECT COUNT(*) FROM notebook").fetchone()[0] == 0, "workspace copies purged too"
+        assert conn.execute("SELECT COUNT(*) FROM source").fetchone()[0] == 0
+    finally:
+        conn.close()

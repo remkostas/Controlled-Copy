@@ -1,9 +1,9 @@
 """TC-LIVE-001 and TC-LIVE-002: checks against a running instance (deployed or local).
 
-Manual, never in CI: `LIVE_URL=https://demo.example LIVE_ACCESS_CODE=... pytest -m smoke_live tests/live`.
-TC-LIVE-001 makes no model calls. TC-LIVE-002 drives both journeys in a real browser with the
-real model (a few cents); run it twice before recording. It uses its own session, so the
-demo data of other visitors is untouched.
+Run: `LIVE_URL=https://demo.example LIVE_ACCESS_CODE=... pytest -m smoke_live tests/live`.
+TC-LIVE-001 makes no model calls; it also runs in CI against the local container stack.
+TC-LIVE-002 drives both journeys in a real browser with the real model (a few cents); run
+it twice before recording. It uses its own session, so other visitors' data is untouched.
 """
 
 from __future__ import annotations

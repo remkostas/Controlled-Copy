@@ -8,6 +8,7 @@ import json
 import re
 import secrets
 import shutil
+import subprocess
 import tempfile
 import urllib.request
 from pathlib import Path
@@ -21,6 +22,38 @@ from controlled_copy.config import AppMode, Settings
 
 ROOT = Path(__file__).resolve().parents[1]
 EVAL = ROOT / "eval"
+
+
+def provenance(case_file: Path) -> dict[str, Any]:
+    """Which code and which cases produced a result: the commit, whether tracked files had
+    uncommitted changes, and a hash of the case file. Written into every result file."""
+
+    def git(*args: str) -> str:
+        try:
+            done = subprocess.run(  # noqa: S603 - fixed git arguments, no shell
+                ["git", *args],  # noqa: S607 - git from PATH
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=True,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return ""
+        return done.stdout.strip()
+
+    return {
+        "commit": git("rev-parse", "HEAD") or "unknown",
+        "dirty": bool(git("status", "--porcelain", "--untracked-files=no")),
+        "cases_sha256": hashlib.sha256(case_file.read_bytes()).hexdigest()[:16],
+    }
+
+
+def provenance_line(info: dict[str, Any]) -> str:
+    dirty = ", with uncommitted changes" if info["dirty"] else ""
+    return f"Code `{info['commit'][:10]}`{dirty}; case file sha256 `{info['cases_sha256']}`."
+
+
 CACHE = EVAL / ".cache"
 CSRF_RE = re.compile(r'"X-CSRF-Token": "([^"]+)"')
 NOTEBOOK_RE = re.compile(r'hx-post="/notebooks/([^/"]+)/ask"')

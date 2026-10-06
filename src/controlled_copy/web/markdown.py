@@ -18,12 +18,18 @@ from controlled_copy.web.views import TYPE_LABELS, model_label, time_label
 # escaped, so a pasted export cannot render links, images or HTML that a hostile source
 # steered the model into writing.
 _MARKDOWN = re.compile(r"([\\`*_\[\]<>])")
+# Bare URLs are auto-linked by GitHub-flavoured renderers; breaking the scheme and "www."
+# keeps them as text (Codex Stage 3 review, S3-5).
+_AUTOLINK = re.compile(r"(?i)\b(https?|ftp)://|\bwww\.")
 
 
 def clean(text: Any) -> str:
     """One line of plain, escaped text: no line breaks that would break a list item or table
     row, no Markdown or HTML syntax."""
-    return _MARKDOWN.sub(r"\\\1", " ".join(str(text or "").split()))
+    text = _MARKDOWN.sub(r"\\\1", " ".join(str(text or "").split()))
+    text = _AUTOLINK.sub(lambda m: f"{m.group(1)}\\://" if m.group(1) else "www\\.", text)
+    # A leading "#" would make an item a heading.
+    return "\\" + text if text.startswith("#") else text
 
 
 def cell(text: Any) -> str:

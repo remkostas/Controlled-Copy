@@ -292,3 +292,57 @@ def test_tc_gov_003_revision_prefixes_and_lookalike_ids():
     assert rules.revision_key("v1") < rules.revision_key("2")
     assert rules.revision_key("rev. 10") == rules.revision_key("10")
     assert rules.document_key("SOP​-INB-001") == rules.document_key("ＳＯＰ-INB-001") == "sop-inb-001"
+
+
+def test_s2_1_the_guard_uses_the_notebook_not_the_selection():
+    upload = rules.document_from(
+        "upload",
+        "Supplier note",
+        {
+            "document_id": "sop-1",
+            "revision": "9",
+            "status": "approved",
+            "effective_from": "2026-01-01",
+            "site": "all",
+        },
+        "asserted",
+    )
+    alone = rules.split([upload], CONTEXT)
+    assert alone.authoritative_ids() == ["upload"], "a personal notebook of uploads: asserted counts (D-036)"
+    guarded = rules.split([upload], CONTEXT, curated_ids=["SOP-1"])
+    assert guarded.excluded["upload"][1] == "asserted by uploader, but sop-1 is a curated controlled document"
+    workspace = rules.split([upload], CONTEXT, curated_only=True)
+    assert workspace.authoritative_ids() == []
+
+
+def test_tc_gov_007_classify_items_turns_verified_items_into_counts():
+    """Codex Stage 2 review S2-5: the status inputs are computed by one pure function."""
+    a = doc("a", document_id="SOP-1", site="all")
+    b = doc("b", document_id="WI-2", site="all")
+    draft = doc("draft", document_id="STD-3", status="draft", site="all")
+    result = rules.split([a, b, draft], CONTEXT)
+    source_of = {1: "a", 2: "b", 3: "draft"}
+    sections = [
+        {
+            "key": "required_actions",
+            "items": [
+                {"text": "Count the line.", "type": "requirement", "cites": [{"n": 1}]},
+                {"text": "From the draft.", "type": "requirement", "cites": [{"n": 3}]},
+                {"text": "No quote.", "type": "inference", "cites": []},
+            ],
+        },
+        {
+            "key": "missing_information",
+            "items": [{"text": "Batch?", "type": "missing_evidence", "cites": [{"n": 2}]}],
+        },
+        {
+            "key": "conflicts",
+            "items": [{"text": "A vs B.", "type": "requirement", "cites": [{"n": 1}, {"n": 2}]}],
+        },
+    ]
+    counts = rules.classify_items(sections, source_of, result)
+    assert (counts.requirements, counts.curated_requirements) == (1, 1)
+    assert counts.downgraded == 1 and counts.dropped == 1
+    assert counts.missing == 1 and counts.conflict is True
+    assert [i["type"] for i in sections[0]["items"]] == ["requirement", "inference"]
+    assert sections[2]["items"][0]["type"] == "conflict"
