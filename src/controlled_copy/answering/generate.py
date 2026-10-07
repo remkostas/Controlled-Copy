@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import re
 import time
+from dataclasses import replace
 from typing import Any
 
 from pydantic import BaseModel, ValidationError
@@ -69,7 +70,13 @@ def generate[M: BaseModel](
     model_cls: type[M],
 ) -> tuple[M, ChatResult]:
     settings = services.settings
-    models = [settings.model_generation, settings.model_generation_fallback or settings.model_generation]
+    primary = services.model or settings.model_generation
+    fallback = settings.model_generation_fallback or primary
+    if fallback == primary and services.model:
+        # The visitor chose the fallback model: the default model becomes the fallback, so a
+        # failing provider still has a second route.
+        fallback = settings.model_generation
+    models = [primary, fallback]
     timeout = settings.provider_timeout_seconds
     # Each attempt reserves the most it can cost: this prompt and schema at the prompt price
     # cap, the whole output allowance at the completion cap.
@@ -120,7 +127,7 @@ def generate[M: BaseModel](
             output_tokens=result.output_tokens,
             cost_usd=result.cost_usd,
         )
-        return payload, result
+        return payload, replace(result, fallback=model != primary)
     if isinstance(failure, ProviderTimeout):
         raise GenerationError(
             f"The model provider did not answer within {int(timeout)} seconds, twice. Please try again.", 504

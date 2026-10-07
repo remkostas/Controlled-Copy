@@ -1,0 +1,101 @@
+{
+  "model": "anthropic/claude-sonnet-5.5",
+  "set": "governed",
+  "results": [
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Look up the code and follow the guide's action for GR-204; do not override the error with a manual posting.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "GR-204 means the scanned quantity is higher than the open quantity of the purchase order line, i.e. the delivery is above what is still open on the line.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post only the open quantity, and only after the shift lead has confirmed the count.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Move the excess units to the over-delivery area OD-01 and inform purchasing.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not increase the purchase order quantity yourself.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not work around the error by posting against a different purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Purchasing is the responsible role for over-deliveries, with a same-working-day response time; inform them of the excess units.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "The shift lead confirms the count before posting; the matrix lists recounts under the shift lead (30 minutes).",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 8,
+      "citations": 9,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "anthropic/claude-sonnet-5.5",
+      "reasons": [],
+      "case_id": "E-02",
+      "title": "WMS error GR-204",
+      "passed": true,
+      "seconds": 5.1
+    }
+  ]
+}

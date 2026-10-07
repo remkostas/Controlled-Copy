@@ -10,17 +10,18 @@ from __future__ import annotations
 
 import contextlib
 import json
+import re
 import sqlite3
 from typing import Annotated, Any
 
 from fastapi import APIRouter, File, Form, Query, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 from markupsafe import Markup
 
 from controlled_copy.answering.answer import ask
 from controlled_copy.config import Settings
 from controlled_copy.errors import UserFacingError
-from controlled_copy.ingestion import pipeline
+from controlled_copy.ingestion import frontmatter, pipeline
 from controlled_copy.ingestion.validate import IngestError
 from controlled_copy.limits import DAILY_LIMIT_MESSAGE
 from controlled_copy.logs import log_event
@@ -43,6 +44,7 @@ from controlled_copy.web.deps import (
     same_origin,
     wants_json,
 )
+from controlled_copy.web.markdown import output_markdown
 from controlled_copy.web.security import (
     SESSION_COOKIE,
     code_matches,
@@ -158,6 +160,7 @@ def workspace_context(
         "ui": {
             "topbar_partials": list(request.app.state.registry.topbar_partials),
             "chat_partials": list(request.app.state.registry.chat_partials),
+            "upload_partials": list(request.app.state.registry.upload_partials),
             "studio_actions": studio_actions(request),
         },
         "pending": pending,
@@ -378,6 +381,12 @@ def add_source(
     title: Annotated[str | None, Form(max_length=500)] = None,
     text: Annotated[str | None, Form()] = None,
     source_ids: Annotated[list[str] | None, Form()] = None,
+    doc_document_id: Annotated[str | None, Form(max_length=200)] = None,
+    doc_revision: Annotated[str | None, Form(max_length=200)] = None,
+    doc_status: Annotated[str | None, Form(max_length=200)] = None,
+    doc_effective_from: Annotated[str | None, Form(max_length=200)] = None,
+    doc_site: Annotated[str | None, Form(max_length=200)] = None,
+    doc_roles: Annotated[str | None, Form(max_length=2000)] = None,
 ) -> Response:
     settings = services.settings
     target = "#add-source-status"
@@ -390,7 +399,24 @@ def add_source(
     if services.budget.read_only():
         return notice(request, DAILY_LIMIT_MESSAGE, 503, target)
     try:
+        typed = frontmatter.from_form(
+            {
+                "document_id": doc_document_id,
+                "revision": doc_revision,
+                "status": doc_status,
+                "effective_from": doc_effective_from,
+                "site": doc_site,
+                "applicable_roles": doc_roles,
+            }
+        )
+    except ValueError as exc:
+        return notice(request, str(exc), 422, target)
+    try:
         extracted = _extract(settings, file, title, text)
+        if typed is not None:
+            # Typed metadata replaces the file's own front matter; both are asserted by the uploader.
+            extracted.metadata, extracted.metadata_origin = typed, "asserted"
+            extracted.warnings = [w for w in extracted.warnings if w != frontmatter.MALFORMED]
         source_id = pipeline.store(services, notebook, extracted, extracted.raw)
     except UserFacingError as exc:
         log_event("source_rejected", session=services.sid, notebook=notebook_id, status=str(exc.status))
@@ -514,6 +540,31 @@ def run_studio(
     if wants_json(request):
         return JSONResponse({"output_id": stored.output_id, "output": stored.output})
     return render_output(request, services, notebook, stored.output_id)
+
+
+@router.get("/notebooks/{notebook_id}/outputs/{output_id}.md")
+def output_as_markdown(
+    request: Request,
+    notebook_id: str,
+    output_id: str,
+    services: SessionDep,
+    download: Annotated[bool, Query()] = False,
+) -> Response:
+    """A Studio output as Markdown (copy or download); only from the visitor's own notebook."""
+    notebook = owned_notebook(services, notebook_id)
+    row = services.repo.get_output(notebook, output_id) if notebook is not None else None
+    text = (
+        output_markdown(row, request.app.state.registry.output_markdown, core_templates())
+        if row is not None
+        else None
+    )
+    if text is None:
+        return PlainTextResponse("Not found.", status_code=404)
+    headers = {"Cache-Control": "no-store"}
+    if download:
+        name = re.sub(r"[^a-z0-9-]", "", str(row["template"]).lower()) or "output"
+        headers["Content-Disposition"] = f'attachment; filename="{name}-{row["created_at"][:10]}.md"'
+    return Response(text, media_type="text/markdown; charset=utf-8", headers=headers)
 
 
 def render_output(request: Request, services: Services, notebook: OwnedNotebook, output_id: str) -> Response:

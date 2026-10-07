@@ -8,6 +8,7 @@ with debug on, or with the fake model provider).
 
 from __future__ import annotations
 
+import re
 from enum import StrEnum
 from pathlib import Path
 from typing import Literal
@@ -51,7 +52,13 @@ class Settings(BaseSettings):
     model_embedding: str = "baai/bge-m3"
 
     feature_governance: bool = False
-    feature_personas: bool = False
+    feature_model_picker: bool = False
+    # Models a visitor may choose with the model picker: only models measured on the
+    # evaluation sets (D-040), comma-separated OpenRouter IDs.
+    model_choices: str = (
+        "openai/gpt-6-luna,openai/gpt-6-luna-pro,openai/gpt-6-sol,google/gemini-3.7-flash,"
+        "google/gemini-3.5-flash-lite,anthropic/claude-sonnet-5.5,z-ai/glm-5.2"
+    )
 
     retention_hours: int = Field(default=168, gt=0)
     purge_interval_seconds: int = Field(default=3600, gt=0)
@@ -119,6 +126,10 @@ class Settings(BaseSettings):
         return self.data_dir / "controlled-copy.sqlite3"
 
     @property
+    def model_choice_list(self) -> list[str]:
+        return [m.strip() for m in self.model_choices.split(",") if m.strip()]
+
+    @property
     def secure_cookies(self) -> bool:
         return self.app_mode is AppMode.DEPLOY
 
@@ -142,6 +153,14 @@ class Settings(BaseSettings):
         ):
             if getattr(self, name) <= 0:
                 problems.append(f"{name.upper()} must be positive")
+        if self.feature_model_picker:
+            choices = self.model_choice_list
+            if len(set(choices)) != len(choices):
+                problems.append("MODEL_CHOICES lists a model twice")
+            if self.model_generation not in choices:
+                problems.append("MODEL_CHOICES must include MODEL_GENERATION (the default choice)")
+            if any(not re.fullmatch(r"[a-z0-9._-]+/[a-z0-9._:-]+", m) for m in choices):
+                problems.append("MODEL_CHOICES entries must be OpenRouter model IDs (vendor/model)")
         if self.app_mode is AppMode.DEPLOY:
             if len(secret) < 32:
                 problems.append("APP_SECRET_KEY must be set and at least 32 characters in deploy mode")

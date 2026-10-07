@@ -1,0 +1,502 @@
+{
+  "model": "deepseek/deepseek-v4.1-flash",
+  "set": "holdout",
+  "results": [
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Check that a delivery note is present and that it refers to an open purchase order.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Count every delivery line before posting.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Compare the counted quantity with the quantity on the delivery note and on the purchase order.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "The counted quantity is 99 and the purchase order quantity is 100, so the deviation is 1 unit. Under the stated tolerance, 2% of 100 is 2 units, and the smaller limit is 2 units; therefore the 1-unit deviation is within tolerance.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post the counted quantity as counted with a note in the goods receipt.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post the goods receipt in the WMS against the purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the WMS shows an error code, follow GUIDE-WMS-003.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not bypass a WMS error by posting against a different purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 8,
+      "citations": 8,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "deepseek/deepseek-v4.1-flash",
+      "reasons": [],
+      "case_id": "H-01",
+      "title": "Small shortage within tolerance",
+      "passed": true,
+      "seconds": 25.0
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved instruction was found"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "missing_evidence",
+          "text": "\"do not post. Move the handling unit to the over-delivery area OD-01 and inform purchasing.\" (P1)",
+          "cites": [],
+          "downgraded": "no verified quote in an applicable approved document"
+        },
+        {
+          "section": "required_actions",
+          "type": "missing_evidence",
+          "text": "\"Never: post against another open line of the same purchase order.\" (P1)",
+          "cites": [],
+          "downgraded": "no verified quote in an applicable approved document"
+        },
+        {
+          "section": "required_actions",
+          "type": "missing_evidence",
+          "text": "If the WMS shows an error code, follow GUIDE-WMS-003. (P3)",
+          "cites": [],
+          "downgraded": "no verified quote in an applicable approved document"
+        },
+        {
+          "section": "required_actions",
+          "type": "missing_evidence",
+          "text": "\"Never bypass a WMS error by posting against a different purchase order line.\" (P3)",
+          "cites": [],
+          "downgraded": "no verified quote in an applicable approved document"
+        },
+        {
+          "section": "escalation",
+          "type": "missing_evidence",
+          "text": "Inform purchasing that the purchase order line is closed and the handling unit is in over-delivery area OD-01. (P1)",
+          "cites": [],
+          "downgraded": "no verified quote in an applicable approved document"
+        }
+      ],
+      "cited": [],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "missing_evidence"
+      ],
+      "items": 5,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 5,
+      "model": "deepseek/deepseek-v4.1-flash",
+      "reasons": [
+        "status expert_confirmation, expected supported",
+        "does not cite GUIDE-WMS-003 rev 1",
+        "no statement of type requirement"
+      ],
+      "case_id": "H-02",
+      "title": "WMS error GR-101",
+      "passed": false,
+      "seconds": 4.2
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "GR-512 means a goods receipt with the same delivery note number already exists, so stop and check the existing goods receipt with the shift lead before posting again.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not confirm the GR-512 warning without performing that check.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Because the WMS is showing an error code, follow GUIDE-WMS-003 for the code shown.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not work around the GR-512 error by posting the receipt against a different purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not clear the error by making a manual posting.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "Posting itself stays against the purchase order line; the receipt is posted only once the shift lead check of the existing goods receipt clears the duplicate warning.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Shift lead: responsible for checking the existing goods receipt when the GR-512 duplicate receipt warning is shown, before any reposting.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "WMS key user: escalation applies if the WMS error is not solved by GUIDE-WMS-003; the matrix lists a one-hour response time.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1",
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 8,
+      "citations": 8,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "deepseek/deepseek-v4.1-flash",
+      "reasons": [],
+      "case_id": "H-03",
+      "title": "Code GR-512 (documented)",
+      "passed": true,
+      "seconds": 19.7
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "H-04",
+      "title": "Torn stretch wrap, parts intact (conflict)",
+      "passed": false,
+      "seconds": 57.0
+    },
+    {
+      "kind": "context_incomplete",
+      "status_reasons": [
+        "2 pieces of information missing"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Move the handling unit to the quarantine area Q-01, post it to blocked stock and notify the QA inspector.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not open wet packaging.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "The situation does not say whether there is a leak, an unknown substance or an unusual odour; if there is, stop unloading immediately, isolate the area and notify the QA lead and EHS.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "The situation does not say whether the delivery note is missing or refers to an unknown purchase order; if it does, do not unload and inform the shift lead.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Notify the QA inspector.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "If suspected contamination is present, notify the QA lead and EHS at once.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "If the delivery note is missing or refers to an unknown purchase order, inform the shift lead.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 7,
+      "citations": 7,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "deepseek/deepseek-v4.1-flash",
+      "reasons": [
+        "status context_incomplete, expected supported"
+      ],
+      "case_id": "H-05",
+      "title": "Wet cartons",
+      "passed": false,
+      "seconds": 12.8
+    },
+    {
+      "kind": "refusal",
+      "status_reasons": [
+        "no passage in the selected sources is close to this situation"
+      ],
+      "detail": [],
+      "cited": [],
+      "warnings": [],
+      "types": [],
+      "items": 0,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 0,
+      "model": null,
+      "reasons": [],
+      "case_id": "H-06",
+      "title": "Off-topic: football",
+      "passed": true,
+      "seconds": 0.4
+    },
+    {
+      "kind": "error 502",
+      "error": "The model returned an answer in an unexpected format twice. Please try again.",
+      "reasons": [
+        "status 502"
+      ],
+      "case_id": "H-07",
+      "title": "Barcode with the draft revision in mind",
+      "passed": false,
+      "seconds": 81.0
+    },
+    {
+      "kind": "context_incomplete",
+      "status_reasons": [
+        "1 piece of information missing"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Stop unloading immediately because there is an unusual odour.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Isolate the area and keep other people away.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not touch the material.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Notify the QA lead and EHS at once.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Unloading resumes only after EHS has cleared the area.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Whether the smell comes from a leak, an unknown substance, or the material itself is not stated, and P6 distinguishes leak or unknown substance from unusual odour only in the trigger; the main instruction is already settled by the odour.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Notify the QA lead and EHS at once when there is a leak, an unknown substance or an unusual odour.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 7,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "deepseek/deepseek-v4.1-flash",
+      "reasons": [
+        "status context_incomplete, expected supported"
+      ],
+      "case_id": "H-08",
+      "title": "Chemical smell",
+      "passed": false,
+      "seconds": 13.3
+    },
+    {
+      "kind": "error 502",
+      "error": "The model returned an answer in an unexpected format twice. Please try again.",
+      "reasons": [
+        "status 502"
+      ],
+      "case_id": "H-09",
+      "title": "Damage without detail",
+      "passed": false,
+      "seconds": 72.6
+    },
+    {
+      "kind": "error 502",
+      "error": "The model returned an answer in an unexpected format twice. Please try again.",
+      "reasons": [
+        "status 502"
+      ],
+      "case_id": "H-10",
+      "title": "Aisle A-12 at HAM-01",
+      "passed": false,
+      "seconds": 67.8
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "H-11",
+      "title": "Unknown code GR-777",
+      "passed": false,
+      "seconds": 90.3
+    }
+  ]
+}

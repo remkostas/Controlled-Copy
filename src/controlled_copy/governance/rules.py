@@ -20,7 +20,6 @@ IDENTIFIER = re.compile(r"\b(?:[A-Z]{2,}(?:-[A-Z0-9]+)*-\d{2,}|[A-Z]{1,3}-\d{2,3
 REVISION_PART = re.compile(r"\d+|[A-Za-z]+")
 REVISION_PREFIX = re.compile(r"^\s*(?:revision|rev|v)\.?\s*(?=\d)", re.IGNORECASE)
 DASHES = re.compile(r"[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]")
-DEFAULT_ROLE = "warehouse_operator"
 
 STATUS_PRECEDENCE = ("conflict", "expert_confirmation", "context_incomplete", "supported")
 STATUS_LABELS = {

@@ -39,10 +39,11 @@ jobs:
           ./gitleaks git --no-banner --redact --exit-code 1 .
 
   core-with-layer-off:
-    name: TC-REV-001 stage 1 suite with FEATURE_GOVERNANCE=false
+    name: TC-REV-001 stage 1 suite with every layer off
     runs-on: ubuntu-24.04
     env:
       FEATURE_GOVERNANCE: "false"
+      FEATURE_MODEL_PICKER: "false"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -56,7 +57,9 @@ jobs:
           echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tgz" | sha256sum -c -
           tar -xzf gitleaks.tgz -C /usr/local/bin gitleaks 2>/dev/null || sudo tar -xzf gitleaks.tgz -C /usr/local/bin gitleaks
           rm gitleaks.tgz
-      - run: python -m pytest -m "stage1 and not eval and not smoke_live" --junitxml=reports/junit-stage1.xml
+      # Everything with every layer flag off: the core tests, plus layer tests that switch their
+      # own layer on through fixtures (they prove a layer works next to a layer-off core).
+      - run: python -m pytest -m "(stage1 or stage2 or stage3) and not eval and not smoke_live" --junitxml=reports/junit-stage1.xml
       - run: python scripts/test_report.py reports/junit-stage1.xml > reports/test-report.md
         if: always()
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -86,6 +89,28 @@ jobs:
           name: test-report-stage2
           path: reports/
 
+  stage3-gate:
+    name: Stage 3 gate with every layer on
+    runs-on: ubuntu-24.04
+    env:
+      FEATURE_GOVERNANCE: "true"
+      FEATURE_MODEL_PICKER: "true"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - run: pip install --require-hashes -r requirements-dev.lock
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m pytest -m "(stage1 or stage2 or stage3) and not eval and not smoke_live" --junitxml=reports/junit-stage3.xml
+      - run: python scripts/test_report.py reports/junit-stage3.xml > reports/test-report-stage3.md
+        if: always()
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: test-report-stage3
+          path: reports/
+
   container:
     name: Container image, Compose stack behind Caddy, image scan
     runs-on: ubuntu-24.04
@@ -106,6 +131,8 @@ jobs:
             echo "OPENROUTER_API_KEY=placeholder"
             echo "SITE_ADDRESS=http://localhost"
             echo "PUBLISH_ADDRESS=127.0.0.1"
+            echo "FEATURE_GOVERNANCE=true"
+            echo "FEATURE_MODEL_PICKER=true"
           } > .env
           echo "::add-mask::$code"
           echo "LIVE_ACCESS_CODE=$code" >> "$GITHUB_ENV"

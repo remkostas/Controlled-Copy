@@ -1,0 +1,83 @@
+{
+  "model": "google/gemini-3.7-flash",
+  "set": "governed",
+  "results": [
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "When error GR-204 occurs, post only the open quantity after the shift lead has confirmed the count, move the excess units to over-delivery area OD-01, and inform purchasing.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not increase the purchase order quantity yourself.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not bypass a WMS error code by posting against another purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not override a WMS error with a manual posting.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Escalate recounts and quantity confirmations to the Shift lead (response time: 30 minutes).",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Inform Purchasing regarding over-deliveries (response time: Same working day).",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 6,
+      "citations": 6,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "google/gemini-3.7-flash",
+      "reasons": [],
+      "case_id": "E-02",
+      "title": "WMS error GR-204",
+      "passed": true,
+      "seconds": 9.5
+    }
+  ]
+}

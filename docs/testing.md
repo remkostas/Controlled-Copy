@@ -151,7 +151,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-GOV-09 | Context bar filters by site, role and date | TC-GOV-010 | integration | Set the date before an effective date | That document becomes excluded with the reason "not yet effective" |
 | FR-UI-03 | Journey B end to end | TC-UI-004 | e2e | Open workspace, run scenarios 1, 5, 6, open evidence, Reset | Every step works in a real browser |
 
-### Reversibility (stages 1 and 2)
+### Reversibility (all layers)
 
 | Req | Requirement | TC | Type | Input | Expected |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -159,13 +159,24 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | NFR-REV-02 | Layer database changes are additive | TC-REV-002 | integration | Apply stage 2 migrations to a stage 1 database, then run the stage 1 suite | Green; no stage 1 table altered destructively |
 | NFR-REV-03 | Switching the layer off hides it cleanly | TC-REV-003 | e2e | Run with the flag off | No workspace switcher entry, no card button, no errors |
 
-### Extension (stage 3, only if reached)
+### Model picker and extras (stage 3)
+
+Replaces the persona switcher planned earlier (never built; Remko asked for a model picker on 2026-10-06).
 
 | Req | Requirement | TC | Type | Input | Expected |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| FR-EXT-01 | Persona switcher labelled as a demo persona | TC-EXT-001 | e2e | Open the switcher | Label "demo persona, not a login" visible |
-| FR-EXT-02 | Only the controller changes document status | TC-EXT-002 | api | Operator persona calls approve | 403 |
-| FR-EXT-03 | Approving makes a document authoritative | TC-EXT-003 | integration | Upload as draft, approve, ask | The document can now support requirements |
+| FR-MOD-01 | The picker offers the allowlist, default selected | TC-MOD-001 | integration | Open the workspace with `FEATURE_MODEL_PICKER=true` | The seven evaluated models grouped by provider in configured order; GPT-6 Luna selected |
+| FR-MOD-02 | Only allowlisted models can be chosen, with CSRF | TC-MOD-002 | integration | Post a Mistral ID, an empty value, no CSRF token, a valid model | 422, 422, 403, saved |
+| FR-MOD-03 | The chosen model writes answers, Briefings and cards, and is shown | TC-MOD-003 | integration | Choose a model, ask, build a card | Calls go to that model; the answer and output show its name |
+| FR-MOD-04 | The fallback still answers; choices are per visitor | TC-MOD-004 | integration | Chosen model fails; two visitors choose differently | Fallback answers and is marked "(fallback)"; each visitor keeps their own choice |
+| FR-MOD-05 | The allowlist is checked; removed models fall back to the default | TC-MOD-005 | integration | Duplicate, missing primary, malformed ID; a stored choice no longer listed | Startup refused with the reason; the default model is used |
+| FR-UI-05 | Model picker in a real browser | TC-UI-005 | e2e | Choose a model, ask, reload | Confirmation shown, answer labelled, choice kept, contrast passes |
+| FR-OUT-01 | Studio outputs export as Markdown with every verified quote | TC-OUT-001 | api | Export a Briefing and a Resolution Card; download | Title, sections, typed items with citation numbers, every quote listed; card status, context, warnings, applicability; download names the file |
+| FR-OUT-02 | Only the owner exports; removed outputs are not exported | TC-OUT-002 | api | Another visitor, a wrong ID, no session, a deleted cited source, the layer switched off | 404 or the landing page; nothing exported |
+| FR-UI-06 | Copy a card as Markdown in a real browser | TC-UI-006 | e2e | Build a card, press "Copy as Markdown" | Confirmation shown; the clipboard holds the card |
+| FR-META-01 | Typed document-control metadata is validated like front matter | TC-META-001 | unit | Empty form; full form; missing or unknown status; bad date; bad document ID | None; normalised metadata; clear refusals |
+| FR-META-02 | Typed metadata is stored as asserted and replaces front matter | TC-META-002 | integration | Paste or upload with the form filled; an unusable form; a card in a personal notebook | Stored with origin "asserted"; refusal stores nothing; a supported card names the asserted approval |
+| FR-UI-07 | Document-control form in a real browser | TC-UI-007 | e2e | Fill the form, paste a text | Badges show the typed metadata as asserted; the fields clear; contrast passes |
 
 ### Evaluation (real model, published as measured)
 
@@ -195,11 +206,14 @@ The scorer itself is tested offline with hand-made responses, so a pass cannot c
 
 | TC | Input | Expected |
 | :--- | :--- | :--- |
-| TC-LIVE-001 | Health endpoint, landing page, certificate | 200, valid certificate |
-| TC-LIVE-002 | Journey A and B, short version, against the live URL | Works; run twice before recording |
+| TC-LIVE-001 | Health endpoint, landing page, security headers, wrong access code; on https also HSTS, certificate and the http redirect | 200, headers present, no server banner, 401, valid certificate, redirect to https |
+| TC-LIVE-002 | Journey A (paste, cited answer, refusal), the model picker, Journey B (a card on the curated workspace, Markdown export) with the real model | Works; run twice before recording |
+
+Run: `LIVE_URL=https://<domain> LIVE_ACCESS_CODE=<code> pytest -m smoke_live tests/live` (`tests/live/test_live_smoke.py`). Without the two variables both tests skip.
 
 ## 3. Gates
 
 - **Stage 1 gate:** `pytest -m "stage1 and not eval and not smoke_live"` green; TC-REV-001 green; lint clean; gitleaks clean; G-01 to G-06 run and recorded; self-audit and Codex review findings addressed.
 - **Stage 2 gate:** `pytest -m "(stage1 or stage2) and not eval and not smoke_live"` green; TC-REV-001 to TC-REV-003 green; E-01 to E-14 run and recorded.
+- **Stage 3 gate:** `pytest -m "(stage1 or stage2 or stage3) and not eval and not smoke_live"` green twice: with every layer flag off (TC-REV-001; layer tests switch their own layer on) and with every layer flag on.
 - **Before the video:** TC-LIVE-001 and TC-LIVE-002 twice.

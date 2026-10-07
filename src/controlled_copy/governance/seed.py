@@ -23,7 +23,6 @@ from controlled_copy.services import Services
 from controlled_copy.storage.db import transaction
 from controlled_copy.storage.repo import CapacityReached, NewSource, OwnedNotebook
 
-WORKSPACE_TITLE = "Inbound Operations"
 WORKSPACE_KIND = "ops_workspace"
 
 
@@ -59,9 +58,25 @@ def corpus() -> tuple[str, tuple[SeedDocument, ...]]:
 
 
 @cache
-def scenarios() -> list[dict[str, Any]]:
+def demo_config() -> dict[str, Any]:
+    """The curated workspace's settings from demo-data/scenarios.json: its title, the default
+    site and role of the context bar and the example situations. The domain lives there,
+    not in code (product-concepts.md section 9, guardrail 3)."""
     path = demo_data_dir() / "scenarios.json"
-    return json.loads(path.read_text(encoding="utf-8"))["scenarios"] if path.exists() else []
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+
+
+def scenarios() -> list[dict[str, Any]]:
+    return list(demo_config().get("scenarios", []))
+
+
+def workspace_title() -> str:
+    return str(demo_config().get("workspace_title") or "Demo workspace")
+
+
+def default_role() -> str | None:
+    role = demo_config().get("default_context", {}).get("role")
+    return str(role) if role else None
 
 
 def seed_vectors(services: Services) -> dict[tuple[str, int], np.ndarray]:
@@ -117,7 +132,7 @@ def seed_workspace(services: Services, sid: str) -> OwnedNotebook:
 
 def _copy_corpus(services: Services, sid: str, vectors: dict[tuple[str, int], np.ndarray]) -> OwnedNotebook:
     _, documents = corpus()
-    notebook_id = services.repo.create_notebook(sid, WORKSPACE_TITLE, kind=WORKSPACE_KIND, limit=1)
+    notebook_id = services.repo.create_notebook(sid, workspace_title(), kind=WORKSPACE_KIND, limit=1)
     notebook = services.repo.get_notebook(sid, notebook_id)
     assert notebook is not None
     for document in documents:

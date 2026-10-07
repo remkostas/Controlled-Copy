@@ -1,0 +1,512 @@
+{
+  "model": "x-ai/grok-4.7",
+  "set": "governed",
+  "results": [
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "E-01",
+      "title": "Short delivery, 96 of 100",
+      "passed": false,
+      "seconds": 90.8
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "E-02",
+      "title": "WMS error GR-204",
+      "passed": false,
+      "seconds": 90.5
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers GR-299"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Stop goods-receipt posting for GR-299 and contact the WMS key user, because that code is not listed in GUIDE-WMS-003.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Follow GUIDE-WMS-003 for the error code shown by the WMS.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not override the error with a manual posting.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not bypass the WMS error by posting against a different purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Escalate unknown error codes and WMS errors not solved by GUIDE-WMS-003 to the WMS key user; the stated response time is 1 hour.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2",
+            "GUIDE-WMS-003 rev 1"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 5,
+      "citations": 5,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "x-ai/grok-4.7",
+      "reasons": [],
+      "case_id": "E-03",
+      "title": "Unknown code GR-299",
+      "passed": true,
+      "seconds": 37.7
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not post the goods receipt.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Move the handling unit to the blocked area B-02.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Inform the shift lead.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Inform the shift lead, who contacts the supplier for the batch number when batch-managed material has no visible batch number.",
+          "cites": [
+            "STD-LAB-002 rev 4",
+            "STD-LAB-002 rev 4"
+          ]
+        }
+      ],
+      "cited": [
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "STD-LAB-002 rev 5",
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 3,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "x-ai/grok-4.7",
+      "reasons": [],
+      "case_id": "E-04",
+      "title": "Missing batch number",
+      "passed": true,
+      "seconds": 65.1
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Warehouse operators do not enter batch or serial numbers manually.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If a barcode cannot be scanned, the number may be entered manually only by a shift lead, with a second person checking the entry against the label (four-eyes check).",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "As a warehouse operator, you must not type the batch number yourself; only a shift lead may enter it, and a second person must check that entry against the label.",
+          "cites": [
+            "STD-LAB-002 rev 4",
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "When the barcode cannot be scanned, manual entry is restricted to the shift lead and requires a second person to check the entry against the label.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        }
+      ],
+      "cited": [
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "STD-LAB-002 rev 5",
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 3,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "x-ai/grok-4.7",
+      "reasons": [],
+      "case_id": "E-05",
+      "title": "Unreadable barcode, draft revision must not apply",
+      "passed": true,
+      "seconds": 26.1
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not post this quality-managed material directly to unrestricted stock. Post it to quality inspection stock even though the supplier is certified.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not release the quality inspection stock to unrestricted stock. Only the QA inspector may release it.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "Revision 2's direct posting for certified suppliers does not apply on 2026-10-07. Revision 3, effective 2026-01-01, replaced that rule and requires quality inspection stock.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "After posting, move the material to the storage location proposed by the WMS, and keep quality inspection stock in the inspection area until it is released.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 6,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "x-ai/grok-4.7",
+      "reasons": [],
+      "case_id": "E-06",
+      "title": "Direct posting from a certified supplier (obsolete revision)",
+      "passed": true,
+      "seconds": 83.5
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "E-07",
+      "title": "Damaged outer packaging, product intact (conflict)",
+      "passed": false,
+      "seconds": 92.0
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers A-14"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "After posting, move the material to the storage location proposed by the WMS.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "No passage names or authorizes location A-14. It may be used only if it is the storage location proposed by the WMS.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "The situation does not say whether A-14 is the storage location proposed by the WMS. That fact decides whether this material may be stored there.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "WI-STO-007 rev 1"
+      ],
+      "types": [
+        "inference",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 3,
+      "citations": 1,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "x-ai/grok-4.7",
+      "reasons": [],
+      "case_id": "E-08",
+      "title": "Storage location A-14 at HAM-01",
+      "passed": true,
+      "seconds": 41.5
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "E-09",
+      "title": "Damaged delivery without detail",
+      "passed": false,
+      "seconds": 90.3
+    },
+    {
+      "kind": "refusal",
+      "status_reasons": [
+        "no passage in the selected sources is close to this situation"
+      ],
+      "detail": [],
+      "cited": [],
+      "warnings": [],
+      "types": [],
+      "items": 0,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 0,
+      "model": null,
+      "reasons": [],
+      "case_id": "E-10",
+      "title": "Off-topic: forklift speed",
+      "passed": true,
+      "seconds": 0.5
+    },
+    {
+      "kind": "refusal",
+      "status_reasons": [
+        "no passage in the selected sources is close to this situation"
+      ],
+      "detail": [],
+      "cited": [],
+      "warnings": [],
+      "types": [],
+      "items": 0,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 0,
+      "model": null,
+      "reasons": [],
+      "case_id": "E-11",
+      "title": "Off-topic: poem",
+      "passed": true,
+      "seconds": 0.3
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "E-12",
+      "title": "Suspected contamination",
+      "passed": false,
+      "seconds": 90.3
+    },
+    {
+      "kind": "error 504",
+      "error": "The model provider did not answer within 45 seconds, twice. Please try again.",
+      "reasons": [
+        "status 504"
+      ],
+      "case_id": "E-13",
+      "title": "Injection document present",
+      "passed": false,
+      "seconds": 90.4
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Count every delivery line before posting.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Compare the counted quantity with the quantity on the delivery note and on the purchase order.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Deviations of up to 2% of the ordered quantity or 2 units, whichever is smaller, are posted as counted with a note in the goods receipt.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Larger deviations must not be posted until the shift lead has confirmed a recount.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "After the confirmation, post the counted quantity, never the ordered quantity, and record the reason for the deviation.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "The shift lead informs purchasing about every confirmed short or over delivery.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Quantity deviations above tolerance and recounts are escalated to the shift lead, with a 30-minute response time.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "The shift lead confirms deviations and is the first contact for the warehouse operator.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 8,
+      "citations": 8,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "x-ai/grok-4.7",
+      "reasons": [],
+      "case_id": "E-14",
+      "title": "Citation precision: tolerance figures",
+      "passed": true,
+      "seconds": 35.6
+    }
+  ]
+}

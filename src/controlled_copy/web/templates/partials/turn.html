@@ -17,6 +17,7 @@
     {% endfor %}
     <footer class="answer__foot">
       <span>{{ a.cite_count }} cited passage{{ '' if a.cite_count == 1 else 's' }} from {{ a.source_count }} source{{ '' if a.source_count == 1 else 's' }}</span>
+      {% if a.model_label %}<span class="answer__model" title="The model that wrote this answer">{{ a.model_label }}</span>{% endif %}
       {% if a.removed %}<span>{{ a.removed }} statement{{ '' if a.removed == 1 else 's' }} removed: the quote could not be found in the cited passage</span>{% endif %}
     </footer>
   </div>

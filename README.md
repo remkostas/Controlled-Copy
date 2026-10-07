@@ -6,7 +6,7 @@ You add your documents, ask questions, and get answers in which every statement 
 
 ![Workspace with sources, a cited answer, a follow-up, a refusal and a Studio Briefing](docs/screenshots/app-workspace.png)
 
-This repository is a portfolio project built in four days. It runs on synthetic data only. Stage 1, the NotebookLM-style core, is complete and tested. Stage 2 adds a governed-documents layer (revisions, status, applicability and a Resolution Card) behind a feature flag.
+This repository is a portfolio project built in four days. It runs on synthetic data only. Stage 1, the NotebookLM-style core, is complete and tested. Stage 2 adds a governed-documents layer (revisions, status, applicability and a Resolution Card) behind a feature flag. Stage 3 adds a model picker, Markdown export and a document-control form.
 
 ## What you can do
 
@@ -15,6 +15,28 @@ This repository is a portfolio project built in four days. It runs on synthetic 
 - **Refusal:** a question your sources do not cover gets "Not in the selected sources", with what was searched.
 - **Studio:** a Briefing (overview, key points, important terms, open questions), an FAQ and a study guide (key concepts, review questions, glossary), in which every item carries a verified citation. Each output type is one JSON template, not a code path. Suggested questions under an empty chat.
 - **Deletion:** delete a source or a notebook and everything derived from it disappears: file, chunks, vectors, search index rows, and every answer or output generated from its passages.
+- **Resolution Card** (governed layer): describe a situation at the dock and get what the applicable approved instructions require, what information is missing and who decides. Every requirement needs a verified quote from a document that is approved, effective on the chosen date and valid for the chosen site and role. Drafts, obsolete or superseded revisions and other sites' documents are named as "not applied", with the reason. The status (supported, context incomplete, expert confirmation required, conflicting instructions) is chosen by fixed rules: they decide which documents apply, which statements may count and the order of the statuses. Whether two cited passages really conflict, or information is missing, is still the model's reading, and it only counts with verified quotes. Each visitor gets their own copy of a curated "Inbound Operations" workspace and can reset it.
+- **Models** (model picker layer): choose which evaluated model writes answers, Studio outputs and cards. Every answer shows the model that wrote it, and "(fallback)" when the fallback model stepped in.
+- **Export:** copy any Studio output (Briefing, FAQ, study guide) or Resolution Card as Markdown, or download it, with every verified quote listed under its citation number.
+- **Document control:** type a document ID, revision, status, effective date, site and roles when you add a source, instead of writing YAML front matter. The app marks this metadata as asserted by the uploader.
+
+## Compared with NotebookLM
+
+| NotebookLM | Here | Why |
+| :--- | :--- | :--- |
+| Notebooks of your own sources; pick which sources a question uses | Yes: up to 5 notebooks of 20 sources per visitor | The core interaction |
+| Sources: PDF, text, Markdown, pasted text | Yes | |
+| Sources: web pages, YouTube, Google Docs and Slides, audio files | No | Each adds a parser or provider surface (web import means server-side requests to arbitrary addresses) without serving the core promise |
+| Cited answers; a citation opens the passage | Yes, and the server checks every quote against its passage before you see it | Citations are the promise |
+| Follow-up questions | Yes; the app shows the standalone question it searched for | |
+| Saying when the sources do not cover a question | Yes: before any model call when nothing relevant is found, and when no quote verifies | |
+| Answers stream while they are written | No: an answer appears once its quotes are verified | Streaming would show unverified text first |
+| Suggested questions | Yes | |
+| Studio reports: briefing doc, FAQ, study guide | Yes, every item cited; copy or download as Markdown | Each report is one JSON template |
+| Audio and Video Overviews, mind maps, quizzes, flashcards | No | Audio and video add a speech provider and one more processor for document content; the learning tools sit outside the controlled-documents use case |
+| Notes, sharing, accounts | No: anonymous sessions behind an access code, deleted seven days after the last visit | A demo for strangers; real sign-in is the first item under question 10 |
+| Languages | English interface; answers, Studio outputs and cards follow the language of the question, sources or situation | Quotes stay in the language of their source |
+| Not in NotebookLM | Document control (revision, status, effective date, site, role), the Resolution Card, a model picker | The use case: which instruction applies, and who decides |
 
 ## The ten questions
 
@@ -34,7 +56,14 @@ This repository is a portfolio project built in four days. It runs on synthetic 
 
 **8. How does it handle unsupported information?** In three layers. Retrieval refuses before any answer is generated when the best match is weaker than an evidence floor (only the question itself is embedded for the comparison; exact codes such as `GR-204` bypass the floor). The model must return statements with quotes in a fixed JSON schema. The server then checks every quote against its passage and removes what fails, so an answer the model invented cannot reach you with a citation attached.
 
-**9. How did I evaluate it?** With mechanical checks only, no model judging another model. The generic set (G-01 to G-06) runs on a public 48-page PDF (NIST AI 100-1): three answerable questions, one unsupported question, one citation check and one Briefing in which every citation must verify. A model bake-off compared three embedding models on retrieval (hit@3, hit@5, mean reciprocal rank) and three generation models on six cases (schema validity, quote validity, outcome, latency, cost). Results, misses included, are in [`eval/results/`](eval/results/); only results that record a clean commit and the case-file hash count as evidence, and the earlier exploratory runs are labelled as such in [`eval/results/README.md`](eval/results/README.md). The checks are mechanical, so a pass means the expected terms, sources and quotes are there, not that a person has confirmed every statement. The sets are small, so the numbers are indicative only.
+**9. How did I evaluate it?** With mechanical checks only, no model judging another model. Results, misses included, are in [`eval/results/`](eval/results/); only results that record a clean commit and the case-file hash count as evidence, and the exploratory runs are labelled as such in [`eval/results/README.md`](eval/results/README.md).
+
+- **Generic set** (G-01 to G-06) on a public 48-page PDF (NIST AI 100-1): three answerable questions, one unsupported question, one citation check and one Briefing in which every citation must verify.
+- **Model bake-off:** three embedding models compared on retrieval (hit@3, hit@5, mean reciprocal rank) and three generation models on six cases (schema validity, quote validity, outcome, latency, cost).
+- **Resolution Card set:** 14 cases (E-01 to E-14) on the curated workspace, plus 11 held-out paraphrases (H-01 to H-11) that were written and committed before their first run, because the prompt had been tuned on the first set. Besides status, sources and quotes, every card case lists the actions a correct card must give and the ones it must not give (for suspected contamination: stop unloading, isolate the area, notify the QA lead and EHS; never keep unloading), checked in what the card says, not in its quotes.
+- **Results:** on commit c3f7a31, the code that is deployed, GPT-6 Luna passed all three sets with the current checks: generic 6 of 6, Resolution Cards 14 of 14, held-out paraphrases 11 of 11. On earlier recorded commits with the same card logic it passed 12 or 13 of 14: the misses (E-09 twice, E-12 once) chose a more cautious status (expert confirmation instead of context incomplete, context incomplete instead of supported), and E-12 still gave every required action. The same question can get a different card from one run to the next.
+- **Fallback and picker models:** earlier exploratory runs, made before the action checks and before result files recorded their code version, compared five candidate fallback models; Gemini 3.5 Flash Lite won on the grounds that it runs on a different provider, answers in about two seconds and errs on the cautious side. They also chose the model picker's list: seven models passed without technical errors (GPT-6 Luna, GPT-6 Luna Pro, GPT-6 Sol, Gemini 3.7 Flash, Gemini 3.5 Flash Lite, Claude Sonnet 5.5 and GLM 5.2, whose misses were all on the cautious side). DeepSeek V4 Pro and V4.1 Flash, Kimi K2.6, Grok 4.7, Qwen 3.5 397B and GLM 5.1 were left out because too many calls failed or ran past the 45-second limit on zero-retention routes; any of them can still be added through `MODEL_CHOICES`. Re-scored with the action checks, the stored fallback answers to the barcode cases (E-05, H-07) say not to type the number in but not that the shift lead does it, so the fallback is safe there but incomplete.
+- **Limits:** the checks are mechanical, so a pass means the expected sources, quotes and action phrases are there, not that a person has confirmed every statement. The sets are small, so the numbers are indicative only.
 
 **10. What would production need?** Real sign-in instead of a shared access code, row-level isolation for a shared company workspace, a data processing agreement with every processor and EU-only model routing, document status coming from a real document-control system instead of uploaded front matter, a sandboxed parsing service with malware scanning, encryption at rest with deletion that reaches backups, monitoring, and a review with the works council and the data protection officer before any pilot.
 
@@ -52,7 +81,7 @@ browser ── htmx ──> FastAPI (session cookie, CSRF token, strict CSP)
                                     google/gemini-3.5-flash-lite as fallback
 ```
 
-More detail: [`docs/architecture.md`](docs/architecture.md). The governed layer plugs in through one registry behind `FEATURE_GOVERNANCE`; the core never imports it, and CI runs the whole core suite with the layer switched off.
+More detail: [`docs/architecture.md`](docs/architecture.md). The governed layer (`FEATURE_GOVERNANCE`) and the model picker (`FEATURE_MODEL_PICKER`, allowlist `MODEL_CHOICES`) plug in through one registry; the core never imports them, and CI runs the whole core suite with every layer switched off and the full suite with every layer on.
 
 ## Run it
 
@@ -83,12 +112,14 @@ The app refuses to start in deploy mode without a strong access code and secret 
 ## Tests
 
 ```
-.venv/bin/python -m pytest -m "stage1 and not eval and not smoke_live"
+.venv/bin/python -m pytest -m "stage1 and not eval and not smoke_live"                       # the core
+FEATURE_GOVERNANCE=true FEATURE_MODEL_PICKER=true \
+  .venv/bin/python -m pytest -m "(stage1 or stage2 or stage3) and not eval and not smoke_live"  # everything
 ```
 
 Every test carries the ID of the test case it implements (for example `test_tc_src_011_...`), and every test case maps to a requirement in [`docs/testing.md`](docs/testing.md). The suite uses a deterministic fake model, so it needs no key and costs nothing. It includes unit, integration, API, security and browser tests (Playwright with Chromium), among them an automated WCAG contrast check; without Chromium installed, the browser tests are skipped with a message (CI installs it and runs them). `scripts/test_report.py` turns a JUnit run into a requirement-to-result table.
 
-The evaluation against the real model is manual: `python eval/run_eval.py generic` and `python eval/bakeoff.py` (see [`eval/README.md`](eval/README.md)).
+The evaluation against the real model is manual: `python eval/run_eval.py generic`, `governed`, `holdout` and `python eval/bakeoff.py` (see [`eval/README.md`](eval/README.md)). A live check drives both journeys against a running instance with the real model: `LIVE_URL=https://... LIVE_ACCESS_CODE=... pytest -m smoke_live tests/live`.
 
 ## Privacy and security
 
@@ -99,7 +130,7 @@ The evaluation against the real model is manual: `python eval/run_eval.py generi
 
 ## Limitations
 
-A quote can exist in a passage and still not support the statement next to it; the app verifies existence, not support. Prompt injection inside a document can still bias wording within that notebook, although it cannot produce a citation the server cannot verify. There is no OCR, so scanned PDFs show a warning and contribute no text. The interface is in English; answers and Resolution Cards follow the language of the question or situation (German was checked), and quotes stay in the language of their source.
+A quote can exist in a passage and still not support the statement next to it; the app verifies existence, not support. Prompt injection inside a document can still bias wording within that notebook, although it cannot produce a citation the server cannot verify. There is no OCR, so scanned PDFs show a warning and contribute no text. The interface is in English; answers, Studio outputs and Resolution Cards follow the language of the question, sources or situation (German was checked), and quotes stay in the language of their source. A question in one language about documents in another matches more weakly and is refused sooner (seen with an English question about a German document).
 
 ## How AI tools were used
 

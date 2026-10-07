@@ -33,8 +33,7 @@ MIGRATIONS = [
 
 def _view_hook(services: Services, notebook: Any, context: dict[str, Any]) -> None:
     from controlled_copy.governance.card import context_options, documents_of
-    from controlled_copy.governance.rules import DEFAULT_ROLE
-    from controlled_copy.governance.seed import WORKSPACE_KIND, scenarios
+    from controlled_copy.governance.seed import WORKSPACE_KIND, default_role, scenarios
 
     if "viewer" in context:
         _superseded_banner(services, context)
@@ -45,7 +44,7 @@ def _view_hook(services: Services, notebook: Any, context: dict[str, Any]) -> No
     context["extra"]["governance"] = {
         "sites": options["sites"],
         "roles": roles,
-        "default_role": DEFAULT_ROLE if DEFAULT_ROLE in roles else (roles[0] if roles else ""),
+        "default_role": default_role() if default_role() in roles else (roles[0] if roles else ""),
         "today": datetime.now(UTC).date().isoformat(),
         "scenarios": scenarios() if notebook.kind == WORKSPACE_KIND else [],
         "has_metadata": any(d.origin != "none" for d in documents_of(rows)),
@@ -83,6 +82,12 @@ def _superseded_banner(services: Services, context: dict[str, Any]) -> None:
         source["superseded_by"] = max(newer, key=lambda d: d.revision_key).label + " (asserted by uploader)"
 
 
+def _card_markdown(output: dict[str, Any], created_at: str) -> str:
+    from controlled_copy.governance.markdown import card_markdown
+
+    return card_markdown(output, created_at)
+
+
 def register(registry: Registry, settings: Settings) -> None:
     from controlled_copy.governance.routes import router
     from controlled_copy.governance.seed import WORKSPACE_KIND, WorkspaceSeeder
@@ -101,7 +106,9 @@ def register(registry: Registry, settings: Settings) -> None:
     )
     registry.topbar_partials.append("governance/reset_button.html")
     registry.chat_partials.append("governance/chat_note.html")
+    registry.upload_partials.append("governance/doc_control.html")
     registry.output_partials["resolution-card"] = "governance/card_output.html"
+    registry.output_markdown["resolution-card"] = _card_markdown
     registry.notebook_kinds.append(WORKSPACE_KIND)
     registry.workspace_hooks.append(WorkspaceSeeder())
     registry.view_hooks.append(_view_hook)

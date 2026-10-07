@@ -1,0 +1,13 @@
+{% if extra.models %}
+<div class="model-select" title="The model that writes answers, Briefings and cards. If it fails, the fallback model answers.">
+  {{ icon('sparkles') }}
+  <label class="visually-hidden" for="model-select">Model</label>
+  <select id="model-select" name="model" hx-post="/settings/model" hx-trigger="change" hx-target="#toast" hx-swap="innerHTML">
+    {% for group in extra.models.groups %}
+    <optgroup label="{{ group.vendor }}">
+      {% for m in group.models %}<option value="{{ m.id }}" {% if m.id == extra.models.current %}selected{% endif %}>{{ m.label }}</option>{% endfor %}
+    </optgroup>
+    {% endfor %}
+  </select>
+</div>
+{% endif %}

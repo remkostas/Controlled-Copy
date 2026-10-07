@@ -28,7 +28,9 @@ controlled_copy/
   governance/     stage 2 layer (only imported by name when FEATURE_GOVERNANCE is on)
 ```
 
-A plugin is a module with a `register(registry)` function. `app.py` imports it by name through `importlib` only when its feature flag is on. Through the registry a plugin can add: routers, database migrations (additive only), Studio actions, top-bar partials, template folders and notebook kinds. The core never imports a plugin module; a unit test scans the core for imports of `controlled_copy.governance`.
+A plugin is a module with a `register(registry)` function. `app.py` imports it by name through `importlib` only when its feature flag is on. Through the registry a plugin can add: routers, database migrations (additive only), Studio actions, top-bar, chat and upload partials, output renderers (HTML and Markdown), template folders, notebook kinds, workspace and view hooks, and a model resolver that picks the visitor's generation model for a request. The core never imports a plugin module; a unit test scans the core for imports of every package listed in `plugins.LAYERS`, and a fresh interpreter checks that no layer module is loaded when every flag is off.
+
+Two layers exist: `governance` (stage 2, `FEATURE_GOVERNANCE`: the Inbound Operations workspace, document-control rules and the Resolution Card) and `models` (stage 3, `FEATURE_MODEL_PICKER`: a per-session choice from the `MODEL_CHOICES` allowlist, stored in an additive `model_choice` table and applied through the model resolver; the configured fallback stays automatic).
 
 ### Options considered
 

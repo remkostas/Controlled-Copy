@@ -153,6 +153,7 @@ def run_template(
         "removed": removed,
         "source_count": len({p.source_id for p in passages}),
         "model": result.model,
+        "fallback": result.fallback,
         **(extra or {}),
     }
     return StudioResult(output=output, citations=numbering.flat, model=result.model)

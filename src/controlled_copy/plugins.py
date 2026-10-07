@@ -21,6 +21,7 @@ from controlled_copy.storage.db import Migration
 LAYERS: dict[str, tuple[str, str]] = {
     # name: (module, settings flag)
     "governance": ("controlled_copy.governance", "feature_governance"),
+    "models": ("controlled_copy.models", "feature_model_picker"),
 }
 
 
@@ -39,15 +40,22 @@ class Registry:
     migrations: list[Migration] = field(default_factory=list)
     studio_actions: list[StudioAction] = field(default_factory=list)
     topbar_partials: list[str] = field(default_factory=list)
+    # Partials shown below the upload and paste buttons (inputs named doc_*, sent with both).
+    upload_partials: list[str] = field(default_factory=list)
     # Partials shown at the top of the chat log (for example a note on what chat covers).
     chat_partials: list[str] = field(default_factory=list)
     # Studio template id -> partial that renders its outputs (instead of the generic list).
     output_partials: dict[str, str] = field(default_factory=dict)
+    # Studio template id -> function(output, created_at) returning its Markdown export.
+    output_markdown: dict[str, Callable[[dict[str, Any], str], str]] = field(default_factory=dict)
     template_dirs: list[Path] = field(default_factory=list)
     # Called with (services, session_id) when a visitor opens the workspace.
     workspace_hooks: list[Callable[[Any, str], None]] = field(default_factory=list)
     # Called with (services, notebook_row, context dict) to extend the workspace view.
     view_hooks: list[Callable[[Any, Any, dict[str, Any]], None]] = field(default_factory=list)
+    # Called with (services) after the session check; the first non-None result is the
+    # visitor's generation model for this request (the fallback model stays configured).
+    model_resolvers: list[Callable[[Any], str | None]] = field(default_factory=list)
     # Notebook kinds a layer owns. Visitors see them only while the layer is loaded.
     notebook_kinds: list[str] = field(default_factory=list)
     loaded: list[str] = field(default_factory=list)

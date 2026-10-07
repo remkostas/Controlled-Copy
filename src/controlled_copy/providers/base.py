@@ -39,6 +39,7 @@ class ChatResult:
     output_tokens: int = 0
     cost_usd: float | None = None
     provider: str | None = None
+    fallback: bool = False  # set by generate(): the fallback model answered
 
 
 # Bounds the cost of every call (full audit re-check RCK-01): the most completion tokens a

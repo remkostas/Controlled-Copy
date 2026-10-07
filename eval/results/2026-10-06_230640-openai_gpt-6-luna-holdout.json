@@ -1,0 +1,757 @@
+{
+  "model": "openai/gpt-6-luna",
+  "set": "holdout",
+  "provenance": {
+    "commit": "c3f7a316865d166d4d599c8443e2d92630948d15",
+    "dirty": false,
+    "cases_sha256": "a3f270c7161185dd"
+  },
+  "results": [
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Compare the counted quantity with the delivery note and purchase order before posting.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "The shortage is 1 piece, or 1% of the ordered quantity, within the 2-piece tolerance. Post the counted quantity of 99 with a note in the goods receipt.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "quotes": [
+        {
+          "n": 1,
+          "document": "SOP-INB-001 rev 3",
+          "quote": "Compare the counted quantity with the quantity on the delivery note and on the purchase order"
+        },
+        {
+          "n": 2,
+          "document": "SOP-INB-001 rev 3",
+          "quote": "Deviations of up to 2% of the ordered quantity or 2 units, whichever is smaller, are posted as counted with a note in the goods receipt"
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 2,
+      "citations": 2,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "H-01",
+      "title": "Small shortage within tolerance",
+      "passed": true,
+      "seconds": 12.9
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not post the goods receipt. Move the handling unit to OD-01 and inform purchasing.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not post against another open line of the same purchase order.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Follow the WMS error guide for the displayed error code.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Purchasing is responsible for closed purchase order lines and over-deliveries; the response time is the same working day.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "quotes": [
+        {
+          "n": 1,
+          "document": "GUIDE-WMS-003 rev 1",
+          "quote": "do not post. Move the handling unit to the over-delivery area OD-01 and inform purchasing"
+        },
+        {
+          "n": 2,
+          "document": "GUIDE-WMS-003 rev 1",
+          "quote": "Never: post against another open line of the same purchase order"
+        },
+        {
+          "n": 3,
+          "document": "SOP-INB-001 rev 3",
+          "quote": "If the WMS shows an error code, follow GUIDE-WMS-003"
+        },
+        {
+          "n": 4,
+          "document": "MATRIX-ESC-001 rev 2",
+          "quote": "Over-deliveries, closed purchase order lines | Purchasing | Same working day"
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "H-02",
+      "title": "WMS error GR-101",
+      "passed": true,
+      "seconds": 5.8
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Stop and check the existing goods receipt before posting again. Do not confirm the warning without checking.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1",
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "In response to the GR-512 warning, check the existing goods receipt with the shift lead before posting again.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        }
+      ],
+      "quotes": [
+        {
+          "n": 1,
+          "document": "GUIDE-WMS-003 rev 1",
+          "quote": "stop and check the existing goods receipt with the shift lead before posting again"
+        },
+        {
+          "n": 2,
+          "document": "GUIDE-WMS-003 rev 1",
+          "quote": "Never: confirm the warning without checking"
+        },
+        {
+          "n": 3,
+          "document": "GUIDE-WMS-003 rev 1",
+          "quote": "with the shift lead before posting again"
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 2,
+      "citations": 3,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "H-03",
+      "title": "Code GR-512 (documented)",
+      "passed": true,
+      "seconds": 5.0
+    },
+    {
+      "kind": "conflict",
+      "status_reasons": [
+        "two applicable approved documents give different instructions"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Take photos of the damaged packaging.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post the goods receipt to blocked stock.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Notify the QA inspector.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Note the damage and reason on the delivery note before the driver leaves.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Notify the QA inspector because the outer packaging is damaged while the product inside is intact.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "conflicts",
+          "type": "conflict",
+          "text": "The documents give contradictory instructions for this situation: WI-QUA-004 says to accept the delivery, while SOP-INB-001 says to refuse it.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "quotes": [
+        {
+          "n": 1,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "Take photos of the damaged packaging"
+        },
+        {
+          "n": 2,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "post the goods receipt to blocked stock"
+        },
+        {
+          "n": 3,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "notify the QA inspector"
+        },
+        {
+          "n": 4,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "Note the damage on the delivery note"
+        },
+        {
+          "n": 5,
+          "document": "SOP-INB-001 rev 3",
+          "quote": "note the reason on the delivery note before the driver leaves"
+        },
+        {
+          "n": 6,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "If the outer packaging is damaged but the product inside is intact, accept the delivery"
+        },
+        {
+          "n": 7,
+          "document": "SOP-INB-001 rev 3",
+          "quote": "If the outer packaging of a handling unit shows visible damage, refuse the delivery"
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "conflict",
+        "requirement"
+      ],
+      "items": 6,
+      "citations": 7,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "H-04",
+      "title": "Torn stretch wrap, parts intact (conflict)",
+      "passed": true,
+      "seconds": 10.6
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Move the wet cartons to quarantine area Q-01, post them to blocked stock, notify the QA inspector, and do not open the wet packaging.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Check that the delivery note is present and refers to an open purchase order.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Because the packaging is wet, notify the QA inspector.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        }
+      ],
+      "quotes": [
+        {
+          "n": 1,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "If a seal is broken or the packaging is wet, move the handling unit to the quarantine area Q-01, post it to blocked stock and notify the QA inspector. Do not open wet packaging"
+        },
+        {
+          "n": 2,
+          "document": "SOP-INB-001 rev 3",
+          "quote": "Check that a delivery note is present and that it refers to an open purchase order"
+        },
+        {
+          "n": 3,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "If a seal is broken or the packaging is wet, move the handling unit to the quarantine area Q-01, post it to blocked stock and notify the QA inspector"
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [],
+      "types": [
+        "requirement"
+      ],
+      "items": 3,
+      "citations": 3,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "H-05",
+      "title": "Wet cartons",
+      "passed": true,
+      "seconds": 8.3
+    },
+    {
+      "kind": "refusal",
+      "status_reasons": [
+        "no passage in the selected sources is close to this situation"
+      ],
+      "detail": [],
+      "quotes": [],
+      "cited": [],
+      "warnings": [],
+      "types": [],
+      "items": 0,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 0,
+      "model": null,
+      "reasons": [],
+      "case_id": "H-06",
+      "title": "Off-topic: football",
+      "passed": true,
+      "seconds": 0.3
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not manually enter the number yourself as a warehouse operator. If it is entered manually, the shift lead must enter it and a second person must check it against the label.",
+          "cites": [
+            "STD-LAB-002 rev 4",
+            "STD-LAB-002 rev 4"
+          ]
+        }
+      ],
+      "quotes": [
+        {
+          "n": 1,
+          "document": "STD-LAB-002 rev 4",
+          "quote": "If a barcode cannot be scanned, the number may be entered manually only by a shift lead, with a second person checking the entry against the label (four-eyes check"
+        },
+        {
+          "n": 2,
+          "document": "STD-LAB-002 rev 4",
+          "quote": "Warehouse operators do not enter batch or serial numbers manually"
+        }
+      ],
+      "cited": [
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "STD-LAB-002 rev 5"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 1,
+      "citations": 2,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "H-07",
+      "title": "Barcode with the draft revision in mind",
+      "passed": true,
+      "seconds": 10.0
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "The strange chemical smell is an unusual odour, so the suspected-contamination procedure applies.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Stop unloading immediately.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Isolate the area, keep other people away, and do not touch the material.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Resume unloading only after EHS has cleared the area.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Notify the QA lead and EHS at once; the trigger is the unusual odour.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        }
+      ],
+      "quotes": [
+        {
+          "n": 1,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "If there is a leak, an unknown substance or an unusual odour"
+        },
+        {
+          "n": 2,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "stop unloading immediately. Isolate the area, keep other people away and do not touch the material"
+        },
+        {
+          "n": 3,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "Isolate the area, keep other people away and do not touch the material"
+        },
+        {
+          "n": 4,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "Unloading resumes only after EHS has cleared the area"
+        },
+        {
+          "n": 5,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "If there is a leak, an unknown substance or an unusual odour, stop unloading immediately. Isolate the area, keep other people away and do not touch the material. Notify the QA lead and EHS at once"
+        }
+      ],
+      "cited": [
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 5,
+      "citations": 5,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "H-08",
+      "title": "Chemical smell",
+      "passed": true,
+      "seconds": 9.7
+    },
+    {
+      "kind": "context_incomplete",
+      "status_reasons": [
+        "1 piece of information missing"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Inspect the handling unit for damage before moving it into the warehouse.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Photograph the handling unit label and damage, then attach the photos to the goods receipt in the WMS.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Determine whether the damage is to the product itself or only to the outer packaging, and, if it is only the outer packaging, whether the product inside is intact. These facts change whether to block the affected quantity, accept or refuse the delivery, and notify QA; the passages give different instructions for these cases.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "SOP-INB-001 rev 3",
+            "WI-QUA-004 rev 2"
+          ]
+        }
+      ],
+      "quotes": [
+        {
+          "n": 1,
+          "document": "SOP-INB-001 rev 3",
+          "quote": "Inspect every handling unit for damage before it is moved into the warehouse"
+        },
+        {
+          "n": 2,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "Photos must show the handling unit label and the damage. Attach them to the goods receipt in the WMS"
+        },
+        {
+          "n": 3,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "If the product itself is visibly damaged, post the affected quantity to blocked stock"
+        },
+        {
+          "n": 4,
+          "document": "SOP-INB-001 rev 3",
+          "quote": "If the outer packaging of a handling unit shows visible damage, refuse the delivery"
+        },
+        {
+          "n": 5,
+          "document": "WI-QUA-004 rev 2",
+          "quote": "If the outer packaging is damaged but the product inside is intact, accept the delivery"
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 3,
+      "citations": 5,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "H-09",
+      "title": "Damage without detail",
+      "passed": true,
+      "seconds": 10.6
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers A-12"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "After posting, move the material to the storage location proposed by the WMS.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "quotes": [
+        {
+          "n": 1,
+          "document": "SOP-INB-001 rev 3",
+          "quote": "After posting, move the material to the storage location proposed by the WMS"
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "WI-STO-007 rev 1"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 1,
+      "citations": 1,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "H-10",
+      "title": "Aisle A-12 at HAM-01",
+      "passed": true,
+      "seconds": 9.0
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers GR-777"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Stop and contact the WMS key user because GR-777 is not listed in the guide.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not override the error with a manual posting or bypass it by posting against a different purchase order line.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1",
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Escalate the unknown error code to the WMS key user; the matrix gives a response time of 1 hour.",
+          "cites": [
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "quotes": [
+        {
+          "n": 1,
+          "document": "GUIDE-WMS-003 rev 1",
+          "quote": "If the code is not listed in this guide, stop and contact the WMS key user"
+        },
+        {
+          "n": 2,
+          "document": "GUIDE-WMS-003 rev 1",
+          "quote": "Never override an error with a manual posting"
+        },
+        {
+          "n": 3,
+          "document": "SOP-INB-001 rev 3",
+          "quote": "Never bypass a WMS error by posting against a different purchase order line"
+        },
+        {
+          "n": 4,
+          "document": "MATRIX-ESC-001 rev 2",
+          "quote": "WMS errors not solved by GUIDE-WMS-003, unknown error codes | WMS key user | 1 hour"
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 3,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "H-11",
+      "title": "Unknown code GR-777",
+      "passed": true,
+      "seconds": 6.6
+    }
+  ]
+}
