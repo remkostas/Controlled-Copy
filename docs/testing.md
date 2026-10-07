@@ -134,6 +134,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-UI-01 | Three-panel layout | TC-UI-001 | e2e | Open the workspace | Sources, chat and Studio visible on a 1366×768 screen |
 | FR-UI-02 | Journey A end to end | TC-UI-002 | e2e | Create notebook, upload, ask, open citation, follow-up, refusal, Briefing, delete source | Every step works in a real browser |
 | NFR-UI-01 | Readable contrast | TC-UI-003 | e2e | Automated contrast check on the main screens | Text meets WCAG AA contrast |
+| FR-UI-09 | The phone header stays compact | TC-UI-009 | e2e | Workspace at 390 × 844 with every layer on | Header at most 100 px (was 189); short labels on screen, full accessible names; full labels on a desktop |
 
 ### Governance (stage 2)
 

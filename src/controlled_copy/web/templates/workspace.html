@@ -15,7 +15,7 @@
     </select>
   </form>
   {% if can_create_notebook %}
-  <button type="button" class="btn btn--sm" data-toggle="new-notebook" aria-controls="new-notebook" aria-expanded="false">{{ icon('plus') }} New notebook</button>
+  <button type="button" class="btn btn--sm topbar__new" data-toggle="new-notebook" aria-controls="new-notebook" aria-expanded="false" title="New notebook">{{ icon('plus') }} <span class="topbar__label">New notebook</span></button>
   <form id="new-notebook" class="nb-switch" hidden hx-post="/notebooks" hx-disabled-elt="find button">
     <label class="visually-hidden" for="new-notebook-title">Notebook title</label>
     <input class="input" id="new-notebook-title" name="title" maxlength="120" placeholder="Notebook title" required>
