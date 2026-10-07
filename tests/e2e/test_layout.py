@@ -93,3 +93,19 @@ def test_tc_ans_008_the_way_back_stays_in_reach(browser, server_url, long_source
         )
     finally:
         context.close()
+
+
+def test_tc_ans_008_a_child_transition_does_not_settle_the_viewer_early(browser, server_url, long_source):
+    context, page = open_page(browser, server_url, 1366, 768)
+    try:
+        # A hover colour ending inside the workspace while the column still widens.
+        page.evaluate(
+            """() => document.querySelector('.workspace').addEventListener('click', () => {
+                 setTimeout(() => document.querySelector('.panel--chat').dispatchEvent(
+                   new TransitionEvent('transitionend', {bubbles: true, propertyName: 'background-color'})), 30);
+               }, true)"""
+        )
+        cite_target(page, long_source)
+        assert in_panel_view(page), "the cited passage is in view after the column has settled"
+    finally:
+        context.close()

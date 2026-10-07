@@ -131,9 +131,14 @@
       const settle = () => {
         if (done) return;
         done = true;
+        ws.removeEventListener("transitionend", onEnd);
         center();
       };
-      ws.addEventListener("transitionend", settle, { once: true });
+      // Only the column animation counts: transitions of children (a hover colour) bubble here too.
+      const onEnd = (event) => {
+        if (event.target === ws && event.propertyName === "grid-template-columns") settle();
+      };
+      ws.addEventListener("transitionend", onEnd);
       setTimeout(settle, 400);
     }
   }
