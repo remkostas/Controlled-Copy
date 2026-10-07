@@ -231,7 +231,11 @@
       const outputs = $$("details.output", target);
       if (outputs.length) {
         outputs.forEach((output, index) => (output.open = index === 0));
-        outputs[0].scrollIntoView({ block: "start" });
+        // Scroll only the Studio panel, never the page (it is locked to the window).
+        const panel = target.closest(".panel__body");
+        if (panel) {
+          panel.scrollTop += outputs[0].getBoundingClientRect().top - panel.getBoundingClientRect().top;
+        }
       }
     }
   });
