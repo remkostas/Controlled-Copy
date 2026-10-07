@@ -157,6 +157,7 @@ def workspace_context(
         "can_create_notebook": sum(n.kind == "personal" for n in notebooks)
         < settings.max_notebooks_per_visitor,
         "limits": limits_view(settings),
+        "retention_days": settings.retention_days,
         "ui": {
             "topbar_partials": list(request.app.state.registry.topbar_partials),
             "chat_partials": list(request.app.state.registry.chat_partials),

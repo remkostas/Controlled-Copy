@@ -25,7 +25,7 @@
   {% for partial in ui.topbar_partials %}{% include partial %}{% endfor %}
   <p class="topbar__note" title="Answers are AI-generated. Check the cited passage.">{{ icon('info') }}<span>Answers are AI-generated. Check the cited passage.</span></p>
   <button type="button" class="btn btn--ghost btn--sm topbar__logout" hx-post="/logout"
-    hx-confirm="Log out? Your notebooks, sources, chats and Studio outputs in this session are deleted now (otherwise 7 days after your last visit).">{{ icon('log-out') }} Log out</button>
+    hx-confirm="Log out? Your notebooks, sources, chats and Studio outputs in this session are deleted now (otherwise {{ retention_days }} days after your last visit).">{{ icon('log-out') }} Log out</button>
 </header>
 
 <nav class="mobile-tabs" role="tablist" aria-label="Panels">

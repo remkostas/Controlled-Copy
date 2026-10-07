@@ -45,3 +45,28 @@ def test_tc_acc_006_log_out_deletes_the_session_and_its_data(make_visitor, db, s
 
 def test_tc_acc_006_the_workspace_offers_log_out(visitor):
     assert 'hx-post="/logout"' in visitor.refresh().page
+
+
+def test_tc_acc_006_the_confirmation_names_the_configured_retention(visitor, settings):
+    page = visitor.refresh().page
+    assert f"otherwise {settings.retention_days} days after your last visit" in page
+
+
+def test_tc_acc_006_an_upload_running_during_log_out_ends_cleanly(visitor, fake, db, settings, monkeypatch):
+    from controlled_copy.storage.repo import Repo
+
+    session_id = db.execute(
+        "SELECT session_id FROM notebook WHERE id = ?", (visitor.notebook_id,)
+    ).fetchone()[0]
+    embed = fake.embed
+
+    def embed_then_log_out(texts, *, model):
+        result = embed(texts, model=model)
+        Repo(db).delete_session(session_id)  # the visitor logs out while the upload is indexed
+        return result
+
+    monkeypatch.setattr(fake, "embed", embed_then_log_out)
+    response = visitor.upload("late.md", b"# Late\n\nA note uploaded while logging out.", expect=404)
+    assert "deleted" in response.json()["error"]
+    assert db.execute("SELECT COUNT(*) FROM source").fetchone()[0] == 0
+    assert not any(settings.uploads_dir.iterdir()), "the uploaded file is removed"

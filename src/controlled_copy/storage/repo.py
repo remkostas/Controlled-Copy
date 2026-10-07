@@ -341,6 +341,8 @@ class Repo:
             raise ValueError("every chunk needs exactly one vector")
         source_id = new_id()
         with transaction(self.conn):
+            # The visitor logged out or deleted the notebook while this upload was indexed.
+            self._require_notebook(_owned(new.notebook))
             if limit is not None and self.count_sources(new.notebook) >= limit:
                 raise sources_full(limit)
             if char_limit is not None and self.count_chars(new.notebook) + len(new.text) > char_limit:
