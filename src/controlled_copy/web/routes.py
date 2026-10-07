@@ -328,6 +328,18 @@ def delete_notebook(request: Request, notebook_id: str, services: WriteDep) -> R
     return json_or_redirect(request, {"deleted": notebook_id}, "/app")
 
 
+@router.post("/logout")
+def logout(request: Request, services: WriteDep) -> Response:
+    """An anonymous session cannot be resumed once its cookie is gone, so logging out deletes
+    its notebooks, sources, chats and outputs now instead of after the retention window."""
+    files = services.repo.delete_session(services.sid)
+    _discard(services, files)
+    log_event("logged_out", session=services.sid, files=len(files))
+    response = json_or_redirect(request, {"logged_out": True}, "/")
+    response.delete_cookie(SESSION_COOKIE, path="/")
+    return response
+
+
 # Sources -------------------------------------------------------------------------
 def _source_list_response(
     request: Request, services: Services, notebook: OwnedNotebook, selected: set[str], new_id: str

@@ -541,6 +541,12 @@ select {
 .topbar__note .icon {
   color: var(--accent);
 }
+.topbar .topbar__logout {
+  color: var(--text-on-chrome);
+}
+.topbar .topbar__logout:hover {
+  background: var(--surface-chrome-3);
+}
 
 /* Workspace grid */
 .workspace {

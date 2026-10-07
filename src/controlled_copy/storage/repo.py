@@ -644,6 +644,21 @@ class Repo:
         return int(row["n"])
 
     # Retention ------------------------------------------------------------------
+    def delete_session(self, sid: str) -> list[str]:
+        """Log out: delete the session with all its data now, as the purge would after the
+        retention window. Returns the uploaded files to remove."""
+        with transaction(self.conn):
+            files = [
+                row["file_path"]
+                for row in self.conn.execute(
+                    "SELECT s.file_path FROM source s JOIN notebook n ON n.id = s.notebook_id "
+                    "WHERE n.session_id = ? AND s.file_path IS NOT NULL",
+                    (sid,),
+                )
+            ]
+            self.conn.execute("DELETE FROM visitor_session WHERE id = ?", (sid,))
+        return files
+
     def purge_expired(self, retention_hours: int, now: datetime | None = None) -> tuple[int, list[str]]:
         """Delete sessions not seen within the retention window, with all their data."""
         now = now or datetime.now(UTC)
