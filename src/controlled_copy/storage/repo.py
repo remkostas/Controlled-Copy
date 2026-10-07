@@ -563,6 +563,13 @@ class Repo:
         if self.conn.execute("SELECT 1 FROM notebook WHERE id = ?", (notebook_id,)).fetchone() is None:
             raise notebook_gone()
 
+    def clear_chat(self, notebook: OwnedNotebook) -> int:
+        """Start a new chat: delete every turn of the notebook. Sources and Studio outputs stay."""
+        with transaction(self.conn):
+            return self.conn.execute(
+                "DELETE FROM chat_message WHERE notebook_id = ?", (_owned(notebook),)
+            ).rowcount
+
     def list_turns(self, notebook: OwnedNotebook) -> list[sqlite3.Row]:
         """One row per turn: question, answer JSON, search query, lineage and status."""
         return self.conn.execute(

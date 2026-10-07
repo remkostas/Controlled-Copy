@@ -18,6 +18,7 @@ from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError
 from controlled_copy.retrieval.search import retrieve
 from controlled_copy.services import Services
+from controlled_copy.storage.db import utcnow
 from controlled_copy.storage.repo import TOMBSTONE, OwnedNotebook
 
 
@@ -113,7 +114,9 @@ def ask(services: Services, notebook: OwnedNotebook, question: str, selected_ids
             )
             return _store(services, notebook, question, search_query, answer, lineage)
 
-        messages, mapping = prompts.answer_messages(search_query or question, retrieval.passages)
+        messages, mapping = prompts.answer_messages(
+            search_query or question, retrieval.passages, today=utcnow()[:10]
+        )
         payload, result = generate(
             services, messages, schema=prompts.ANSWER_SCHEMA, schema_name="answer", model_cls=AnswerOut
         )
