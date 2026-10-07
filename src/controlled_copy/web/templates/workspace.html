@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ nb.title }} · {{ product_name }}{% endblock %}
-{% block body_attrs %} hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'{% endblock %}
+{% block body_attrs %} class="app-shell" hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'{% endblock %}
 {% block content %}
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <header class="topbar">
