@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ nb.title }} · {{ product_name }}{% endblock %}
+{% block body_attrs %} hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'{% endblock %}
+{% block content %}
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<header class="topbar">
+  <a class="brand" href="/app">{{ icon('brand') }}<span class="brand__name">{{ product_name }}</span></a>
+  <span class="topbar__divider" aria-hidden="true"></span>
+  <form class="nb-switch" method="get" action="/app">
+    <label class="visually-hidden" for="nb-select">Notebook</label>
+    <select id="nb-select" name="nb" data-autosubmit>
+      {% for n in notebooks %}
+      <option value="{{ n.id }}" {% if n.id == nb.id %}selected{% endif %}>{{ n.title }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  {% if can_create_notebook %}
+  <button type="button" class="btn btn--sm" data-toggle="new-notebook" aria-controls="new-notebook" aria-expanded="false">{{ icon('plus') }} New notebook</button>
+  <form id="new-notebook" class="nb-switch" hidden hx-post="/notebooks" hx-disabled-elt="find button">
+    <label class="visually-hidden" for="new-notebook-title">Notebook title</label>
+    <input class="input" id="new-notebook-title" name="title" maxlength="120" placeholder="Notebook title" required>
+    <button class="btn btn--sm" type="submit">Create</button>
+  </form>
+  {% endif %}
+  {% for partial in ui.topbar_partials %}{% include partial %}{% endfor %}
+  <p class="topbar__note">{{ icon('info') }}<span>Answers are AI-generated. Check the cited passage.</span></p>
+</header>
+
+<nav class="mobile-tabs" role="tablist" aria-label="Panels">
+  <button type="button" role="tab" data-tab="sources" aria-selected="false">Sources</button>
+  <button type="button" role="tab" data-tab="chat" aria-selected="true">Chat</button>
+  <button type="button" role="tab" data-tab="studio" aria-selected="false">Studio</button>
+</nav>
+
+<main class="workspace{% if initial_viewer %} is-reading{% endif %}" data-tab="chat">
+  {% include "partials/sources_panel.html" %}
+
+  <section class="panel panel--chat" aria-labelledby="chat-title">
+    <header class="panel__head">
+      <h2 class="panel__title" id="chat-title">Chat</h2>
+      <div class="panel__head-actions">
+        {% if nb.kind == 'personal' %}
+        <button type="button" class="btn btn--ghost btn--sm" hx-delete="/notebooks/{{ nb.id }}"
+          hx-confirm="Delete the notebook “{{ nb.title }}” with all its sources, chat and Studio outputs? This cannot be undone.">{{ icon('trash-2') }} Delete notebook</button>
+        {% endif %}
+      </div>
+    </header>
+    <div class="chat">
+      <div class="chat__log" id="chat-log">
+        <div class="chat__inner" id="chat-inner">
+          {% include "partials/chat_intro.html" %}
+          {% if notice %}<p class="notice notice--warn" role="status">{{ icon('triangle-alert') }}<span>{{ notice }}</span></p>{% endif %}
+          {% for t in turns %}{% include "partials/turn.html" %}{% endfor %}
+          <article class="turn" id="pending-turn" hidden>
+            <p class="question" data-pending-question></p>
+            <p class="thinking htmx-request">{{ icon('loader-circle', 'icon--spin') }} Searching the selected sources and checking every quote…</p>
+          </article>
+        </div>
+      </div>
+      <div class="composer">
+        <form class="composer__form" id="ask-form" hx-post="/notebooks/{{ nb.id }}/ask" hx-target="#pending-turn" hx-swap="beforebegin"
+              hx-include="#source-list-wrap" hx-disabled-elt="find button, find textarea">
+          <div class="composer__box">
+            <label class="visually-hidden" for="question">Question</label>
+            <textarea id="question" name="question" rows="1" maxlength="{{ limits.question_chars }}" data-counter="question-counter"
+              placeholder="Ask about the selected sources…" required {% if read_only %}disabled{% endif %}></textarea>
+            <button class="btn btn--primary btn--icon" type="submit" aria-label="Ask" {% if read_only %}disabled{% endif %}>{{ icon('send-horizontal') }}</button>
+          </div>
+          <p class="composer__meta">
+            <span>Follow-ups use the last two turns.</span>
+            <span class="counter" id="question-counter" data-max="{{ limits.question_chars }}">0 / {{ '{:,}'.format(limits.question_chars) }}</span>
+          </p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel panel--studio" aria-labelledby="studio-title">
+    <header class="panel__head">
+      <h2 class="panel__title" id="studio-title">Studio</h2>
+    </header>
+    <div class="panel__body">
+      <div class="studio-actions">
+        {% for action in ui.studio_actions %}
+        {% if action.partial %}{% include action.partial %}{% else %}
+        <button type="button" class="studio-action" hx-post="/notebooks/{{ nb.id }}/studio/{{ action.id }}" hx-include="#source-list-wrap"
+                hx-target="#studio-outputs" hx-swap="afterbegin" hx-disabled-elt="this" {% if read_only %}disabled{% endif %}>
+          {{ icon(action.icon) }}
+          <span class="studio-action__name"><span class="btn-label--idle">{{ action.title }}</span><span class="btn-label--busy">{{ icon('loader-circle', 'icon--spin') }} Writing {{ action.title|lower }}…</span></span>
+          <span class="studio-action__desc">{{ action.description }}</span>
+        </button>
+        {% endif %}
+        {% endfor %}
+      </div>
+      <div id="studio-status" aria-live="polite"></div>
+      <section class="studio-outputs" aria-labelledby="outputs-title">
+        <h3 class="studio-outputs__title" id="outputs-title">Outputs</h3>
+        <div id="studio-outputs" class="studio-outputs">
+          {% for o in outputs %}{% include "partials/output.html" %}{% else %}
+          <p class="empty" id="outputs-empty"><strong>Nothing generated yet</strong><span>Studio outputs use the selected sources and cite every statement.</span></p>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+{% endblock %}

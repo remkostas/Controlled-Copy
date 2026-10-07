@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# The package is imported from src/ instead of being installed: an editable install would
+# download an unlocked build backend (full audit SCM-01). Everything installed is hash-locked.
+env:
+  PYTHONPATH: src
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - run: pip install --require-hashes -r requirements-dev.lock
+      - run: ruff check src tests scripts eval
+      - run: ruff format --check src tests scripts eval
+
+  secrets:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: gitleaks (TC-SEC-007)
+        run: |
+          curl -sSfL -o gitleaks.tgz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tgz" | sha256sum -c -
+          tar -xzf gitleaks.tgz gitleaks
+          ./gitleaks git --no-banner --redact --exit-code 1 .
+
+  core-with-layer-off:
+    name: TC-REV-001 stage 1 suite with FEATURE_GOVERNANCE=false
+    runs-on: ubuntu-24.04
+    env:
+      FEATURE_GOVERNANCE: "false"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - run: pip install --require-hashes -r requirements-dev.lock
+      - run: python -m playwright install --with-deps chromium
+      - name: gitleaks for TC-SEC-007
+        run: |
+          curl -sSfL -o gitleaks.tgz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tgz" | sha256sum -c -
+          tar -xzf gitleaks.tgz -C /usr/local/bin gitleaks 2>/dev/null || sudo tar -xzf gitleaks.tgz -C /usr/local/bin gitleaks
+          rm gitleaks.tgz
+      - run: python -m pytest -m "stage1 and not eval and not smoke_live" --junitxml=reports/junit-stage1.xml
+      - run: python scripts/test_report.py reports/junit-stage1.xml > reports/test-report.md
+        if: always()
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: test-report
+          path: reports/
+
+  container:
+    name: Container image, Compose stack behind Caddy, image scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - run: pip install --require-hashes -r requirements-dev.lock
+      - name: Settings for a throwaway deploy-mode stack (TC-LIVE-001 makes no model calls)
+        run: |
+          code=$(python -c "import secrets; print(secrets.token_urlsafe(16))")
+          secret=$(python -c "import secrets; print(secrets.token_urlsafe(48))")
+          {
+            echo "APP_MODE=deploy"
+            echo "APP_ACCESS_CODE=$code"
+            echo "APP_SECRET_KEY=$secret"
+            echo "OPENROUTER_API_KEY=placeholder"
+            echo "SITE_ADDRESS=http://localhost"
+            echo "PUBLISH_ADDRESS=127.0.0.1"
+          } > .env
+          echo "::add-mask::$code"
+          echo "LIVE_ACCESS_CODE=$code" >> "$GITHUB_ENV"
+      - run: docker compose build --pull
+      - run: docker compose up -d --wait --wait-timeout 180
+      - run: docker compose ps
+      - name: TC-LIVE-001 through Caddy
+        env:
+          LIVE_URL: http://localhost
+        run: python -m pytest -m smoke_live tests/live -k tc_live_001 -v
+      - name: Container logs (content-free) on failure
+        if: failure()
+        run: docker compose logs --tail 100
+      - name: App image scan (fixable HIGH and CRITICAL fail the build)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.75.0
+          image-ref: controlled-copy:latest
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Caddy image scan (the internet-facing container)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.75.0
+          image-ref: caddy:2.11
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      - if: always()
+        run: docker compose down -v

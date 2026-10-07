@@ -1,0 +1,29 @@
+{% from "partials/macros.html" import status_chip %}
+<article class="viewer" data-viewer aria-labelledby="viewer-title">
+  <div class="viewer__bar">
+    <button type="button" class="btn btn--sm" data-close-viewer>{{ icon('chevron-left') }} Sources</button>
+  </div>
+  <h3 class="viewer__title" id="viewer-title">{{ s.title }}</h3>
+  {% if s.meta and s.meta.status == 'obsolete' %}
+  <p class="banner-obsolete">{{ icon('ban') }}<span>OBSOLETE{% if s.superseded_by %}, superseded by {{ s.superseded_by }}{% endif %}. Do not act on this revision.</span></p>
+  {% endif %}
+  <dl class="titleblock">
+    {% if s.meta %}
+    <div><dt>Document</dt><dd>{{ s.meta.document_id or '—' }}</dd></div>
+    <div><dt>Revision</dt><dd>{{ s.meta.revision or '—' }}</dd></div>
+    <div><dt>Status</dt><dd>{{ status_chip(s.meta.status or 'unknown') }}</dd></div>
+    <div><dt>Effective</dt><dd>{{ s.meta.effective_from or '—' }}</dd></div>
+    <div><dt>Site</dt><dd>{{ s.meta.site or '—' }}</dd></div>
+    <div><dt>Metadata</dt><dd>{{ s.origin_short }}</dd></div>
+    {% else %}
+    <div><dt>Type</dt><dd>{{ s.kind_label }}</dd></div>
+    <div><dt>Size</dt><dd>{{ s.size_label }}</dd></div>
+    <div><dt>Added</dt><dd>{{ s.created_label }}</dd></div>
+    {% endif %}
+  </dl>
+  {% if focus_label %}<p class="viewer__note">{{ icon('message-square-quote') }} Cited passage: {{ focus_label }}</p>{% endif %}
+  <div class="paper">
+    <div class="doc-text">{% for seg in segments %}{% if seg.page_label %}<span class="page-break">{{ seg.page_label }}</span>{% endif %}{% if seg.mark %}<mark{% if seg.anchor %} id="cited"{% endif %}{% if seg.cls %} class="{{ seg.cls }}"{% endif %}>{{ seg.text }}</mark>{% elif seg.cls %}<span class="{{ seg.cls }}">{{ seg.text }}</span>{% else %}{{ seg.text }}{% endif %}{% endfor %}</div>
+  </div>
+  <p class="viewer__note">This is exactly the text that was extracted and sent to the model, including any text hidden in the original file.</p>
+</article>

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ product_name }}: {{ tagline }}{% endblock %}
+{% block content %}
+<main class="cover">
+  <article class="sheet">
+    <p class="stamp" aria-hidden="true">Synthetic demo</p>
+    <div>
+      <div class="sheet__title sheet__brand">{{ icon('brand') }}<h1>{{ product_name }}</h1></div>
+      <p class="sheet__tagline">{{ tagline }}</p>
+    </div>
+    <p class="sheet__lede">Ask questions about your own documents and get answers whose every statement cites the exact passage it came from, for documents that must be current and approved.</p>
+
+    <section class="notice notice--warn" aria-labelledby="notice-title">
+      {{ icon('triangle-alert') }}
+      <div>
+        <p><strong id="notice-title">Demonstration with synthetic data.</strong> Do not upload personal or confidential documents. Uploads and everything derived from them are deleted {{ retention_days }} days after your last visit.</p>
+        <p>Processors: the host (Hetzner, Germany) and OpenRouter, with the model providers it routes to (zero data retention requested, no data collection).</p>
+      </div>
+    </section>
+
+    <form class="access" method="post" action="/access">
+      <div class="field">
+        <label for="access-code">Access code</label>
+        <input class="input" id="access-code" name="code" type="password" autocomplete="off" required maxlength="200">
+      </div>
+      <button class="btn btn--primary" type="submit">Open the workspace</button>
+    </form>
+    {% if error %}
+    <p class="notice notice--error" role="alert">{{ icon('ban') }}<span>{{ error }}</span></p>
+    {% endif %}
+
+    <footer class="sheet__foot">
+      <a href="/video">Watch the demo video</a>
+      <span class="muted">Answers are AI-generated. Check the cited passage.</span>
+    </footer>
+  </article>
+</main>
+{% endblock %}

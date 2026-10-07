@@ -1,0 +1,216 @@
+"""From an upload or pasted text to a stored, indexed source.
+
+1. Check type by content and size (validate.py); nothing is stored on rejection.
+2. Extract text: PDF per page in a time-limited subprocess; Markdown and text as is;
+   front matter parsed into document metadata.
+3. Flag pages with little or no text.
+4. Chunk with exact character offsets.
+5. Embed every chunk (batched) through the provider; each batch is one model call.
+6. Store file, source, chunks, vectors and full-text rows in one transaction.
+"""
+
+from __future__ import annotations
+
+import os
+import secrets
+import time
+from dataclasses import dataclass, field
+from pathlib import PurePath
+from typing import Any
+
+from controlled_copy.ingestion import chunking
+from controlled_copy.ingestion.frontmatter import split_front_matter
+from controlled_copy.ingestion.pdf import extract_pdf
+from controlled_copy.ingestion.validate import IngestError, decode_text, detect_kind
+from controlled_copy.limits import worst_case_usd
+from controlled_copy.logs import log_event
+from controlled_copy.providers.base import EMBED_ATTEMPTS, ProviderError, call_with_deadline
+from controlled_copy.services import Services
+from controlled_copy.storage.repo import (
+    NewSource,
+    OwnedNotebook,
+    characters_full,
+    check_free_disk,
+    estimated_growth,
+)
+
+# BGE-M3 vectors have 1024 float32 values; a bigger model is caught by the check in the write.
+VECTOR_BYTES_ESTIMATE = 4096
+
+MIN_PAGE_CHARS = 20
+KIND_EXTENSION = {"pdf": ".pdf", "md": ".md", "txt": ".txt"}
+
+
+@dataclass
+class Extracted:
+    kind: str
+    title: str
+    text: str
+    bytes: int
+    chunks: list[chunking.Chunk]
+    pages: int | None = None
+    page_starts: list[int] | None = None
+    warnings: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] | None = None
+    metadata_origin: str = "none"
+    raw: bytes | None = None  # the uploaded file, kept for the record; None for pasted text
+
+
+def _clean_title(title: str, limit: int) -> str:
+    cleaned = " ".join(title.split())
+    return cleaned[:limit] or "Untitled source"
+
+
+def extract_upload(
+    filename: str, data: bytes, *, max_pages: int, timeout: float, memory_mb: int, title_limit: int
+) -> Extracted:
+    kind = detect_kind(filename, data)
+    stem = _clean_title(PurePath(filename or "source").stem.replace("_", " "), title_limit)
+    if kind == "pdf":
+        pages = extract_pdf(data, max_pages=max_pages, timeout=timeout, memory_mb=memory_mb)
+        text, starts = chunking.join_pages(pages)
+        empty = sum(1 for page in pages if len("".join(page.split())) < MIN_PAGE_CHARS)
+        warnings = []
+        if empty:
+            noun = "page" if empty == 1 else "pages"
+            warnings.append(f"{empty} {noun} without extractable text")
+        chunks = chunking.chunk_pdf(text, starts)
+        result = Extracted("pdf", stem, text, len(data), chunks, len(pages), starts, warnings)
+    else:
+        decoded = decode_text(data)
+        if kind == "md":
+            metadata, body, warning = split_front_matter(decoded)
+            chunks = chunking.chunk_markdown(body)
+            title = (
+                _clean_title(metadata["title"], title_limit) if metadata and metadata.get("title") else stem
+            )
+            result = Extracted(
+                "md",
+                title,
+                body,
+                len(data),
+                chunks,
+                warnings=[warning] if warning else [],
+                metadata=metadata,
+                metadata_origin="asserted" if metadata else "none",
+            )
+        else:
+            result = Extracted("txt", stem, decoded, len(data), chunking.chunk_plain(decoded))
+    if not result.chunks:
+        raise IngestError(
+            "No text could be extracted from this file. Scanned PDFs need OCR, which this demo does not do.",
+            422,
+        )
+    return result
+
+
+def extract_paste(title: str, text: str, *, title_limit: int) -> Extracted:
+    cleaned = text.replace("\r\n", "\n").replace("\r", "\n").replace("\x00", "")
+    if not cleaned.strip():
+        raise IngestError("The pasted text is empty.", 422)
+    chunks = chunking.chunk_plain(cleaned)
+    return Extracted("paste", _clean_title(title, title_limit), cleaned, len(cleaned.encode()), chunks)
+
+
+def embedding_input(title: str, chunk: chunking.Chunk) -> str:
+    """Contextual header: the title and section help retrieval for short chunks."""
+    return f"{title}\n{chunk.locator}\n{chunk.text}"
+
+
+def embed_texts(services: Services, texts: list[str], kind: str = "embed") -> list[list[float]]:
+    settings = services.settings
+    batch = max(1, settings.embedding_batch_size)
+    batches = [texts[i : i + batch] for i in range(0, len(texts), batch)]
+    # Each batch reserves the most it can cost: every byte at the embedding price cap, for the
+    # first request and each retry.
+    price = settings.max_price_embedding_per_million
+    per_request = [worst_case_usd(sum(len(t.encode()) for t in part), price) for part in batches]
+    reserves = [one * EMBED_ATTEMPTS for one in per_request]
+    services.budget.check(services.session_id, calls=len(batches), reserve_usd=sum(reserves))
+    vectors: list[list[float]] = []
+    for part, reserve, one in zip(batches, reserves, per_request, strict=True):
+        call_id = services.budget.consume(services.session_id, kind, reserve_usd=reserve)
+        try:
+            result = call_with_deadline(
+                lambda part=part: services.provider.embed(part, model=settings.model_embedding),
+                settings.provider_timeout_seconds,
+            )
+        except ProviderError as exc:
+            services.budget.settle(call_id, exc.cost_usd)  # no reported cost: the reservation stays
+            raise
+        # The answering request's reported cost replaces the reservation. Earlier requests of a
+        # retried batch lost their replies but may still have been billed, so each keeps its
+        # worst case; without a reported cost the whole reservation stays (re-check RCK2-02).
+        if result.cost_usd is not None:
+            earlier = max(0, min(result.requests, EMBED_ATTEMPTS) - 1)
+            services.budget.settle(call_id, result.cost_usd + earlier * one)
+        if len(result.vectors) != len(part):
+            raise ProviderError("embedding count mismatch")
+        vectors.extend(result.vectors)
+    return vectors
+
+
+def store(services: Services, notebook: OwnedNotebook, extracted: Extracted, raw: bytes | None) -> str:
+    started = time.monotonic()
+    settings = services.settings
+    char_limit = settings.max_notebook_chars
+    if services.repo.count_chars(notebook) + len(extracted.text) > char_limit:
+        raise characters_full(char_limit)  # before any embedding call; checked again on insert
+    storage_limits = (settings.max_visitor_upload_mb, settings.max_total_upload_mb)
+    services.repo.check_storage(notebook.session_id, extracted.bytes, *storage_limits)
+    # Free disk before any embedding call (the vectors' size estimated), and again inside the
+    # write with the real vectors: the disk can fill while the embeddings are computed.
+    disk_floor = (settings.data_dir, settings.min_free_disk_mb * 1024 * 1024)
+    chunk_texts = [c.text for c in extracted.chunks]
+    growth = estimated_growth(extracted.text, chunk_texts, VECTOR_BYTES_ESTIMATE * len(chunk_texts))
+    check_free_disk(disk_floor[0], extracted.bytes + growth, disk_floor[1])
+    vectors = embed_texts(services, [embedding_input(extracted.title, c) for c in extracted.chunks])
+    file_name: str | None = None
+    uploads = services.settings.uploads_dir
+    if raw is not None:
+        uploads.mkdir(mode=0o700, parents=True, exist_ok=True)
+        file_name = secrets.token_hex(16) + KIND_EXTENSION.get(extracted.kind, ".bin")
+        # Owner-only permissions; O_EXCL refuses to follow or overwrite an existing path.
+        descriptor = os.open(uploads / file_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(raw)
+    try:
+        source_id = services.repo.insert_source(
+            NewSource(
+                notebook=notebook,
+                title=extracted.title,
+                kind=extracted.kind,
+                bytes=extracted.bytes,
+                text=extracted.text,
+                pages=extracted.pages,
+                page_starts=extracted.page_starts,
+                warnings=extracted.warnings,
+                metadata=extracted.metadata,
+                metadata_origin=extracted.metadata_origin,
+                file_path=file_name,
+                chunks=extracted.chunks,
+                vectors=vectors,
+                vector_model=services.settings.model_embedding,
+            ),
+            limit=services.settings.max_sources_per_notebook,
+            char_limit=char_limit,
+            storage_limits_mb=storage_limits,
+            disk_floor=disk_floor,
+        )
+    except BaseException:
+        if file_name:
+            (uploads / file_name).unlink(missing_ok=True)
+        raise
+    log_event(
+        "source_ingested",
+        session=services.session_id,
+        notebook=notebook.id,
+        source=source_id,
+        kind=extracted.kind,
+        bytes=extracted.bytes,
+        pages=extracted.pages,
+        chunks=len(extracted.chunks),
+        warnings=len(extracted.warnings),
+        duration_ms=int((time.monotonic() - started) * 1000),
+    )
+    return source_id

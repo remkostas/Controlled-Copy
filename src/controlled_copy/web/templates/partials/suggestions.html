@@ -1,0 +1,15 @@
+{% if pending %}
+<div class="suggestions" id="suggestions" hx-post="/notebooks/{{ nb.id }}/suggestions" hx-trigger="load" hx-swap="outerHTML">
+  <p class="label">Suggested questions</p>
+  <div class="suggestions__list" aria-busy="true"><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span></div>
+</div>
+{% elif questions %}
+<div class="suggestions" id="suggestions">
+  <p class="label">Suggested questions</p>
+  <div class="suggestions__list">
+    {% for q in questions %}<button type="button" class="suggestion" data-question="{{ q }}">{{ q }}</button>{% endfor %}
+  </div>
+</div>
+{% else %}
+<div id="suggestions"></div>
+{% endif %}

@@ -1,0 +1,36 @@
+{% from "partials/macros.html" import cites %}
+<article class="turn" id="turn-{{ t.id }}">
+  {% if t.question %}<p class="question">{{ t.question }}</p>{% endif %}
+  {% if t.search_query %}
+  <p class="searched">{{ icon('search') }}<span>Searched for <q>{{ t.search_query }}</q></span></p>
+  {% endif %}
+  {% set a = t.answer %}
+  {% if a.kind == 'answer' %}
+  <div class="answer">
+    <ol class="answer__statements">
+      {% for st in a.statements %}
+      <li class="statement">{{ st.text }} {{ cites(st.cites) }}</li>
+      {% endfor %}
+    </ol>
+    {% for gap in a.gaps %}
+    <p class="answer__gap">{{ icon('circle-help') }}<span>Not in the selected sources: {{ gap }}</span></p>
+    {% endfor %}
+    <footer class="answer__foot">
+      <span>{{ a.cite_count }} cited passage{{ '' if a.cite_count == 1 else 's' }} from {{ a.source_count }} source{{ '' if a.source_count == 1 else 's' }}</span>
+      {% if a.removed %}<span>{{ a.removed }} statement{{ '' if a.removed == 1 else 's' }} removed: the quote could not be found in the cited passage</span>{% endif %}
+    </footer>
+  </div>
+  {% elif a.kind == 'refusal' %}
+  <div class="refusal" role="status">
+    <p class="refusal__head">{{ icon('ban') }} Not in the selected sources</p>
+    <p>Searched {{ a.searched_sources }} selected source{{ '' if a.searched_sources == 1 else 's' }}{% if a.search_query %} for <q>{{ a.search_query }}</q>{% endif %} and found no passage that answers this{% if a.reason %}. {{ a.reason }}{% else %}.{% endif %}</p>
+  </div>
+  {% elif a.kind == 'tombstone' %}
+  <div class="refusal" role="status">
+    <p class="refusal__head">{{ icon('trash-2') }} Answer removed</p>
+    <p>This answer cited a source that was deleted, so its content was deleted too.</p>
+  </div>
+  {% else %}
+  {% with message=a.message %}{% include "partials/notice.html" %}{% endwith %}
+  {% endif %}
+</article>
