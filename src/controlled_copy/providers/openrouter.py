@@ -15,6 +15,7 @@ unsupported parameter would rule out every endpoint.
 from __future__ import annotations
 
 import math
+import random
 import time
 from typing import Any
 
@@ -34,7 +35,26 @@ from controlled_copy.providers.base import (
 
 PRIVACY: dict[str, Any] = {"zdr": True, "data_collection": "deny"}
 TRANSIENT_STATUS = frozenset({408, 429, 500, 502, 503, 504})
-RETRY_BACKOFF = (1.0, 3.0)
+# Seconds before retry 1, 2, 3, ...; the last value repeats. A random extra of up to half the
+# wait spreads retries from parallel uploads. A provider's Retry-After wins, up to the cap.
+RETRY_BACKOFF = (2.0, 4.0, 8.0, 12.0)
+RETRY_AFTER_CAP = 15.0
+
+
+def _retry_wait(attempt: int, retry_after: float | None) -> float:
+    base = RETRY_BACKOFF[min(attempt, len(RETRY_BACKOFF) - 1)]
+    if retry_after is not None:
+        return min(max(retry_after, base), RETRY_AFTER_CAP)
+    return base + random.uniform(0, base / 2)  # noqa: S311 - jitter, not security
+
+
+def _retry_after(value: str | None) -> float | None:
+    """Seconds from a Retry-After header in its seconds form; dates are ignored."""
+    try:
+        seconds = float(value) if value is not None else None
+    except ValueError:
+        return None
+    return seconds if seconds is not None and math.isfinite(seconds) and seconds >= 0 else None
 
 
 def build_embedding_request(
@@ -131,10 +151,18 @@ class OpenRouterProvider:
             except ProviderError as exc:
                 if not isinstance(exc, ProviderTransient) or attempt == retries:
                     raise
-                if time.monotonic() - started + RETRY_BACKOFF[attempt] >= self.timeout:
+                wait = _retry_wait(attempt, exc.retry_after)
+                if time.monotonic() - started + wait >= self.timeout:
                     raise
-                log_event("provider_retry", path=path, attempt=attempt + 1, model=str(body.get("model")))
-                time.sleep(RETRY_BACKOFF[attempt])
+                log_event(
+                    "provider_retry",
+                    path=path,
+                    attempt=attempt + 1,
+                    status=str(exc.status),
+                    wait_ms=int(wait * 1000),
+                    model=str(body.get("model")),
+                )
+                time.sleep(wait)
         raise AssertionError("unreachable")
 
     def _post(self, path: str, body: dict[str, Any], timeout: float | None = None) -> dict[str, Any]:
@@ -158,7 +186,11 @@ class OpenRouterProvider:
                 duration_ms=duration_ms,
             )
             kind = ProviderTransient if response.status_code in TRANSIENT_STATUS else ProviderError
-            raise kind(f"provider returned HTTP {response.status_code}")
+            raise kind(
+                f"provider returned HTTP {response.status_code}",
+                status=response.status_code,
+                retry_after=_retry_after(response.headers.get("retry-after")),
+            )
         try:
             data = response.json()
         except ValueError as exc:
@@ -167,7 +199,7 @@ class OpenRouterProvider:
             code = data["error"].get("code") if isinstance(data["error"], dict) else None
             log_event("provider_error_body", path=path, status=str(code), model=str(body.get("model")))
             kind = ProviderTransient if code in TRANSIENT_STATUS else ProviderError
-            raise kind(f"provider error {code}")
+            raise kind(f"provider error {code}", status=code if isinstance(code, int) else None)
         return data
 
     def embed(self, texts: list[str], *, model: str) -> EmbedResult:

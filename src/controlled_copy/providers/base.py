@@ -14,9 +14,18 @@ class ProviderError(Exception):
     `cost_usd`: what the provider reported for a call that was billed but failed after the
     response arrived (for example malformed output), so the daily budget still counts it."""
 
-    def __init__(self, message: str = "", *, cost_usd: float | None = None) -> None:
+    def __init__(
+        self,
+        message: str = "",
+        *,
+        cost_usd: float | None = None,
+        status: int | None = None,
+        retry_after: float | None = None,
+    ) -> None:
         super().__init__(message)
         self.cost_usd = cost_usd
+        self.status = status  # the HTTP status, when the provider sent one
+        self.retry_after = retry_after  # seconds from a Retry-After header, when given
 
 
 class ProviderTransient(ProviderError):
@@ -46,7 +55,11 @@ class ChatResult:
 # generation may bill, and how many requests one embedding batch may send (first try plus
 # retries of transient failures, any of which might be billed).
 MAX_COMPLETION_TOKENS = 4000
-EMBED_ATTEMPTS = 3
+# Embedding requests are retried longer than chat calls: under daytime load the zero-data-
+# retention embedding route answers bursts of uploads with HTTP 429 for several seconds
+# (rubric review, 2026-10-07: 5 of 11 uploads of a 48-page PDF failed with 3 attempts).
+# Every attempt is still reserved at its worst case before the batch starts.
+EMBED_ATTEMPTS = 5
 
 
 @dataclass(frozen=True)

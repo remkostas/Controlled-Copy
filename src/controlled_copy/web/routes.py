@@ -26,7 +26,7 @@ from controlled_copy.ingestion.validate import IngestError
 from controlled_copy.limits import DAILY_LIMIT_MESSAGE
 from controlled_copy.logs import log_event
 from controlled_copy.plugins import StudioAction
-from controlled_copy.providers.base import ProviderError
+from controlled_copy.providers.base import ProviderError, ProviderTimeout
 from controlled_copy.purge import remove_uploads
 from controlled_copy.services import Services
 from controlled_copy.storage.db import connect
@@ -58,6 +58,10 @@ router = APIRouter()
 
 DEFAULT_NOTEBOOK_TITLE = "Untitled notebook"
 EMBEDDING_UNAVAILABLE = "Indexing failed because the embedding provider is not available. Please try again."
+EMBEDDING_BUSY = (
+    "The embedding service is busy right now and did not answer in time, even after retrying. "
+    "Nothing was stored; please try again in a minute."
+)
 
 
 # Rendering helpers -------------------------------------------------------------
@@ -421,8 +425,14 @@ def add_source(
     except UserFacingError as exc:
         log_event("source_rejected", session=services.sid, notebook=notebook_id, status=str(exc.status))
         return notice(request, exc.message, exc.status, target)
-    except ProviderError:
-        return notice(request, EMBEDDING_UNAVAILABLE, 502, target)
+    except ProviderError as exc:
+        busy = exc.status == 429 or isinstance(exc, ProviderTimeout)
+        log_event(
+            "source_embedding_failed", session=services.sid, notebook=notebook_id, status=str(exc.status)
+        )
+        return notice(
+            request, EMBEDDING_BUSY if busy else EMBEDDING_UNAVAILABLE, 503 if busy else 502, target
+        )
     return _source_list_response(request, services, notebook, set(source_ids or []), source_id)
 
 
