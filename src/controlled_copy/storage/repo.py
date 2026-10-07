@@ -526,14 +526,19 @@ class Repo:
         search_query: str | None,
         lineage: Collection[str],
         status: str,
+        chat_epoch: int | None = None,
     ) -> Stored:
         """Store a turn. `lineage` names every source the turn's text depends on. Returns what
-        was stored: callers answer with that, never with text the store discarded."""
+        was stored: callers answer with that, never with text the store discarded.
+        `chat_epoch` is the notebook's chat generation when the question arrived: if New chat
+        ran since, nothing is stored and the turn comes back as a tombstone."""
         notebook_id = _owned(notebook)
         turn_id = new_id()
         now = utcnow()
         with transaction(self.conn):
             self._require_notebook(notebook_id)
+            if chat_epoch is not None and self._chat_epoch(notebook_id) != chat_epoch:
+                return Stored(turn_id, TOMBSTONE)
             if not self._all_sources_exist(notebook_id, lineage):
                 # A source was deleted while the model was answering: keep no derived text.
                 question, answer, search_query, lineage, status = "", {}, None, [], TOMBSTONE
@@ -564,11 +569,22 @@ class Repo:
             raise notebook_gone()
 
     def clear_chat(self, notebook: OwnedNotebook) -> int:
-        """Start a new chat: delete every turn of the notebook. Sources and Studio outputs stay."""
+        """Start a new chat: delete every turn of the notebook and raise its chat generation,
+        so an answer still being generated is not stored. Sources and Studio outputs stay."""
+        notebook_id = _owned(notebook)
         with transaction(self.conn):
+            self.conn.execute("UPDATE notebook SET chat_epoch = chat_epoch + 1 WHERE id = ?", (notebook_id,))
             return self.conn.execute(
-                "DELETE FROM chat_message WHERE notebook_id = ?", (_owned(notebook),)
+                "DELETE FROM chat_message WHERE notebook_id = ?", (notebook_id,)
             ).rowcount
+
+    def chat_epoch(self, notebook: OwnedNotebook) -> int:
+        """The notebook's chat generation; New chat raises it."""
+        return self._chat_epoch(_owned(notebook))
+
+    def _chat_epoch(self, notebook_id: str) -> int:
+        row = self.conn.execute("SELECT chat_epoch FROM notebook WHERE id = ?", (notebook_id,)).fetchone()
+        return int(row[0]) if row else 0
 
     def list_turns(self, notebook: OwnedNotebook) -> list[sqlite3.Row]:
         """One row per turn: question, answer JSON, search query, lineage and status."""

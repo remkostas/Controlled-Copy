@@ -32,6 +32,8 @@ ANSWER_SYSTEM = "\n".join(
         ' statements and explain briefly in "unanswerable".',
         "- Write the statements in the language of the question (English if that is unclear). Quotes"
         " stay word for word in the language of their passage.",
+        "- Today's date is given only to judge whether dates in the passages (effective dates,"
+        " deadlines) have passed. It is not evidence: do not state it unless the question needs it.",
     ]
 )
 

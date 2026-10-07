@@ -88,7 +88,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-ANS-07 | Timeout handled | TC-ANS-007 | integration | Fake that exceeds the timeout | Clear message within the time limit |
 | FR-ANS-08 | Citation opens the passage | TC-ANS-008 | e2e | Click a citation chip | Viewer opens, passage highlighted and visible |
 | FR-ANS-09 | Answers follow the language of the question; quotes stay in the language of their source | TC-ANS-009 | unit, integration | The prompts; a German source and a German question | No prompt fixes the answer language; the German answer keeps its verified German quote |
-| FR-ANS-10 | Answers know today's date | TC-ANS-010 | integration | Any question | The answer prompt carries today's date |
+| FR-ANS-10 | Answers know today's date | TC-ANS-010 | unit, integration | Any question; dates around midnight and the summer-time switches | The answer prompt carries today's date in Germany and says it is not evidence |
 
 ### Follow-ups (stage 1)
 
@@ -97,7 +97,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-FUP-01 | Follow-ups rewritten with the last two turns | TC-FUP-001 | integration | Turn 1 about packaging; turn 2 "and if it is wet?" | Rewrite contains the topic; retrieval uses it |
 | FR-FUP-02 | The rewritten question is shown | TC-FUP-002 | api | Same | Response fragment shows the search question |
 | FR-FUP-03 | Citations only from the current retrieval | TC-FUP-003 | unit | Fake answer citing a passage from turn 1 not retrieved now | Citation removed |
-| FR-FUP-04 | New chat starts over; a new topic is searched as asked | TC-FUP-004 | unit, integration | Two turns, then New chat; a new topic after earlier turns | Turns deleted, sources kept, no rewrite afterwards; only the owner can clear; the rewrite prompt keeps a new topic unchanged |
+| FR-FUP-04 | New chat starts over; a new topic is searched as asked | TC-FUP-004 | unit, integration, e2e | Two turns, then New chat; New chat while an answer is generated; a new topic after earlier turns; first answer in a browser | Turns deleted, sources kept, no rewrite afterwards; an answer that started before New chat is not stored; only the owner can clear; the button appears with the first answer without a reload; the rewrite prompt keeps a new topic unchanged (the real model's behaviour is a live check) |
 
 ### Studio (stage 1)
 
