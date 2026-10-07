@@ -1573,3 +1573,47 @@ details.paste > summary.btn {
 .applicability + .applicability {
   margin-top: var(--sp-2);
 }
+
+/* Printable page of a Studio output or Resolution Card */
+.print-page {
+  background: var(--surface-panel);
+}
+.print-sheet {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: var(--sp-6) var(--sp-4);
+  display: grid;
+  gap: var(--sp-4);
+}
+.print-stamp {
+  padding: var(--sp-3);
+  border: 2px solid var(--text);
+  font-size: var(--fs-sm);
+}
+.print-actions {
+  display: flex;
+  gap: var(--sp-2);
+}
+.print-sources ol {
+  margin: 0;
+  padding-left: var(--sp-5);
+  display: grid;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+}
+@media print {
+  .print-actions {
+    display: none;
+  }
+  .print-page {
+    background: #fff;
+  }
+  .print-page .cite {
+    border: 0;
+    background: none;
+    color: inherit;
+    padding: 0;
+    font-size: 0.75em;
+    vertical-align: super;
+  }
+}

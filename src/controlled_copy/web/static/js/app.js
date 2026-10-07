@@ -7,6 +7,14 @@
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const workspace = () => $(".workspace");
 
+  // Printable page of a Studio output: print on open, and again from its button.
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-print]")) window.print();
+  });
+  document.addEventListener("DOMContentLoaded", () => {
+    if (document.body.hasAttribute("data-autoprint")) window.setTimeout(() => window.print(), 300);
+  });
+
   // Notebook switcher submits on change.
   document.addEventListener("change", (event) => {
     const el = event.target;

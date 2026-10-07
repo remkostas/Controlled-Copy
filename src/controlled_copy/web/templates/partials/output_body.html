@@ -1,0 +1,24 @@
+{% from "partials/macros.html" import cites %}
+{% if o.kind == 'ok' and o.partial %}
+{% include o.partial %}
+{% elif o.kind == 'ok' %}
+{% for sec in o.sections %}
+<section class="output__section">
+  <h3>{{ sec.title }}</h3>
+  {% if sec.entries %}
+  <ul>
+    {% for it in sec.entries %}
+    <li>{% if it.type_label %}<span class="badge">{{ it.type_label }}</span> {% endif %}{{ it.text }} {{ cites(it.cites) }}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Nothing in the selected sources supports this section.</p>
+  {% endif %}
+</section>
+{% endfor %}
+{% if o.removed %}<p class="muted">{{ o.removed }} statement{{ '' if o.removed == 1 else 's' }} removed because the quote could not be verified.</p>{% endif %}
+{% elif o.kind == 'unavailable' %}
+<p class="muted">This output was made by a feature that is switched off, so it is not shown.</p>
+{% else %}
+<p class="muted">This output cited a source that was deleted, so its content was deleted too.</p>
+{% endif %}

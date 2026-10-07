@@ -29,7 +29,7 @@ from controlled_copy.plugins import StudioAction
 from controlled_copy.providers.base import ProviderError
 from controlled_copy.purge import remove_uploads
 from controlled_copy.services import Services
-from controlled_copy.storage.db import connect
+from controlled_copy.storage.db import connect, utcnow
 from controlled_copy.storage.repo import CapacityReached, OwnedNotebook, sources_full
 from controlled_copy.studio.actions import run_overview_template, suggested_questions, suggestions_key
 from controlled_copy.studio.engine import core_templates
@@ -565,6 +565,28 @@ def output_as_markdown(
         name = re.sub(r"[^a-z0-9-]", "", str(row["template"]).lower()) or "output"
         headers["Content-Disposition"] = f'attachment; filename="{name}-{row["created_at"][:10]}.md"'
     return Response(text, media_type="text/markdown; charset=utf-8", headers=headers)
+
+
+@router.get("/notebooks/{notebook_id}/outputs/{output_id}/print")
+def output_for_print(request: Request, notebook_id: str, output_id: str, services: SessionDep) -> Response:
+    """A Studio output or Resolution Card as a printable page, stamped as an uncontrolled copy;
+    only from the visitor's own notebook."""
+    notebook = owned_notebook(services, notebook_id)
+    row = services.repo.get_output(notebook, output_id) if notebook is not None else None
+    view = (
+        views.output_view(row, open_=True, partials=request.app.state.registry.output_partials)
+        if row is not None
+        else None
+    )
+    if view is None or view["kind"] != "ok":
+        return PlainTextResponse("Not found.", status_code=404)
+    response = render(
+        request,
+        "print.html",
+        {"o": view, "notebook": notebook, "printed": views.time_label(utcnow())},
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 def render_output(request: Request, services: Services, notebook: OwnedNotebook, output_id: str) -> Response:

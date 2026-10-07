@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ o.title }} · printed copy · {{ product_name }}{% endblock %}
+{% block body_attrs %} class="print-page" data-autoprint{% endblock %}
+{% block content %}
+<main class="print-sheet">
+  <p class="print-stamp" role="note"><strong>Printed copy: uncontrolled.</strong> Printed {{ printed }}. A paper copy is not updated when the documents change: check the current revision before you act on it.</p>
+  <p class="print-actions">
+    <button type="button" class="btn btn--sm btn--primary" data-print>{{ icon('files') }} Print</button>
+    <a class="btn btn--sm btn--ghost" href="/app?nb={{ notebook.id }}">Back to the notebook</a>
+  </p>
+  <header class="print-head">
+    <h1>{{ o.title }}</h1>
+    <p class="muted">{{ notebook.title }} · {{ o.meta_label }}</p>
+  </header>
+  <div class="output__body">
+    {% include "partials/output_body.html" %}
+  </div>
+  {% if o.extra.citations %}
+  <section class="output__section print-sources">
+    <h3>Sources</h3>
+    <ol>
+      {% for c in o.extra.citations %}<li value="{{ c.n }}">{{ c.label }}: “{{ c.quote }}”</li>{% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+  <p class="muted print-foot">Made with {{ product_name }}. Every quote was checked word for word against its source when this was generated.</p>
+</main>
+{% endblock %}
