@@ -2,6 +2,8 @@
   <h1>{{ nb.title }}</h1>
   {% if sources %}
   <p>{{ sources|length }} source{{ '' if sources|length == 1 else 's' }}. Ask a question; every statement in the answer links to the passage it came from.</p>
+  <button type="button" class="btn btn--sm chat-intro__summary" data-chat-summary hx-post="/notebooks/{{ nb.id }}/studio/summary" hx-include="#source-list-wrap"
+    hx-target="#studio-outputs" hx-swap="afterbegin" hx-disabled-elt="this"{% if read_only is defined and read_only %} disabled{% endif %}>{{ icon('file-text') }} Summarise the selected sources</button>
   {% include "partials/suggestions.html" %}
   {% else %}
   <p>Add sources on the left. Questions are answered only from the sources you select.</p>

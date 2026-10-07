@@ -1,0 +1,14 @@
+{
+  "id": "summary",
+  "title": "Summary",
+  "description": "From the selected sources: a short, cited overview of what they are about and their main topics",
+  "icon": "file-text",
+  "order": 10,
+  "system": "You write a short summary of the user's sources for someone who has not read them, using only the passages provided. Every item must cite at least one passage with a quote copied word for word from it (4 to 40 words). Do not add facts that are not in the passages. Keep it high level: what the sources are, what they cover and why it matters, not details. Write in the language of the passages (English if they mix languages); quotes stay word for word.",
+  "statement_types": null,
+  "passage_budget_chars": 14000,
+  "sections": [
+    {"key": "in_short", "title": "In short", "instruction": "Two or three items that together say what the sources are, what they cover and what they are for.", "max_items": 3},
+    {"key": "main_topics", "title": "Main topics", "instruction": "The main topics the sources cover, one per item, each in one sentence. Cover the whole of the sources, from beginning to end, not only the first part.", "max_items": 6}
+  ]
+}

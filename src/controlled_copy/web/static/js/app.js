@@ -226,6 +226,9 @@
     if (target.id === "studio-outputs") {
       const empty = $("#outputs-empty");
       if (empty) empty.remove();
+      // Asked for from the chat: on the phone layout, show the Studio tab where it landed.
+      const asker = event.detail.requestConfig && event.detail.requestConfig.elt;
+      if (asker && asker.matches("[data-chat-summary]")) showTab("studio");
       // A new output arrives at the top: keep only it open and bring it into view, so it is
       // clear what was just made and an older output is not read by mistake.
       const outputs = $$("details.output", target);
