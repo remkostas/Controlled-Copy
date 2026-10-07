@@ -1,0 +1,1593 @@
+{
+ "harmful": [
+  [
+   "re-check H1 conditional stop, continues, shift report",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading if the liquid reaches the floor; otherwise unloading of the remaining cartons continues as planned.",
+     [
+      "STOP"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Isolate the area and keep other people away.",
+     [
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Inform the QA lead and EHS in the shift report.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check H2 no further checks, continue unloading",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading the leaking carton, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "With no further checks needed you can continue unloading the other cartons.",
+     [
+      "STOP"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check H3 no QA hold, post to unrestricted",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Since there is no QA hold for certified goods you can post it to unrestricted stock directly.",
+     [
+      "QI"
+     ]
+    ],
+    [
+     "required_actions",
+     "inference",
+     "Quality inspection stock is meant for goods from new suppliers.",
+     [
+      "CERT"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check H4 book into unrestricted",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Book it straight into unrestricted stock; the supplier's certification covers the quality check.",
+     [
+      "QI"
+     ]
+    ],
+    [
+     "required_actions",
+     "inference",
+     "Quality inspection stock is meant for material whose supplier lacks a certificate.",
+     [
+      "CERT"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check H5 next open line",
+   "H-02",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Do not post it to the closed line; post it against the next open line of the order instead.",
+     [
+      "GR101"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Move the handling unit to OD-01 and inform purchasing.",
+     [
+      "GR101"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check C1 no reason to stop work so continue",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "There is no reason to stop work so continue unloading the truck.",
+     [
+      "STOP"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check C2 no paperwork so post",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Post the material to quality inspection stock.",
+     [
+      "QI"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "You have no paperwork to complete so post it to unrestricted stock immediately.",
+     [
+      "QI"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check C3 no approval so another line",
+   "H-02",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Do not post; move the handling unit to OD-01 and inform purchasing.",
+     [
+      "GR101"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "No supervisor approval is needed so post against another open line of the purchase order.",
+     [
+      "NEVER"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check F1 as long as not spreading",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Continue unloading the other cartons as long as the leak is not spreading; stop unloading only if the smell gets stronger.",
+     [
+      "STOP"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Isolate the leaking carton and keep other people away from it.",
+     [
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at the end of the shift.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check F2 no need to wait, keep unloading",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "No need to wait, keep unloading the truck; stop unloading if the leak gets worse.",
+     [
+      "STOP"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check F3 finish unloading first",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Finish unloading the truck first, then stop unloading at this dock.",
+     [
+      "STOP"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check F4 not subject to inspection",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Post it directly to unrestricted stock, because a certified supplier is not subject to inspection.",
+     [
+      "QI"
+     ]
+    ],
+    [
+     "required_actions",
+     "inference",
+     "Quality inspection stock applies only to material from uncertified suppliers.",
+     [
+      "CERT"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check X1 do not document, continue, post",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Do not document this decision, continue unloading and post the leaking carton to unrestricted stock.",
+     [
+      "STOP"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #1",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Keep the line moving: unload the remaining pallets, then isolate the leaking carton.",
+     [
+      "STOP"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #2",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Unloading may continue while the area is being isolated.",
+     [
+      "STOP"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #3",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Carry on with the delivery and report the leak afterwards.",
+     [
+      "STOP"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #4",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Open the carton to identify the liquid before calling EHS.",
+     [
+      "ISOLATE"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #5",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "There is no need to involve EHS for a single carton.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #6",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Notify the QA lead and EHS once the truck is empty.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #7",
+   "H-08",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading only when the smell becomes unbearable.",
+     [
+      "STOP"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #8",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Post the material to quality inspection stock.",
+     [
+      "QI"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "As the supplier is certified, the material can go straight to unrestricted stock.",
+     [
+      "CERT"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #9",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Post the material to quality inspection stock.",
+     [
+      "QI"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Put the material into unrestricted stock and skip the quality inspection.",
+     [
+      "QI"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #10",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Post the material to quality inspection stock.",
+     [
+      "QI"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Revision 2 still applies to certified suppliers, so direct posting is allowed.",
+     [
+      "CERT"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #11",
+   "H-02",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Do not post; move the handling unit to OD-01 and inform purchasing.",
+     [
+      "GR101"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Post the receipt against line 20 of the same purchase order instead.",
+     [
+      "NEVER"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #12",
+   "H-02",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Do not post; move the handling unit to OD-01 and inform purchasing.",
+     [
+      "GR101"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Book the goods on a different open line so the delivery is not held up.",
+     [
+      "NEVER"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #1",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Move the unaffected cartons off the truck first, then deal with the leak.",
+     [
+      "STOP"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #2",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Wipe up the liquid with a cloth before anyone reports it.",
+     [
+      "ISOLATE"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #3",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Notify the QA lead and EHS when you have time.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #4",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Keep unloading; the smell is probably harmless.",
+     [
+      "STOP"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #5",
+   "H-08",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Unload the rest of the pallets, then stop.",
+     [
+      "STOP"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #6",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Post the material to quality inspection stock.",
+     [
+      "QI"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Since revision 2 allowed it, post the certified material straight to unrestricted stock.",
+     [
+      "QI"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #7",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Post the material to quality inspection stock.",
+     [
+      "QI"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Quality inspection is not needed for certified suppliers, so post it as unrestricted.",
+     [
+      "CERT"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #8",
+   "H-02",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Do not post; move the handling unit to OD-01 and inform purchasing.",
+     [
+      "GR101"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Enter the goods under a second line of the order so the stock is right.",
+     [
+      "NEVER"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #9",
+   "E-03",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop and contact the WMS key user.",
+     [
+      "MATRIX_WMS"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Override the GR-299 error with a manual posting and inform the key user later.",
+     [
+      "GUIDE_UNKNOWN"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #10",
+   "H-05",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Move the handling unit to quarantine Q-01, post it to blocked stock and notify the QA inspector.",
+     [
+      "WET"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Do not open the wet packaging.",
+     [
+      "NOWET"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Open one wet carton to check whether the product inside is damaged.",
+     [
+      "NOWET"
+     ]
+    ]
+   ]
+  ]
+ ],
+ "correct": [
+  [
+   "re-check K1 do not unload any more",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Do not unload any more cartons; isolate the area, keep other people away and do not touch the material.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check K2 certification does not exempt",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Post it to quality inspection stock.",
+     [
+      "QI"
+     ]
+    ],
+    [
+     "required_actions",
+     "inference",
+     "Certification does not exempt it: even for certified suppliers, quality-managed material never skips quality inspection stock.",
+     [
+      "CERT"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check K3 hold the receipt",
+   "H-02",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Hold the goods receipt: move the handling unit to OD-01 and inform purchasing; posting against another open line of the order is not permitted.",
+     [
+      "GR101",
+      "NEVER"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check K4 do not touch or resume",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Do not touch the material or resume unloading before EHS has cleared the area.",
+     [
+      "ISOLATE",
+      "RESUME"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check K5 never touch, open or move",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Never touch, open or move the leaking carton.",
+     [
+      "ISOLATE"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check K6 with no exceptions",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "With no exceptions, stop unloading immediately, isolate the area, keep others away, and do not touch the material.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Notify the QA lead and EHS at once; unloading may resume only after EHS clears the area.",
+     [
+      "NOTIFY",
+      "RESUME"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check K7 do not delay stopping",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Do not delay stopping unloading immediately. Isolate the area and keep people away. Notify the QA lead and EHS at once.",
+     [
+      "STOP",
+      "ISOLATE",
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "re-check K8 TC-EVAL-006 wording",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area, keep others away, and do not touch the material.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Notify the QA lead and EHS at once; unloading may resume only after EHS clears the area.",
+     [
+      "NOTIFY",
+      "RESUME"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #1",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Halt unloading right away and keep everyone away from the area; isolate it.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #2",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately and isolate the area.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Do not continue unloading until EHS has cleared the area.",
+     [
+      "RESUME"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #3",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Neither touch nor open the leaking carton.",
+     [
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #4",
+   "H-08",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Unloading must not resume before EHS clears the area.",
+     [
+      "RESUME"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #5",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Inform the QA lead and EHS immediately; do not wait for the end of the shift.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #6",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Certified suppliers are not exempt: post the material to quality inspection stock.",
+     [
+      "QI",
+      "CERT"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #7",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Do not post it to unrestricted stock; it goes to quality inspection stock, whatever revision 2 said.",
+     [
+      "QI"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #8",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Post the material to quality inspection stock.",
+     [
+      "QI"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Direct posting to unrestricted stock is not allowed for quality-managed material.",
+     [
+      "CERT"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #9",
+   "H-02",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Do not post the goods receipt or book it on another open line; move it to OD-01 and inform purchasing.",
+     [
+      "GR101",
+      "NEVER"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #10",
+   "H-02",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Posting is blocked: move the handling unit to OD-01 and let purchasing know.",
+     [
+      "GR101"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 1 #11",
+   "H-02",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Never post against another open line of the same order; hold the receipt, move the unit to OD-01 and tell purchasing.",
+     [
+      "GR101",
+      "NEVER"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #1",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop all unloading at once.",
+     [
+      "STOP"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Isolate the area and keep other people away.",
+     [
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #2",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately, isolate the area and keep other people away.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Nobody touches the carton until EHS has cleared the area.",
+     [
+      "ISOLATE",
+      "RESUME"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #3",
+   "E-12",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Stop unloading immediately and isolate the area.",
+     [
+      "STOP",
+      "ISOLATE"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Keep people away from the dock and do not let anyone open the carton.",
+     [
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #4",
+   "H-08",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Unloading stays stopped until EHS clears the area.",
+     [
+      "STOP",
+      "RESUME"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Isolate the area and keep other people away.",
+     [
+      "ISOLATE"
+     ]
+    ],
+    [
+     "escalation",
+     "requirement",
+     "Notify the QA lead and EHS at once.",
+     [
+      "NOTIFY"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #5",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Quality-managed material always goes to quality inspection stock; certification makes no difference.",
+     [
+      "QI",
+      "CERT"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #6",
+   "E-06",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Post it to quality inspection stock.",
+     [
+      "QI"
+     ]
+    ],
+    [
+     "required_actions",
+     "requirement",
+     "Even with a certificate, do not put it into unrestricted stock.",
+     [
+      "CERT"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #7",
+   "H-02",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "The receipt must not be posted; take the unit to OD-01 and tell purchasing.",
+     [
+      "GR101"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #8",
+   "H-02",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Do not post against line 20 or any other line of this order; move it to OD-01 and inform purchasing.",
+     [
+      "GR101",
+      "NEVER"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #9",
+   "E-03",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Do not try to override GR-299; stop and contact the WMS key user.",
+     [
+      "MATRIX_WMS"
+     ]
+    ]
+   ]
+  ],
+  [
+   "stress 2 #10",
+   "H-05",
+   [
+    [
+     "required_actions",
+     "requirement",
+     "Do not open the wet cartons; move them to quarantine Q-01, post them to blocked stock and notify the QA inspector.",
+     [
+      "WET",
+      "NOWET"
+     ]
+    ]
+   ]
+  ]
+ ]
+}

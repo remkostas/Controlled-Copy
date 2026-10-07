@@ -119,7 +119,10 @@ def run_template(
     *,
     task: str | None = None,
     extra: dict[str, Any] | None = None,
+    keep_uncited: bool = False,
 ) -> StudioResult:
+    """`keep_uncited` keeps statements whose quotes all failed, without citations; only a caller
+    that applies statement-type rules afterwards (the Resolution Card) may set it."""
     block, mapping = prompts.passages_block(passages)
     user = (f"Task: {task}\n\n" if task else "") + f"Passages:\n{block}"
     messages = [{"role": "system", "content": template.instructions()}, {"role": "user", "content": user}]
@@ -138,7 +141,7 @@ def run_template(
         if template.statement_types:
             allowed = template.statement_types
             raw = [s if s.type in allowed else s.model_copy(update={"type": None}) for s in raw]
-        verified = verify_statements(raw, mapping, numbering)
+        verified = verify_statements(raw, mapping, numbering, keep_uncited=keep_uncited)
         removed += verified.removed
         sections.append({"key": spec.key, "title": spec.title, "items": verified.statements})
     output = {

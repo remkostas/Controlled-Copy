@@ -79,6 +79,10 @@ class Settings(BaseSettings):
     # to the cost the provider reports; a call without a reported cost keeps its reservation.
     max_usd_per_day: float = Field(default=5.0, gt=0)
     access_attempts_per_hour: int = 10
+    # New sessions per client address: each one gets its own seeded copy on disk.
+    new_sessions_per_hour: int = 30
+    # Workspace Resets per visitor (governed layer): each one rewrites the whole copy.
+    resets_per_visitor_hour: int = 10
     provider_timeout_seconds: float = Field(default=45.0, gt=0)
     # Highest endpoint price a request may route to, USD per million tokens. BGE-M3 costs 0.01
     # on its zero-retention endpoints (2026-10-06), so the embedding cap leaves room.
@@ -129,7 +133,13 @@ class Settings(BaseSettings):
         base = urlsplit(self.openrouter_base_url)
         if base.scheme != "https" and base.hostname not in ("localhost", "127.0.0.1"):
             problems.append("OPENROUTER_BASE_URL must use https (the API key is sent with every request)")
-        for name in ("model_calls_per_visitor_hour", "model_calls_per_day", "access_attempts_per_hour"):
+        for name in (
+            "model_calls_per_visitor_hour",
+            "model_calls_per_day",
+            "access_attempts_per_hour",
+            "new_sessions_per_hour",
+            "resets_per_visitor_hour",
+        ):
             if getattr(self, name) <= 0:
                 problems.append(f"{name.upper()} must be positive")
         if self.app_mode is AppMode.DEPLOY:

@@ -184,6 +184,7 @@ def create_app(
     app.state.provider = provider or build_provider(settings)
     app.state.registry = registry
     app.state.access_limiter = AccessLimiter(settings.access_attempts_per_hour)
+    app.state.session_limiter = AccessLimiter(settings.new_sessions_per_hour)
     secret = (
         settings.app_secret_key.get_secret_value() if settings.app_secret_key else secrets.token_urlsafe(32)
     )
@@ -200,9 +201,10 @@ def create_app(
     app.add_middleware(BodySizeLimitMiddleware, limit=settings.max_file_bytes + BODY_OVERHEAD)
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.secure_cookies)
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-    app.include_router(router)
+    # Layer routes first, so a layer can add a more specific path than a core pattern.
     for layer_router in registry.routers:
         app.include_router(layer_router)
+    app.include_router(router)
 
     @app.exception_handler(NotAuthenticated)
     async def not_authenticated(request: Request, exc: NotAuthenticated) -> Response:

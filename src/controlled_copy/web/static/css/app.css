@@ -1356,3 +1356,156 @@ details.paste > summary.btn {
     transition-duration: 1ms !important;
   }
 }
+
+/* Governed layer: Resolution Card (only rendered when FEATURE_GOVERNANCE is on) */
+.card-form {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+.card-form__head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px var(--sp-3);
+  align-items: center;
+}
+.card-form__head .icon {
+  grid-row: span 2;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--text-faint);
+}
+.card-form .textarea {
+  min-height: 4.5rem;
+}
+.card-form__note {
+  font-size: var(--fs-xs);
+}
+.context-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+}
+.context-bar .field {
+  min-width: 0; /* let long site and role names shrink instead of clipping the selects */
+}
+.context-bar .field:last-child {
+  grid-column: 1 / -1; /* the date input needs its own row in the narrow Studio column */
+}
+.context-bar .input {
+  padding: var(--sp-1) var(--sp-2);
+  font-size: var(--fs-sm);
+}
+.card-result {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-panel);
+}
+.card-status {
+  font-weight: 600;
+}
+.card-result--supported {
+  background: var(--status-approved-bg);
+  border-color: #b5d9c1;
+  color: var(--status-approved-fg);
+}
+.card-result--context_incomplete,
+.card-result--expert_confirmation {
+  background: var(--accent-soft);
+  border-color: var(--c-amber-300);
+  color: var(--accent-text);
+}
+.card-result--conflict {
+  background: var(--danger-soft);
+  border-color: #e7b3ad;
+  color: var(--danger);
+}
+.card-result--refusal {
+  background: var(--surface-panel-alt);
+  color: var(--text-faint);
+}
+.card-fallback {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-sm);
+}
+.card-reasons {
+  margin: var(--sp-1) 0 0;
+  padding-left: var(--sp-4);
+  font-size: var(--fs-sm);
+}
+.card-warning {
+  margin-top: var(--sp-3);
+}
+.card-warning__excerpt {
+  font-size: var(--fs-sm);
+}
+.badge--warn {
+  border-color: var(--c-amber-300);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.card-items {
+  list-style: none;
+  padding-left: 0 !important;
+}
+.card-item {
+  line-height: var(--lh-body);
+}
+.type {
+  display: inline-flex;
+  align-items: center;
+  height: 1.25rem;
+  margin-right: var(--sp-1);
+  padding: 0 var(--sp-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  vertical-align: 0.1em;
+  white-space: nowrap;
+}
+.type--requirement {
+  color: var(--status-approved-fg);
+  background: var(--status-approved-bg);
+}
+.type--inference {
+  color: var(--status-draft-fg);
+  background: var(--status-draft-bg);
+}
+.type--recommendation {
+  color: var(--text-faint);
+  background: var(--surface-panel-alt);
+}
+.type--missing_evidence {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+.type--conflict {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+.applicability {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-xs);
+}
+.applicability th,
+.applicability td {
+  padding: var(--sp-1) var(--sp-2);
+  border-bottom: 1px solid var(--rule-paper);
+  text-align: left;
+  vertical-align: top;
+}
+.applicability th {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.applicability + .applicability {
+  margin-top: var(--sp-2);
+}

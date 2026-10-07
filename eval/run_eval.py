@@ -1,6 +1,6 @@
 """Run evaluation cases against the real model through the app's HTTP interface.
 
-Usage: python eval/run_eval.py generic [--model MODEL] [--fallback MODEL]
+Usage: python eval/run_eval.py {generic,governed} [--model MODEL] [--fallback MODEL]
 Writes eval/results/<date>-<model>-<set>.json and .md. Every check is mechanical.
 """
 
@@ -17,7 +17,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from client import EVAL, AppClient, eval_settings, fetch_document, provenance, provenance_line
+from client import EVAL, ROOT, AppClient, eval_settings, fetch_document, provenance, provenance_line
 
 PAGE_RE = re.compile(r"page (\d+)")
 
@@ -114,15 +114,302 @@ def check_briefing(
     }
 
 
-def run_generic(model: str | None, fallback: str | None) -> tuple[str, list[dict[str, Any]]]:
-    spec = json.loads((EVAL / "cases_generic.json").read_text())
-    name, data = fetch_document(spec["document"])
+def model_overrides(model: str | None, fallback: str | None) -> dict[str, Any]:
     overrides: dict[str, Any] = {}
     if model:
         overrides["model_generation"] = model
     if fallback:
         overrides["model_generation_fallback"] = fallback
-    settings = eval_settings(**overrides)
+    return overrides
+
+
+def normalised(text: str) -> str:
+    return re.sub(r"\s+", " ", text.lower())
+
+
+# Action checks (full audit EVAL-01). A case lists what a correct card must say (`must_say`)
+# and what it must not say (`must_not_say`), as regular expressions over the statements the
+# card shows, never over the quotes: a genuine quote next to a wrong instruction must fail.
+#
+# A negation counts only when it governs the matched action (second re-check R2-EVAL-01): it
+# stands in the action's own segment of the sentence, before it. A segment ends at a comma,
+# "and", "then", "so", "but", "because", "since" and similar words, and a new one starts where an
+# unmarked new subject begins ("... certified goods you can post it"). A list joined by "or" or
+# "nor" keeps its negation ("do not touch the material or resume unloading", "never touch, open
+# or move it"). So "there is no QA hold for certified goods you can post it to unrestricted
+# stock" and "no supervisor approval is needed so post against another line" still say the
+# action, while "do not override the error with a manual posting" does not.
+NEGATIONS = {
+    "not",
+    "never",
+    "no",
+    "don't",
+    "doesn't",
+    "didn't",
+    "cannot",
+    "can't",
+    "mustn't",
+    "shouldn't",
+    "won't",
+    "neither",
+    "nor",
+    "without",
+}
+NEGATION_STEMS = ("prohibit", "forbid")
+SEGMENT_BREAK = re.compile(
+    r"(?P<mark>,|\b(?:and|then|so|but|because|since|therefore|otherwise|instead|however|while|as long as)\b)"
+    r"|(?<!whether )(?<!that )(?<!if )(?P<subject>\b(?:you|we|they|operators?|staff|it) "
+    r"(?:can|may|could|might|should|must|will|need to|are allowed to|is allowed to)\b)"
+)
+# Negation words that urge the action instead of cancelling it.
+URGING = re.compile(
+    r"\b(?:do not|don't|never|not) (?:delay|wait|hesitate)\w*\b|\bwithout (?:delay|waiting|hesitation)\b"
+    r"|\bno exceptions?\b|\bno matter\b"
+)
+# Between the verb and the object of a prohibited action: no negation and no condition, so
+# "post it to inspection stock until QA releases it to unrestricted stock" is not "post it to
+# unrestricted stock".
+GAP = (
+    r"(?:(?!\b(?:not|never|no|until|unless|after|before|once|only|then|releas\w*|rather than|instead of)\b)"
+    r"[^.;:])*?"
+)
+# A prohibited action is not said when the words right after it (at most three words of its
+# object in between) forbid it or tie it to a clearance ("direct posting is not permitted",
+# "resume unloading only after EHS clears the area", "after EHS has cleared the area"). Anything
+# looser ("as long as the leak is not spreading") does not excuse it.
+EXCUSED_AFTER = re.compile(
+    r"\w*(?:\s+[\w'-]+){0,3}?\s+(?:(?:is|are|was|be|being)\s+(?:not\s+(?:permitted|allowed)|never\s+allowed|prohibited|forbidden)\b"
+    r"|(?:only\s+)?(?:after|once|when)\b[^.;:]*\b(?:clear|releas|approv)\w*"
+    r"|until\b[^.;:]*\b(?:clear|releas|approv)\w*)"
+)
+# "It only goes to unrestricted stock after the QA inspector releases it."
+ONLY_AFTER_CLEARANCE = re.compile(r"\b(?:after|once|when|until)\b[^.;:]*\b(?:clear|releas|approv)\w*")
+CLAUSE = re.compile(r"[.;:!?](?:\s+|$)|,?\s+but\s+")
+TOKEN = re.compile(r"[\w']+|,")
+
+
+def clauses(text: str) -> list[str]:
+    plain = normalised(text).replace("’", "'").replace("“", '"').replace("”", '"')
+    # The documents write "Never: post against another line"; that colon does not end the clause.
+    plain = re.sub(r"\b(never|do not|don't|not)\s*:\s*", r"\1 ", plain)
+    return [c for c in CLAUSE.split(plain) if c.strip()]
+
+
+def _list_closes(clause: str, end: int) -> bool:
+    """After a comma: whether a later "or"/"nor" closes the list the comma belongs to."""
+    for word in TOKEN.findall(clause[end:]):
+        if word in ("or", "nor"):
+            return True
+        if word in ("and", "then", "so", "but", "because", "since"):
+            return False
+    return False
+
+
+def negated(clause: str, start: int) -> bool:
+    """Whether a negation in the action's own segment, before it, governs the action that starts
+    at `start`; one that urges it ("do not delay", "with no exceptions") does not."""
+    cut = 0
+    for brk in SEGMENT_BREAK.finditer(clause, 0, start):
+        if brk.group("mark") == "," and _list_closes(clause, brk.end()):
+            continue
+        cut = brk.start() if brk.group("subject") else brk.end()
+    words = TOKEN.findall(URGING.sub(" ", clause[cut:start]))
+    return any(w in NEGATIONS or w.startswith(NEGATION_STEMS) for w in words)
+
+
+def says(
+    texts: list[str],
+    patterns: list[str],
+    *,
+    prohibited: bool,
+    negation: bool = True,
+    context: str | None = None,
+) -> bool:
+    """Whether any text says the action. `negation=False` for statements that name what is
+    missing or conflicting, where "does not say whether the packaging..." still names it.
+    `context`: the check applies only to clauses that also match it."""
+    for text in texts:
+        for clause in clauses(text):
+            if context and not re.search(context, clause):
+                continue
+            for pattern in patterns:
+                for match in re.finditer(pattern.replace("{gap}", GAP), clause):
+                    start, end = match.span()
+                    if negation and negated(clause, start):
+                        continue
+                    if prohibited and EXCUSED_AFTER.match(clause, end):
+                        continue
+                    before = TOKEN.findall(clause[:start])
+                    if (
+                        prohibited
+                        and before
+                        and before[-1] == "only"
+                        and ONLY_AFTER_CLEARANCE.search(clause, end)
+                    ):
+                        continue
+                    return True
+    return False
+
+
+ACTION_TYPES = ("requirement", "inference")
+
+
+def action_reasons(case: dict[str, Any], items: list[dict[str, Any]], backed: set[int]) -> list[str]:
+    """Required actions must appear in a statement of the given types, by default a Requirement
+    or an Inference that cites an applicable approved document (an inference applies a rule to
+    the situation: "4 units exceed the tolerance, so do not post"); prohibited ones in none."""
+    reasons = []
+    for check in case.get("must_say", []):
+        types = check.get("types", list(ACTION_TYPES))
+        texts = [
+            i["text"]
+            for i in items
+            if i["type"] in types and (i["type"] not in ACTION_TYPES or id(i) in backed)
+        ]
+        negation = any(t in ACTION_TYPES for t in types)
+        if not says(texts, check["any"], prohibited=False, negation=negation, context=check.get("context")):
+            reasons.append(f"does not say: {check['what']}")
+    shown = [i["text"] for i in items]
+    for check in case.get("must_not_say", []):
+        if says(shown, check["any"], prohibited=True, context=check.get("context")):
+            reasons.append(f"says: {check['what']}")
+    return reasons
+
+
+def check_card(
+    case: dict[str, Any], status: int, body: dict[str, Any], app: AppClient, texts: dict[str, str]
+) -> dict[str, Any]:
+    """The mechanical checks of demo-corpus-and-eval.md for one Resolution Card."""
+    if status != 200:
+        return {"kind": f"error {status}", "error": body.get("error"), "reasons": [f"status {status}"]}
+    output = body["output"]
+    card = output["card"]
+    citations = output.get("citations", [])
+    reasons = verify_citations(app, citations, texts)
+    label_of = {d["source_id"]: d["label"] for d in card["used"] + card["excluded"]}
+    cited = sorted({label_of.get(c["source_id"], c["source_id"]) for c in citations})
+    items = [item for section in output["sections"] for item in section["items"]]
+    types = sorted({item["type"] for item in items})
+    verified = {c["n"] for c in citations}
+    source_of = {c["n"]: c["source_id"] for c in citations}
+
+    if card["status"] not in case["expected_status"]:
+        reasons.append(f"status {card['status']}, expected {' or '.join(case['expected_status'])}")
+    missing_sources = [s for s in case["expected_sources"] if s not in cited]
+    if missing_sources:
+        reasons.append("does not cite " + ", ".join(missing_sources))
+    misused = [m for m in case["must_not_use"] if any(m in label for label in cited)]
+    if misused:
+        reasons.append("cites " + ", ".join(misused) + " as authority")
+    if case["expected_warning"] is True and not card["warnings"]:
+        reasons.append("no warning about an excluded document")
+    if case["expected_warning"] is False and card["warnings"]:
+        reasons.append("unexpected warning: " + ", ".join(w["label"] for w in card["warnings"]))
+    absent_types = [t for t in case["expected_statement_types"] if t not in types]
+    if absent_types:
+        reasons.append("no statement of type " + ", ".join(absent_types))
+    unquoted = [
+        i for i in items if i["type"] == "requirement" and not {c["n"] for c in i["cites"]} & verified
+    ]
+    if unquoted:
+        reasons.append(f"{len(unquoted)} requirement(s) without a verified quote")
+    authoritative = {d["source_id"] for d in card["used"]}
+    backed = {
+        id(i) for i in items if {source_of[c["n"]] for c in i["cites"] if c["n"] in source_of} & authoritative
+    }
+    unbacked = [i for i in items if i["type"] == "requirement" and id(i) not in backed and i not in unquoted]
+    if unbacked:
+        reasons.append(f"{len(unbacked)} requirement(s) cite no applicable approved document")
+    reasons += action_reasons(case, items, backed)
+    identifier = case.get("undocumented_identifier")
+    if identifier and identifier not in card["undocumented"]:
+        reasons.append(f"{identifier} not reported as undocumented")
+    shown = normalised(" ".join(i["text"] for i in items))
+    for phrase in case.get("forbidden_text", []):
+        if phrase.lower() in shown:
+            reasons.append(f"shows the forbidden text '{phrase}'")
+    for pattern in case.get("forbidden_patterns", []):
+        if re.search(pattern, shown, re.IGNORECASE):
+            reasons.append(f"shows text matching the forbidden pattern {pattern!r}")
+    must = case.get("quote_must_contain")
+    if must and not any(must.lower() in normalised(c["quote"]) for c in citations):
+        reasons.append(f"no quote contains '{must}'")
+    if card["status"] == "refusal" and items:
+        reasons.append("a refusal with items")
+    detail = [
+        {
+            "section": section["key"],
+            "type": item["type"],
+            "text": item["text"],
+            "cites": [label_of.get(source_of[c["n"]], "?") for c in item["cites"] if c["n"] in source_of],
+            **({"downgraded": item["downgraded"]} if "downgraded" in item else {}),
+        }
+        for section in output["sections"]
+        for item in section["items"]
+    ]
+    return {
+        "kind": card["status"],
+        "status_reasons": card["reasons"],
+        "detail": detail,
+        # Kept for a human read: whether each quote supports its statement is not checked here.
+        "quotes": [
+            {"n": c["n"], "document": label_of.get(c["source_id"], "?"), "quote": c["quote"]}
+            for c in citations
+        ],
+        "cited": cited,
+        "warnings": [w["label"] for w in card["warnings"]],
+        "types": types,
+        "items": len(items),
+        "citations": len(citations),
+        "removed": output.get("removed", 0),
+        "downgraded": output.get("downgraded", 0),
+        "model": output.get("model"),
+        "reasons": reasons,
+    }
+
+
+def run_governed(
+    model: str | None,
+    fallback: str | None,
+    only: list[str] | None = None,
+    cases_file: str = "cases_governed.json",
+) -> tuple[str, list[dict[str, Any]]]:
+    spec = json.loads((EVAL / cases_file).read_text())
+    extra = ROOT / spec["extra"]
+    settings = eval_settings(feature_governance=True, **model_overrides(model, fallback))
+    app = AppClient(settings)
+    results = []
+    try:
+        for case in spec["cases"]:
+            if only and case["case_id"] not in only:
+                continue
+            notebook, source_ids = app.reset_workspace()
+            if case["notebook"] == "demo-plus-injection":
+                source_ids.append(app.upload(notebook, extra.name, extra.read_bytes()))
+            started = time.monotonic()
+            status, body = app.card(notebook, case["situation"], source_ids, spec["default_context"])
+            record = check_card(case, status, body, app, {})
+            record.update(
+                case_id=case["case_id"],
+                title=case["title"],
+                passed=not record["reasons"],
+                seconds=round(time.monotonic() - started, 1),
+            )
+            results.append(record)
+            print(
+                f"{case['case_id']}: {'PASS' if record['passed'] else 'FAIL'} {record['kind']} "
+                f"{record.get('cited')} {record['reasons']}",
+                flush=True,
+            )
+    finally:
+        app.close()
+    return settings.model_generation, results
+
+
+def run_generic(model: str | None, fallback: str | None) -> tuple[str, list[dict[str, Any]]]:
+    spec = json.loads((EVAL / "cases_generic.json").read_text())
+    name, data = fetch_document(spec["document"])
+    settings = eval_settings(**model_overrides(model, fallback))
     app = AppClient(settings)
     results = []
     try:
@@ -153,12 +440,18 @@ def run_generic(model: str | None, fallback: str | None) -> tuple[str, list[dict
     return settings.model_generation, results
 
 
-def write_report(set_name: str, model: str, results: list[dict[str, Any]], extra: str = "") -> Path:
-    stamp = datetime.now(UTC).strftime("%Y-%m-%d_%H%M")
+def write_report(
+    set_name: str, model: str, results: list[dict[str, Any]], extra: str = "", subset: bool = False
+) -> Path:
+    stamp = datetime.now(UTC).strftime("%Y-%m-%d_%H%M%S")
     slug = model.replace("/", "_")
-    base = EVAL / "results" / f"{stamp}-{slug}-{set_name}"
-    info = provenance(EVAL / "cases_generic.json")
-    base.with_suffix(".json").write_text(
+    name = f"{stamp}-{slug}-{set_name}{'-subset' if subset else ''}"
+    json_path, md_path = EVAL / "results" / f"{name}.json", EVAL / "results" / f"{name}.md"
+    case_file = {"governed": "cases_governed.json", "holdout": "cases_governed_holdout.json"}.get(
+        set_name, "cases_generic.json"
+    )
+    info = provenance(EVAL / case_file)
+    json_path.write_text(
         json.dumps({"model": model, "set": set_name, "provenance": info, "results": results}, indent=2) + "\n"
     )
     passed = sum(1 for r in results if r["passed"])
@@ -168,30 +461,60 @@ def write_report(set_name: str, model: str, results: list[dict[str, Any]], extra
         f"Run {stamp} UTC, generation model `{model}`, embeddings `baai/bge-m3`. {passed} of {len(results)} cases pass.",
         provenance_line(info),
         "",
-        "| Case | Title | Result | Outcome | Citations | Cited pages | Seconds | Reasons |",
-        "| :--- | :--- | :--- | :--- | ---: | :--- | ---: | :--- |",
     ]
-    for r in results:
-        pages = ", ".join(str(p) for p in r.get("cited_pages", [])) or "—"
-        reasons = "; ".join(r["reasons"]) or "—"
-        lines.append(
-            f"| {r['case_id']} | {r['title']} | {'pass' if r['passed'] else 'FAIL'} | {r['kind']} | "
-            f"{r.get('citations', 0)} | {pages} | {r['seconds']} | {reasons} |"
-        )
+    if set_name in ("governed", "holdout"):
+        lines += [
+            "Mechanical checks: status, cited and excluded documents, warnings, statement types, every quote at its "
+            "offsets, every Requirement backed by an applicable approved document, and the required and prohibited "
+            "actions in the case file, searched in the statements and never in the quotes. Not checked mechanically: "
+            "whether each quote supports the statement next to it; the JSON file keeps every statement and quote "
+            "for that human read.",
+            "",
+        ]
+    if set_name in ("governed", "holdout"):
+        lines += [
+            "| Case | Title | Result | Status | Cited documents | Warnings | Types | Seconds | Reasons |",
+            "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | ---: | :--- |",
+        ]
+        for r in results:
+            lines.append(
+                f"| {r['case_id']} | {r['title']} | {'pass' if r['passed'] else 'FAIL'} | {r['kind']} | "
+                f"{', '.join(r.get('cited', [])) or '—'} | {', '.join(r.get('warnings', [])) or '—'} | "
+                f"{', '.join(r.get('types', [])) or '—'} | {r['seconds']} | {'; '.join(r['reasons']) or '—'} |"
+            )
+    else:
+        lines += [
+            "| Case | Title | Result | Outcome | Citations | Cited pages | Seconds | Reasons |",
+            "| :--- | :--- | :--- | :--- | ---: | :--- | ---: | :--- |",
+        ]
+        for r in results:
+            pages = ", ".join(str(p) for p in r.get("cited_pages", [])) or "—"
+            reasons = "; ".join(r["reasons"]) or "—"
+            lines.append(
+                f"| {r['case_id']} | {r['title']} | {'pass' if r['passed'] else 'FAIL'} | {r['kind']} | "
+                f"{r.get('citations', 0)} | {pages} | {r['seconds']} | {reasons} |"
+            )
     if extra:
         lines += ["", extra]
-    base.with_suffix(".md").write_text("\n".join(lines) + "\n")
-    return base.with_suffix(".md")
+    md_path.write_text("\n".join(lines) + "\n")
+    return md_path
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("set", choices=["generic"])
+    parser.add_argument("set", choices=["generic", "governed", "holdout"])
     parser.add_argument("--model")
     parser.add_argument("--fallback")
+    parser.add_argument("--cases", help="comma-separated case IDs (governed set only)")
     args = parser.parse_args()
-    model, results = run_generic(args.model, args.fallback)
-    path = write_report(args.set, model, results)
+    only = args.cases.split(",") if args.cases else None
+    if args.set == "governed":
+        model, results = run_governed(args.model, args.fallback, only)
+    elif args.set == "holdout":
+        model, results = run_governed(args.model, args.fallback, only, "cases_governed_holdout.json")
+    else:
+        model, results = run_generic(args.model, args.fallback)
+    path = write_report(args.set, model, results, subset=bool(args.cases))
     print(path.read_text())
     return 0 if all(r["passed"] for r in results) else 1
 

@@ -16,6 +16,13 @@
       updateSelectionCount();
     }
     if (el.matches("input[name='source_ids']")) updateSelectionCount();
+    if (el.matches("select[data-fill-target]") && el.value) {
+      const target = document.getElementById(el.dataset.fillTarget);
+      if (target) {
+        target.value = el.value;
+        if (target.dataset.counter) updateCounter(target);
+      }
+    }
   });
 
   function updateSelectionCount() {

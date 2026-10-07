@@ -1,5 +1,6 @@
 """FR-STU-01, FR-STU-02, FR-RTN-01."""
 
+import json
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -130,3 +131,46 @@ def test_tc_rtn_001_a_session_seen_167_hours_ago_is_kept(visitor, db, settings, 
     recent = (datetime.now(UTC) - timedelta(hours=167)).isoformat(timespec="seconds")
     db.execute("UPDATE visitor_session SET last_seen_at = ?", (recent,))
     assert purge(settings, services.repo).sessions == 0
+
+
+def test_tc_stu_001_typed_templates_still_drop_statements_whose_quotes_fail(services, fake, tmp_path):
+    """Statement types alone never keep an unverified statement; only an explicit caller can."""
+    from controlled_copy.retrieval.search import Passage
+    from controlled_copy.studio import engine
+
+    spec = json.loads((engine.TEMPLATE_DIR / "briefing.json").read_text())
+    spec["statement_types"] = ["requirement", "inference"]
+    path = tmp_path / "typed.json"
+    path.write_text(json.dumps(spec))
+    template = engine.load_template(path)
+    text = "Count every delivery line before posting."
+    passage = Passage(
+        chunk_id=1,
+        source_id="s",
+        source_title="SOP",
+        source_kind="md",
+        locator="4.2",
+        page=None,
+        char_start=0,
+        char_end=len(text),
+        text=text,
+        metadata=None,
+        metadata_origin="none",
+        cosine=1.0,
+        fused=1.0,
+    )
+
+    def invented(request):
+        pid = request.passages()[0][0]
+        item = {
+            "type": "requirement",
+            "text": "Never count.",
+            "citations": [{"passage_id": pid, "quote": "never count anything"}],
+        }
+        return {section.key: [item] for section in template.sections}
+
+    fake.responder = invented
+    dropped = engine.run_template(services, template, [passage])
+    assert all(not s["items"] for s in dropped.output["sections"])
+    kept = engine.run_template(services, template, [passage], keep_uncited=True)
+    assert all(s["items"][0]["cites"] == [] for s in kept.output["sections"])

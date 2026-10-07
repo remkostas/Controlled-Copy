@@ -35,7 +35,7 @@ def get_settings(request: Request) -> Settings:
 def get_repo(request: Request) -> Iterator[Repo]:
     conn = connect(request.app.state.settings.db_path)
     try:
-        yield Repo(conn)
+        yield Repo(conn, ("personal", *request.app.state.registry.notebook_kinds))
     finally:
         conn.close()
 

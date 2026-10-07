@@ -1,0 +1,40 @@
+{
+  "id": "resolution-card",
+  "title": "Resolution Card",
+  "description": "What the approved instructions require for a situation, what is missing, who decides",
+  "icon": "file-search",
+  "system": "You prepare a Resolution Card for an operational situation, using only the passages provided. Every passage comes from an approved document that applies to the reader's site, role and date. Work from the situation exactly as described and treat circumstances it does not mention as normal: include what applies to it and leave out rules for circumstances it does not mention. Give every item a type. requirement: what an approved passage says must or must not be done; quote it word for word. inference: a conclusion you draw from cited passages, for example applying a stated tolerance to the numbers in the situation; cite the passages it uses. recommendation: a sensible suggestion the passages do not state. missing_evidence: a fact the situation raises without settling that changes its main instruction; cite the passage that makes it decisive. Quotes are 4 to 40 words copied exactly from one passage. Do not invent rules, codes, roles or numbers. Write in the language of the situation (English if that is unclear); quotes stay word for word.",
+  "statement_types": [
+    "requirement",
+    "inference",
+    "recommendation",
+    "missing_evidence"
+  ],
+  "passage_budget_chars": 12000,
+  "sections": [
+    {
+      "key": "required_actions",
+      "title": "Required actions",
+      "instruction": "Steps the passages require for this situation as described: handling, system actions, documentation, and stop or quarantine conditions. Leave out rules for circumstances the situation does not mention.",
+      "max_items": 8
+    },
+    {
+      "key": "missing_information",
+      "title": "Missing information",
+      "instruction": "Facts the situation raises without settling that change its main instruction, for example when a passage handles two cases differently and the situation does not say which case it is. Cite the passage that makes the fact decisive. Type missing_evidence. Circumstances the situation does not mention count as normal, not as missing; checks the procedure requires in every case belong under required actions. Leave this empty when the situation settles its main instruction.",
+      "max_items": 5
+    },
+    {
+      "key": "escalation",
+      "title": "Escalation",
+      "instruction": "The responsible role and the condition that triggers escalation for this situation, as the passages state it.",
+      "max_items": 3
+    },
+    {
+      "key": "conflicts",
+      "title": "Conflicting instructions",
+      "instruction": "Only when the situation as described falls under two passages from different documents that give contradicting instructions: one item per conflict, citing both passages. If the contradiction depends on a fact the situation does not state, list that fact under missing information instead and leave this empty.",
+      "max_items": 2
+    }
+  ]
+}

@@ -1,0 +1,521 @@
+{
+  "model": "google/gemini-3.8-flash",
+  "set": "holdout",
+  "results": [
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "The deviation of 1 piece (1% of the ordered quantity) is within the permitted tolerance of up to 2% or 2 units, so post the goods receipt as counted (99 pieces) with a note recording the deviation.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Post the goods receipt in the WMS against the purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 2,
+      "citations": 2,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "google/gemini-3.8-flash",
+      "reasons": [],
+      "case_id": "H-01",
+      "title": "Small shortage within tolerance",
+      "passed": true,
+      "seconds": 12.9
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "do not post. Move the handling unit to the over-delivery area OD-01 and inform purchasing.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never: post against another open line of the same purchase order.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "inference",
+          "text": "Escalate the closed purchase order line error (GR-101) to Purchasing, who is the responsible role with a same working day response time.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1",
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 3,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "google/gemini-3.8-flash",
+      "reasons": [],
+      "case_id": "H-02",
+      "title": "WMS error GR-101",
+      "passed": true,
+      "seconds": 23.9
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "stop and check the existing goods receipt with the shift lead before posting again.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never: confirm the warning without checking.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never bypass a WMS error by posting against a different purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never override an error with a manual posting.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "stop and check the existing goods receipt with the shift lead before posting again.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "requirement"
+      ],
+      "items": 5,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "google/gemini-3.8-flash",
+      "reasons": [],
+      "case_id": "H-03",
+      "title": "Code GR-512 (documented)",
+      "passed": true,
+      "seconds": 14.3
+    },
+    {
+      "kind": "error 502",
+      "error": "The model returned an answer in an unexpected format twice. Please try again.",
+      "reasons": [
+        "status 502"
+      ],
+      "case_id": "H-04",
+      "title": "Torn stretch wrap, parts intact (conflict)",
+      "passed": false,
+      "seconds": 50.0
+    },
+    {
+      "kind": "error 502",
+      "error": "The model returned an answer in an unexpected format twice. Please try again.",
+      "reasons": [
+        "status 502"
+      ],
+      "case_id": "H-05",
+      "title": "Wet cartons",
+      "passed": false,
+      "seconds": 46.7
+    },
+    {
+      "kind": "refusal",
+      "status_reasons": [
+        "no passage in the selected sources is close to this situation"
+      ],
+      "detail": [],
+      "cited": [],
+      "warnings": [],
+      "types": [],
+      "items": 0,
+      "citations": 0,
+      "removed": 0,
+      "downgraded": 0,
+      "model": null,
+      "reasons": [],
+      "case_id": "H-06",
+      "title": "Off-topic: football",
+      "passed": true,
+      "seconds": 2.6
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Warehouse operators do not enter batch or serial numbers manually.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "inference",
+          "text": "You cannot type the number in yourself, even if you take a photo, because warehouse operators are explicitly barred from manual entry of batch or serial numbers.",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "If a barcode cannot be scanned, the number may be entered manually only by a shift lead, with a second person checking the entry against the label (four-eyes check).",
+          "cites": [
+            "STD-LAB-002 rev 4"
+          ]
+        }
+      ],
+      "cited": [
+        "STD-LAB-002 rev 4"
+      ],
+      "warnings": [
+        "STD-LAB-002 rev 5"
+      ],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 3,
+      "citations": 2,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "google/gemini-3.8-flash",
+      "reasons": [],
+      "case_id": "H-07",
+      "title": "Barcode with the draft revision in mind",
+      "passed": true,
+      "seconds": 24.0
+    },
+    {
+      "kind": "supported",
+      "status_reasons": [
+        "every required action is backed by an applicable approved instruction"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If there is a leak, an unknown substance or an unusual odour, stop unloading immediately.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Isolate the area, keep other people away and do not touch the material.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Unloading resumes only after EHS has cleared the area.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "requirement",
+          "text": "Notify the QA lead and EHS at once.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [],
+      "types": [
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "google/gemini-3.8-flash",
+      "reasons": [],
+      "case_id": "H-08",
+      "title": "Chemical smell",
+      "passed": true,
+      "seconds": 13.7
+    },
+    {
+      "kind": "context_incomplete",
+      "status_reasons": [
+        "3 pieces of information missing"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Inspect every handling unit for damage before it is moved into the warehouse.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Whether the damage is limited to the outer packaging with the product inside intact, or if the product itself is visibly damaged.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Whether outer packaging damage requires refusing delivery or inspecting product integrity to accept the delivery, as the condition of the inner product is not specified.",
+          "cites": [
+            "SOP-INB-001 rev 3",
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "Whether the damage involves a broken seal or wet packaging.",
+          "cites": [
+            "WI-QUA-004 rev 2"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "inference",
+          "text": "Notify the QA inspector if the product itself is visibly damaged, if the packaging has a broken seal or moisture, or if the outer packaging is damaged while the product remains intact.",
+          "cites": [
+            "WI-QUA-004 rev 2",
+            "WI-QUA-004 rev 2",
+            "WI-QUA-004 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "SOP-INB-001 rev 3",
+        "WI-QUA-004 rev 2"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 5,
+      "citations": 6,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "google/gemini-3.8-flash",
+      "reasons": [],
+      "case_id": "H-09",
+      "title": "Damage without detail",
+      "passed": true,
+      "seconds": 50.3
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers A-12"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Only move the material to the storage location designated by the WMS after posting.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Do not put material away in an unrecorded location.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Keep material in the inspection area if it is in quality inspection stock or blocked stock until release.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "missing_information",
+          "type": "missing_evidence",
+          "text": "It is unknown whether aisle A-12 is the storage location proposed by the WMS for this material.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "WI-STO-007 rev 1"
+      ],
+      "types": [
+        "missing_evidence",
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "google/gemini-3.8-flash",
+      "reasons": [],
+      "case_id": "H-10",
+      "title": "Aisle A-12 at HAM-01",
+      "passed": true,
+      "seconds": 13.2
+    },
+    {
+      "kind": "expert_confirmation",
+      "status_reasons": [
+        "no applicable approved document covers GR-777"
+      ],
+      "detail": [
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "If the code is not listed in this guide, stop and contact the WMS key user (see MATRIX-ESC-001).",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never override an error with a manual posting.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1"
+          ]
+        },
+        {
+          "section": "required_actions",
+          "type": "requirement",
+          "text": "Never bypass a WMS error by posting against a different purchase order line.",
+          "cites": [
+            "SOP-INB-001 rev 3"
+          ]
+        },
+        {
+          "section": "escalation",
+          "type": "inference",
+          "text": "Because error code GR-777 is unlisted and unknown, escalate to the WMS key user, who has a response time of 1 hour.",
+          "cites": [
+            "GUIDE-WMS-003 rev 1",
+            "MATRIX-ESC-001 rev 2"
+          ]
+        }
+      ],
+      "cited": [
+        "GUIDE-WMS-003 rev 1",
+        "MATRIX-ESC-001 rev 2",
+        "SOP-INB-001 rev 3"
+      ],
+      "warnings": [
+        "SOP-INB-001 rev 2"
+      ],
+      "types": [
+        "inference",
+        "requirement"
+      ],
+      "items": 4,
+      "citations": 4,
+      "removed": 0,
+      "downgraded": 0,
+      "model": "google/gemini-3.8-flash",
+      "reasons": [],
+      "case_id": "H-11",
+      "title": "Unknown code GR-777",
+      "passed": true,
+      "seconds": 19.8
+    }
+  ]
+}

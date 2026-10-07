@@ -39,6 +39,8 @@ class Registry:
     migrations: list[Migration] = field(default_factory=list)
     studio_actions: list[StudioAction] = field(default_factory=list)
     topbar_partials: list[str] = field(default_factory=list)
+    # Partials shown at the top of the chat log (for example a note on what chat covers).
+    chat_partials: list[str] = field(default_factory=list)
     # Studio template id -> partial that renders its outputs (instead of the generic list).
     output_partials: dict[str, str] = field(default_factory=dict)
     template_dirs: list[Path] = field(default_factory=list)
@@ -46,6 +48,8 @@ class Registry:
     workspace_hooks: list[Callable[[Any, str], None]] = field(default_factory=list)
     # Called with (services, notebook_row, context dict) to extend the workspace view.
     view_hooks: list[Callable[[Any, Any, dict[str, Any]], None]] = field(default_factory=list)
+    # Notebook kinds a layer owns. Visitors see them only while the layer is loaded.
+    notebook_kinds: list[str] = field(default_factory=list)
     loaded: list[str] = field(default_factory=list)
 
 

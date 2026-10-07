@@ -176,6 +176,20 @@ The scorer itself is tested offline with hand-made responses, so a pass cannot c
 | Req | Requirement | TC | Type | Input | Expected |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | NFR-EVAL-01 | Expected terms must be in the answer, not only in its quotes | TC-EVAL-001 | unit | A wrong statement next to a genuine quote that holds every expected term | The case fails; the statements and quotes are kept in the result |
+| NFR-EVAL-02 | A card passes only if its statements give the required actions and none of the prohibited ones | TC-EVAL-002 | unit | E-12 card: "continue unloading, do not contact QA or EHS" next to the genuine WI-QUA-004 quote | Fails on missing stop, isolate, QA lead and on the prohibited actions |
+| NFR-EVAL-02 | | TC-EVAL-003 | unit | E-12 card that only notifies QA lead and EHS | Fails on missing stop and isolate |
+| NFR-EVAL-02 | | TC-EVAL-004 | unit | A vague statement whose quotes hold every required word | Fails: quotes are never searched |
+| NFR-EVAL-03 | Every Requirement cites an applicable approved document | TC-EVAL-005 | unit | A Requirement backed only by a verified quote from the obsolete revision | Fails |
+| NFR-EVAL-02 | | TC-EVAL-006 | unit | The E-12 wording of the versioned GPT-6 Luna run | Passes |
+| NFR-EVAL-02 | | TC-EVAL-007 | unit | A conflict that does not name both instructions | Fails |
+| NFR-EVAL-02 | | TC-EVAL-008 | unit | "Never:" with a colon, "is not permitted" after the verb, "rather than"; and the plain harmful instruction | Correct wording passes, the harmful one fails |
+| NFR-EVAL-02 | | TC-EVAL-009 | unit | Both governed case files | Every check is well formed; every case that expects instructions lists them |
+| NFR-EVAL-02 | | TC-EVAL-010 | unit | "Do not document this decision, continue unloading and post the leaking carton" next to a correct first Requirement | Fails: the negation belongs to "document" |
+| NFR-EVAL-02 | | TC-EVAL-011 | unit | Delayed or conditional stops and late notification of QA and EHS | Each fails |
+| NFR-EVAL-02 | | TC-EVAL-012 | unit | Certification presented as an exemption from quality inspection stock | Fails |
+| NFR-EVAL-02 | | TC-EVAL-013 | unit | Correct wordings with urging negations ("do not delay", "with no exceptions") | Each passes |
+| NFR-EVAL-02 | | TC-EVAL-014 | unit | 35 harmful cards from both re-checks and two stress sets (unrelated negations, synonyms, conditions, delays) | Each fails |
+| NFR-EVAL-02 | | TC-EVAL-015 | unit | 29 correct cards from the same sources (or-lists, "neither … nor", prohibitions after the verb, "hold the goods receipt") | Each passes |
 
 ### Live smoke (deployed URL)
 
