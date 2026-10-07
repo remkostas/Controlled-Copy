@@ -5,17 +5,6 @@
   {% if c.reasons %}<ul class="card-reasons">{% for r in c.reasons %}<li>{{ r }}</li>{% endfor %}</ul>{% endif %}
   {% if c.get('fallback_escalation') %}<p class="card-fallback"><strong>Who decides:</strong> {{ c.fallback_escalation }} <span class="muted">(standard escalation, not taken from the documents)</span></p>{% endif %}
 </div>
-{% for w in c.warnings %}
-<div class="notice notice--warn card-warning" role="note">
-  {{ icon('triangle-alert') }}
-  <div>
-    <p><strong>Not applied: {{ w.label }}</strong> ({{ w.reason }})</p>
-    <p class="card-warning__excerpt">“{{ w.excerpt }}”
-      <button type="button" class="cite" hx-get="/sources/{{ w.source_id }}?start={{ w.start }}&end={{ w.end }}" hx-target="#viewer-slot" hx-swap="innerHTML" title="Open {{ w.label }} · {{ w.locator }}" aria-label="Open the passage in {{ w.label }}">{{ icon('book-open') }}</button>
-    </p>
-  </div>
-</div>
-{% endfor %}
 <section class="output__section">
   <h3>Situation</h3>
   <p class="card-situation">{{ c.situation }}</p>
@@ -37,6 +26,7 @@
   </ul>
 </section>
 {% endif %}{% endfor %}
+{% if c.status != 'refusal' %}
 <section class="output__section">
   <h3>Applicability</h3>
   {% if c.used %}
@@ -57,5 +47,15 @@
     <tbody>{% for d in c.excluded %}<tr><td>{{ d.label }}{% if d.origin == 'asserted' %} <span class="origin">asserted by uploader</span>{% endif %}</td><td>{{ d.reason }}</td></tr>{% endfor %}</tbody>
   </table>
   {% endif %}
+  {# A revision that is not applied but matched the situation: shown for the record, quietly, so it never reads as a problem with the answer above. #}
+  {% for w in c.warnings %}
+  <div class="card-warning" role="note">
+    <p><strong>Not applied: {{ w.label }}</strong> ({{ w.reason }}) also matched this situation; nothing above is taken from it.
+      <button type="button" class="cite" hx-get="/sources/{{ w.source_id }}?start={{ w.start }}&end={{ w.end }}" hx-target="#viewer-slot" hx-swap="innerHTML" title="Open {{ w.label }} · {{ w.locator }}" aria-label="Open the passage in {{ w.label }}">{{ icon('book-open') }}</button>
+    </p>
+    <details class="card-warning__details"><summary>What it says</summary><p class="card-warning__excerpt">“{{ w.excerpt }}”</p></details>
+  </div>
+  {% endfor %}
 </section>
+{% endif %}
 {% if o.removed or o.extra.downgraded or o.extra.dropped %}<p class="muted">{% if o.removed %}{{ o.removed }} item(s) removed because no quote could be verified. {% endif %}{% if o.extra.downgraded %}{{ o.extra.downgraded }} item(s) shown with a weaker type because their quote did not verify against an applicable approved document. {% endif %}{% if o.extra.dropped %}{{ o.extra.dropped }} item(s) not shown: a conflict needs verified quotes from two documents, an inference needs one verified quote.{% endif %}</p>{% endif %}

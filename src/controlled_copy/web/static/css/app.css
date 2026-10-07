@@ -1504,6 +1504,16 @@ details.paste > summary.btn {
 }
 .card-warning {
   margin-top: var(--sp-3);
+  padding-left: var(--sp-3);
+  border-left: 3px solid var(--border);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.card-warning strong {
+  color: var(--text);
+}
+.card-warning__details summary {
+  cursor: pointer;
 }
 .card-warning__excerpt {
   font-size: var(--fs-sm);
