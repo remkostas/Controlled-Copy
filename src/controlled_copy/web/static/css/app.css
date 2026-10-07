@@ -492,9 +492,26 @@ select {
 }
 .doc-control summary {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
   cursor: pointer;
+  color: var(--text);
+  font-weight: 500;
+}
+.doc-control summary:hover {
+  border-style: solid;
+}
+.doc-control[open] summary {
+  border-style: solid;
+}
+.doc-control__hint {
+  display: block;
+  font-weight: 400;
+  font-size: var(--fs-xs);
   color: var(--text-muted);
 }
 .doc-control__fields {
@@ -504,7 +521,7 @@ select {
 }
 .doc-control__pair {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--sp-2);
 }
 .doc-control__pair .field {
