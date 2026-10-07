@@ -39,8 +39,31 @@ def test_tc_gov_004_a_matched_obsolete_revision_is_a_quiet_note_under_applicabil
     assert "SOP-INB-001 rev 2" in body[note:] and "obsolete" in body[note:]
 
 
-def test_tc_gov_008_a_refused_card_shows_no_applicability(workspace):
+def test_tc_gov_004_a_refused_card_shows_no_applicability(workspace):
     body = workspace.card("What is the forklift speed limit in the yard?", htmx=True).text
     assert "card-result--refusal" in body
     assert "<h3>Applicability</h3>" not in body
     assert 'class="applicability"' not in body
+
+
+def test_tc_gov_004_a_document_without_metadata_that_drives_the_status_stays_visible(workspace, db):
+    """When the only match is a document without document-control metadata, that is the reason
+    for "Expert confirmation required": its passage stays under the status, not a quiet note."""
+    workspace.visitor.upload(
+        "yard-note.txt",
+        b"The zebra crossing paint in the yard is renewed every spring by the facility team.",
+        notebook_id=workspace.id,
+    )
+    note_id = db.execute(
+        "SELECT id FROM source WHERE notebook_id = ? AND title LIKE 'yard-note%'", (workspace.id,)
+    ).fetchone()[0]
+    body = workspace.card(
+        "When is the zebra crossing paint in the yard renewed by the facility team?",
+        source_ids=[note_id],
+        htmx=True,
+    ).text
+    assert "card-result--expert_confirmation" in body
+    box = body.index("notice--warn card-warning card-warning--unknown")
+    assert box < body.index("<h3>Situation</h3>"), "the box sits right under the status"
+    assert "yard-note" in body[box:] and "status unknown" in body[box:]
+    assert "zebra crossing paint" in body[box : body.index("<h3>Situation</h3>")], "its passage is shown"

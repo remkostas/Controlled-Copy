@@ -5,6 +5,20 @@
   {% if c.reasons %}<ul class="card-reasons">{% for r in c.reasons %}<li>{{ r }}</li>{% endfor %}</ul>{% endif %}
   {% if c.get('fallback_escalation') %}<p class="card-fallback"><strong>Who decides:</strong> {{ c.fallback_escalation }} <span class="muted">(standard escalation, not taken from the documents)</span></p>{% endif %}
 </div>
+{# A document without document-control metadata that matched is the reason for the status,
+   so it stays visible under the status with its passage. Obsolete, draft or other-site
+   revisions are only a record and appear quietly under Applicability. #}
+{% for w in c.warnings if w.reason.startswith('status unknown') %}
+<div class="notice notice--warn card-warning card-warning--unknown" role="note">
+  {{ icon('triangle-alert') }}
+  <div>
+    <p><strong>Not applied: {{ w.label }}</strong> ({{ w.reason }})</p>
+    <p class="card-warning__excerpt">“{{ w.excerpt }}”
+      <button type="button" class="cite" hx-get="/sources/{{ w.source_id }}?start={{ w.start }}&end={{ w.end }}" hx-target="#viewer-slot" hx-swap="innerHTML" title="Open {{ w.label }} · {{ w.locator }}" aria-label="Open the passage in {{ w.label }}">{{ icon('book-open') }}</button>
+    </p>
+  </div>
+</div>
+{% endfor %}
 <section class="output__section">
   <h3>Situation</h3>
   <p class="card-situation">{{ c.situation }}</p>
@@ -48,7 +62,7 @@
   </table>
   {% endif %}
   {# A revision that is not applied but matched the situation: shown for the record, quietly, so it never reads as a problem with the answer above. #}
-  {% for w in c.warnings %}
+  {% for w in c.warnings if not w.reason.startswith('status unknown') %}
   <div class="card-warning" role="note">
     <p><strong>Not applied: {{ w.label }}</strong> ({{ w.reason }}) also matched this situation; nothing above is taken from it.
       <button type="button" class="cite" hx-get="/sources/{{ w.source_id }}?start={{ w.start }}&end={{ w.end }}" hx-target="#viewer-slot" hx-swap="innerHTML" title="Open {{ w.label }} · {{ w.locator }}" aria-label="Open the passage in {{ w.label }}">{{ icon('book-open') }}</button>
