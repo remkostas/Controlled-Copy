@@ -37,6 +37,22 @@
     }
   }
 
+  // Show or hide a typed access code. The button only appears when this script runs.
+  document.addEventListener("click", (event) => {
+    const toggle = event.target.closest("[data-reveal]");
+    if (!toggle) return;
+    const field = document.getElementById(toggle.dataset.reveal);
+    if (!field) return;
+    const show = field.type === "password";
+    field.type = show ? "text" : "password";
+    toggle.textContent = show ? "Hide" : "Show";
+    toggle.setAttribute("aria-pressed", String(show));
+    field.focus();
+  });
+  document.addEventListener("DOMContentLoaded", () => {
+    $$("[data-reveal]").forEach((toggle) => (toggle.hidden = false));
+  });
+
   // Disclosure buttons (paste form, new notebook).
   document.addEventListener("click", (event) => {
     const toggle = event.target.closest("[data-toggle]");
