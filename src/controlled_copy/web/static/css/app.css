@@ -557,6 +557,7 @@ select {
 body.app-shell {
   display: flex;
   flex-direction: column;
+  height: 100vh; /* fallback where dvh is not supported */
   height: 100dvh;
   overflow: hidden;
 }
@@ -615,6 +616,9 @@ body.app-shell > .workspace {
   background: var(--surface-chrome-3);
 }
 .panel__body {
+  /* Positioned, so absolutely positioned content (visually hidden table captions) stays
+     inside the scroll box instead of giving the locked page extra height. */
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow-y: auto;

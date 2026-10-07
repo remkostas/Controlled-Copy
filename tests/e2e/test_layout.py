@@ -109,3 +109,36 @@ def test_tc_ans_008_a_child_transition_does_not_settle_the_viewer_early(browser,
         assert in_panel_view(page), "the cited passage is in view after the column has settled"
     finally:
         context.close()
+
+
+@pytest.fixture
+def wrapping_source(tmp_path):
+    """Long paragraphs that rewrap while the reading column widens, so the passage moves."""
+    long_filler = " ".join([FILLER] * 6)
+    paragraphs = [f"{long_filler} Paragraph {n}." for n in range(1, 41)]
+    paragraphs.insert(32, f"{TARGET} {long_filler}")
+    path = tmp_path / "wrapping-guide.txt"
+    path.write_text("\n\n".join(paragraphs), encoding="utf-8")
+    return path
+
+
+@pytest.mark.parametrize("dwell_ms", [0, 100, 120])
+def test_tc_ans_008_a_hovered_chip_still_lands_on_the_passage(browser, server_url, wrapping_source, dwell_ms):
+    """A real hover before the click starts the chip's colour transitions; their end events
+    must not settle the viewer before the column has its final width."""
+    context, page = open_page(browser, server_url, 1366, 768)
+    try:
+        page.set_input_files("input[type=file]", str(wrapping_source))
+        page.wait_for_selector(".source", state="attached")
+        page.fill("#question", "What does rule ZPH-552 say?")
+        page.press("#question", "Enter")
+        chip = page.locator("#chat-inner article.turn:not(#pending-turn) button.cite").first
+        chip.wait_for()
+        chip.hover()
+        page.wait_for_timeout(dwell_ms)
+        chip.click()
+        page.wait_for_selector("#viewer-slot mark#cited")
+        page.wait_for_timeout(700)
+        assert in_panel_view(page), f"passage in view after a {dwell_ms} ms hover"
+    finally:
+        context.close()
