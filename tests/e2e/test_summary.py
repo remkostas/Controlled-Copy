@@ -28,22 +28,3 @@ def test_tc_stu_007_summary_from_the_chat(page, server_url, width, height):
     assert headings == ["in short", "main topics"]
     assert shown.is_visible(), "the new Summary is on screen"
     assert page.js_errors == []
-
-
-def test_tc_stu_007_a_refusal_offers_the_summary(page, server_url):
-    """Comparison review: "Fasse das Dokument zusammen" was refused with no way forward. A request
-    for an overview finds no single passage, so every chat refusal offers the Summary."""
-    from tests.e2e.test_journey_a import ask
-
-    page.set_viewport_size({"width": 1366, "height": 768})
-    login(page, server_url)
-    upload(page, SOP)
-    page.wait_for_selector(".source .badge:has-text('SOP-INB-001')")
-    refusal = ask(page, "What is the forklift speed limit in the yard?")
-    assert "Not in the selected sources" in refusal.inner_text()
-    offer = refusal.locator(".refusal__next")
-    assert "Looking for an overview?" in offer.inner_text()
-    offer.locator("[data-chat-summary]").click()
-    page.locator("#output-reader").wait_for()
-    assert page.locator("#reader-title").text_content() == "Summary"
-    assert page.js_errors == []

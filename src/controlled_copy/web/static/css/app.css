@@ -1236,12 +1236,6 @@ details.paste > summary.btn {
   color: var(--text-muted);
   max-width: 65ch;
 }
-.refusal .refusal__next {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sp-2) var(--sp-3);
-}
 .suggestions {
   display: grid;
   gap: var(--sp-2);

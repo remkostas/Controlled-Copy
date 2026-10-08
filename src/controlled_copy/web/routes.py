@@ -525,7 +525,7 @@ def ask_question(
         if wants_json(request):
             return json_error(exc.message, exc.status)
         turn = views.error_turn(question.strip()[: services.settings.max_question_chars], exc.message)
-        return render(request, "partials/turn.html", {"t": turn, "nb": notebook}, exc.status)
+        return render(request, "partials/turn.html", {"t": turn}, exc.status)
     if wants_json(request):
         return JSONResponse(
             {
@@ -536,7 +536,7 @@ def ask_question(
             }
         )
     turn = views.turn_view(result.turn_id, result.question, result.search_query, result.answer, result.status)
-    return render(request, "partials/turn.html", {"t": turn, "nb": notebook})
+    return render(request, "partials/turn.html", {"t": turn})
 
 
 @router.post("/notebooks/{notebook_id}/chat/clear")
