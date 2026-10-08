@@ -250,6 +250,17 @@
     if (target.id === "studio-outputs") {
       const empty = $("#outputs-empty");
       if (empty) empty.remove();
+      // A new output arrives at the top: keep only it open and bring it into view, so it is
+      // clear what was just made and an older output is not read by mistake.
+      const outputs = $$("details.output", target);
+      if (outputs.length) {
+        outputs.forEach((output, index) => (output.open = index === 0));
+        // Scroll only the Studio panel, never the page (it is locked to the window).
+        const panel = target.closest(".panel__body");
+        if (panel) {
+          panel.scrollTop += outputs[0].getBoundingClientRect().top - panel.getBoundingClientRect().top;
+        }
+      }
     }
   });
 

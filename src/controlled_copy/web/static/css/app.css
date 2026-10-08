@@ -1239,6 +1239,11 @@ details.paste > summary.btn {
   font-weight: 600;
   font-size: var(--fs-sm);
 }
+.output__subject {
+  font-size: var(--fs-sm);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
 .output__meta {
   font-family: var(--font-mono);
   font-size: var(--fs-2xs);
@@ -1265,8 +1270,8 @@ details.paste > summary.btn {
   margin: 0;
   padding-left: var(--sp-4);
   display: grid;
-  gap: var(--sp-2);
-  font-size: var(--fs-sm);
+  gap: var(--sp-3);
+  font-size: var(--fs-md);
 }
 
 /* Landing and video pages */
