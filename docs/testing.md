@@ -142,6 +142,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | NFR-UI-01 | Readable contrast | TC-UI-003 | e2e | Automated contrast check on the main screens | Text meets WCAG AA contrast |
 | FR-UI-08 | Resizable side panels; the chat keeps room | TC-UI-008 | e2e | Drag and arrow-key the panel edges; reload; double-click; open a citation at 1000 and 1366 px | Widths follow and are kept per browser; reset works; the chat never drops below 22rem; no handles in the tab layout |
 | FR-UI-09 | The phone header stays compact | TC-UI-009 | e2e | Workspace at 390 × 844 with every layer on | Header at most 100 px (was 189); short labels on screen, full accessible names; full labels on a desktop |
+| FR-UI-12 | The Sources panel can be collapsed | TC-UI-012 | e2e | Collapse at 1366 px, reload, expand; collapse, then open a citation; switch to a phone width | The chat gains the room and the choice is kept; a citation shows the panel again; no collapse in the tab layout |
 
 ### Governance (stage 2)
 

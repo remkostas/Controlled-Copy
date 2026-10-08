@@ -160,6 +160,7 @@
   --topbar-h: 3.25rem;
   --panel-head-h: 2.5rem;
   --col-sources: 18.5rem;
+  --col-rail: 3rem;
   --col-studio: 21rem;
   /* The reader never squeezes the chat below 24rem; it shrinks first. */
   --col-reader: clamp(18rem, calc(100vw - var(--col-studio) - 24rem), 36rem);
@@ -577,6 +578,28 @@ select {
 }
 .workspace.is-reading {
   grid-template-columns: var(--col-reader) minmax(0, 1fr) var(--col-studio);
+}
+/* Collapsed Sources panel (wide layouts only; the script never sets it on the tab layout). */
+.workspace.sources-collapsed {
+  grid-template-columns: var(--col-rail) minmax(0, 1fr) var(--col-studio);
+}
+.sources-collapsed .panel--sources .panel__body,
+.sources-collapsed .panel--sources .resizer,
+.sources-collapsed #sources-title,
+.sources-collapsed #source-count,
+.panel__toggle .panel__toggle-open,
+.sources-collapsed .panel__toggle .panel__toggle-close {
+  display: none;
+}
+.sources-collapsed .panel__toggle .panel__toggle-open {
+  display: inline;
+}
+.sources-collapsed .panel--sources .panel__head {
+  justify-content: center;
+  padding: 0;
+}
+.panel__toggle {
+  margin-left: auto;
 }
 .workspace.is-resizing {
   transition: none;
@@ -1462,6 +1485,9 @@ details.paste > summary.btn {
   }
 }
 @media (max-width: 900px) {
+  .panel__toggle {
+    display: none;
+  }
   .topbar {
     flex-wrap: wrap;
     height: auto;
