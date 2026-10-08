@@ -2,6 +2,7 @@
 <details class="output" id="output-{{ o.id }}" {% if o.open %}open{% endif %}>
   <summary>
     <span class="output__name">{{ o.title }}</span>
+    {% if o.subject %}<span class="output__subject">{{ o.subject }}</span>{% endif %}
     <span class="output__meta">{{ o.meta_label }}</span>
   </summary>
   <div class="output__body">

@@ -46,6 +46,8 @@ class StudioTemplate(BaseModel):
     statement_types: list[str] | None = None
     passage_budget_chars: int = Field(ge=1000, le=60000)
     sections: list[SectionSpec] = Field(min_length=1, max_length=12)
+    # Position among the Studio actions: lower comes first; equal values keep file-name order.
+    order: int = Field(default=100, ge=0, le=1000)
 
     def schema(self) -> dict[str, Any]:
         item = prompts.statement_schema(self.statement_types)
@@ -78,7 +80,7 @@ def load_template(path: Path) -> StudioTemplate:
 @cache
 def core_templates() -> dict[str, StudioTemplate]:
     templates = [load_template(path) for path in sorted(TEMPLATE_DIR.glob("*.json"))]
-    return {t.id: t for t in templates}
+    return {t.id: t for t in sorted(templates, key=lambda t: t.order)}
 
 
 def select_overview_passages(

@@ -41,31 +41,46 @@ def card_markdown(output: dict[str, Any], created_at: str) -> str:
             line += " (not covered by an applicable approved document: "
             line += ", ".join(clean(i) for i in card["undocumented"]) + ")"
         lines += ["", line]
-    for warning in card.get("warnings", []):
+    # The same split as on screen: a matched document without metadata drives the status and
+    # stays at the top; other not-applied revisions are a note under Applicability.
+    warnings = card.get("warnings", [])
+    unknown = [w for w in warnings if str(w.get("reason", "")).startswith("status unknown")]
+    quiet = [w for w in warnings if w not in unknown]
+    for warning in unknown:
         lines += [
             "",
             f"> **Not applied: {clean(warning.get('label'))}** ({clean(warning.get('reason'))}):"
             f' "{clean(warning.get("excerpt"))}"',
         ]
     lines += sections_md(output)
-    used = card.get("used", [])
-    excluded = card.get("excluded", [])
-    if used or excluded or card.get("consulted") or card.get("not_selected"):
+    refused = card.get("status") == "refusal"
+    # A refusal shows no applicability on screen, and neither does its copy.
+    used = [] if refused else card.get("used", [])
+    excluded = [] if refused else card.get("excluded", [])
+    if refused:
+        quiet = []
+    if used or excluded or quiet or (not refused and (card.get("consulted") or card.get("not_selected"))):
         lines += ["", "## Applicability"]
     if used:
         rows = [
             [_labelled(d), d.get("status"), d.get("effective") or "-", d.get("site") or "-"] for d in used
         ]
         lines += ["", *table(["Used", "Status", "Effective", "Site"], rows)]
-    if card.get("not_selected"):
+    if not refused and card.get("not_selected"):
         names = ", ".join(clean(d.get("label")) for d in card["not_selected"])
         lines += ["", f"Applicable but not selected, so not used: {names}"]
-    if card.get("consulted"):
+    if not refused and card.get("consulted"):
         names = ", ".join(clean(_labelled(d)) for d in card["consulted"])
         lines += ["", f"Also given to the model, not cited: {names}"]
     if excluded:
         rows = [[_labelled(d), d.get("reason")] for d in excluded]
         lines += ["", *table(["Not applied", "Reason"], rows)]
+    for warning in quiet:
+        lines += [
+            "",
+            f"Not applied: {clean(warning.get('label'))} ({clean(warning.get('reason'))}) also matched"
+            " this situation; nothing above is taken from it.",
+        ]
     lines += citations_md(output)
     # The same notes as the HTML card, so a copy says what was weakened or left out.
     downgraded, dropped = int(output.get("downgraded", 0)), int(output.get("dropped", 0))

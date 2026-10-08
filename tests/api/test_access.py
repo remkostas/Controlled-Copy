@@ -78,3 +78,10 @@ def test_tc_acc_004_all_workspace_routes_need_a_session(app):
     # A forged cookie is no better than none.
     with TestClient(app, cookies={"cc_session": "forged.signature"}) as client:
         assert client.get("/app", follow_redirects=False).status_code == 303
+
+
+def test_tc_acc_007_the_show_button_needs_the_page_script(app):
+    """Without JavaScript the button would do nothing, so it starts hidden."""
+    page = TestClient(app).get("/").text
+    button = page.split("data-reveal", 1)[1].split(">", 1)[0]
+    assert " hidden" in button and 'aria-controls="access-code"' in button

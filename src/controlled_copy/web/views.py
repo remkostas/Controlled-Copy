@@ -158,6 +158,11 @@ def _core_template_ids() -> frozenset[str]:
     return frozenset(core_templates())
 
 
+# What an output was asked for (a card's situation), shown in its header so outputs stay
+# distinguishable; the full text is in the output itself.
+SUBJECT_CHARS = 110
+
+
 def output_view(
     row: sqlite3.Row, open_: bool = False, partials: dict[str, str] | None = None
 ) -> dict[str, Any]:
@@ -166,6 +171,7 @@ def output_view(
     base = {
         "id": row["id"],
         "open": open_,
+        "subject": None,
         "removed": 0,
         "sections": [],
         "partial": None,
@@ -184,6 +190,8 @@ def output_view(
             "meta_label": created,
         }
     citations = {int(c["n"]): c for c in output.get("citations", [])}
+    asked = " ".join((row["input"] or "").split())
+    subject = asked if len(asked) <= SUBJECT_CHARS else asked[: SUBJECT_CHARS - 1].rstrip() + "…"
     sections = []
     for section in output.get("sections", []):
         entries = [
@@ -210,6 +218,7 @@ def output_view(
             )
             if part
         ),
+        "subject": subject or None,
         "sections": sections,
         "removed": int(output.get("removed", 0)),
         "extra": output,

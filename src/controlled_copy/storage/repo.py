@@ -341,6 +341,8 @@ class Repo:
             raise ValueError("every chunk needs exactly one vector")
         source_id = new_id()
         with transaction(self.conn):
+            # The visitor logged out or deleted the notebook while this upload was indexed.
+            self._require_notebook(_owned(new.notebook))
             if limit is not None and self.count_sources(new.notebook) >= limit:
                 raise sources_full(limit)
             if char_limit is not None and self.count_chars(new.notebook) + len(new.text) > char_limit:
@@ -526,14 +528,19 @@ class Repo:
         search_query: str | None,
         lineage: Collection[str],
         status: str,
+        chat_epoch: int | None = None,
     ) -> Stored:
         """Store a turn. `lineage` names every source the turn's text depends on. Returns what
-        was stored: callers answer with that, never with text the store discarded."""
+        was stored: callers answer with that, never with text the store discarded.
+        `chat_epoch` is the notebook's chat generation when the question arrived: if New chat
+        ran since, nothing is stored and the turn comes back as a tombstone."""
         notebook_id = _owned(notebook)
         turn_id = new_id()
         now = utcnow()
         with transaction(self.conn):
             self._require_notebook(notebook_id)
+            if chat_epoch is not None and self._chat_epoch(notebook_id) != chat_epoch:
+                return Stored(turn_id, TOMBSTONE)
             if not self._all_sources_exist(notebook_id, lineage):
                 # A source was deleted while the model was answering: keep no derived text.
                 question, answer, search_query, lineage, status = "", {}, None, [], TOMBSTONE
@@ -562,6 +569,24 @@ class Repo:
         """Inside a write: the notebook was not deleted while its content was generated."""
         if self.conn.execute("SELECT 1 FROM notebook WHERE id = ?", (notebook_id,)).fetchone() is None:
             raise notebook_gone()
+
+    def clear_chat(self, notebook: OwnedNotebook) -> int:
+        """Start a new chat: delete every turn of the notebook and raise its chat generation,
+        so an answer still being generated is not stored. Sources and Studio outputs stay."""
+        notebook_id = _owned(notebook)
+        with transaction(self.conn):
+            self.conn.execute("UPDATE notebook SET chat_epoch = chat_epoch + 1 WHERE id = ?", (notebook_id,))
+            return self.conn.execute(
+                "DELETE FROM chat_message WHERE notebook_id = ?", (notebook_id,)
+            ).rowcount
+
+    def chat_epoch(self, notebook: OwnedNotebook) -> int:
+        """The notebook's chat generation; New chat raises it."""
+        return self._chat_epoch(_owned(notebook))
+
+    def _chat_epoch(self, notebook_id: str) -> int:
+        row = self.conn.execute("SELECT chat_epoch FROM notebook WHERE id = ?", (notebook_id,)).fetchone()
+        return int(row[0]) if row else 0
 
     def list_turns(self, notebook: OwnedNotebook) -> list[sqlite3.Row]:
         """One row per turn: question, answer JSON, search query, lineage and status."""
@@ -644,6 +669,21 @@ class Repo:
         return int(row["n"])
 
     # Retention ------------------------------------------------------------------
+    def delete_session(self, sid: str) -> list[str]:
+        """Log out: delete the session with all its data now, as the purge would after the
+        retention window. Returns the uploaded files to remove."""
+        with transaction(self.conn):
+            files = [
+                row["file_path"]
+                for row in self.conn.execute(
+                    "SELECT s.file_path FROM source s JOIN notebook n ON n.id = s.notebook_id "
+                    "WHERE n.session_id = ? AND s.file_path IS NOT NULL",
+                    (sid,),
+                )
+            ]
+            self.conn.execute("DELETE FROM visitor_session WHERE id = ?", (sid,))
+        return files
+
     def purge_expired(self, retention_hours: int, now: datetime | None = None) -> tuple[int, list[str]]:
         """Delete sessions not seen within the retention window, with all their data."""
         now = now or datetime.now(UTC)

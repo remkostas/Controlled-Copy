@@ -38,7 +38,7 @@ def test_tc_stu_001_briefing_has_all_sections_and_only_verified_citations(visito
     assert "Briefing" in page and "Key points" in page
 
 
-@pytest.mark.parametrize("template_id", ["faq", "study-guide"])
+@pytest.mark.parametrize("template_id", ["summary", "faq", "study-guide"])
 def test_tc_stu_001_faq_and_study_guide_are_cited_studio_outputs(visitor, db, template_id):
     """NotebookLM's FAQ and study guide: the same engine, one JSON template each."""
     template = core_templates()[template_id]
