@@ -35,3 +35,22 @@ def test_tc_ui_001_a_card_and_its_citation_leave_the_page_in_place(page, server_
     if width < 900:
         assert page.locator(".mobile-tabs").bounding_box()["y"] >= 0, "the tabs stay on screen"
     assert page.js_errors == []
+
+
+def test_tc_ui_001_a_situation_without_spaces_does_not_widen_studio(page, server_url):
+    """Release audit: 2,000 characters without a space widened the Studio card to about 15,000 px."""
+    page.set_viewport_size({"width": 1366, "height": 768})
+    login(page, server_url)
+    page.select_option("#nb-select", label="Inbound Operations")
+    page.wait_for_selector("h1:has-text('Inbound Operations')")
+    outputs = page.locator("#studio-outputs details.output")
+    before = outputs.count()
+    page.fill("#situation", "x" * 2000)
+    page.click(".card-form button[type=submit]")
+    outputs.nth(before).wait_for(state="attached")
+    page.locator("#output-reader").wait_for()
+    sideways = "el => el.scrollWidth - el.clientWidth"
+    assert page.locator("#output-reader .reader__body").evaluate(sideways) <= 1
+    page.click("[data-reader-close]")
+    assert page.locator(".panel--studio .panel__body").evaluate(sideways) <= 1
+    assert page.js_errors == []

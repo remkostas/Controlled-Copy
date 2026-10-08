@@ -4,7 +4,7 @@
 
 Ask questions about your own documents. Every statement links to the exact passage it came from, and the server checks each quote against its source before you see it. When your sources do not cover a question, the app says so instead of guessing.
 
-**Try it:** https://controlled-copy.remkostas.com (access code on request) · **Video:** on the site's [video page](https://controlled-copy.remkostas.com/video)
+**Try it:** https://controlled-copy.remkostas.com (access code on request) · **Video:** coming soon
 
 ![Workspace with sources, a cited answer, a follow-up, a refusal and a Studio Briefing](docs/screenshots/app-workspace.png)
 

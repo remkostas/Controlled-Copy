@@ -1107,7 +1107,8 @@ details.paste > summary.btn {
   display: grid;
   gap: var(--sp-2);
 }
-.turn {
+.turn,
+.card-situation {
   overflow-wrap: anywhere;
 }
 .question {

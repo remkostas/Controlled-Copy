@@ -404,9 +404,13 @@
     reader.hidden = true;
     $(".reader__body", reader).replaceChildren();
     $$(".panel--chat > :not(.reader)").forEach((el) => (el.inert = false));
-    // Studio shows the output that was read, open, with its buttons.
+    // Studio shows the output that was read, open, with its buttons. On a phone the visitor came
+    // from the Studio tab (Open is only there), so closing goes back to it.
     $$("#studio-outputs details.output[aria-current]").forEach((item) => item.removeAttribute("aria-current"));
-    if (readerReturn && readerReturn.isConnected) readerReturn.open = true;
+    if (readerReturn && readerReturn.isConnected) {
+      readerReturn.open = true;
+      if (!wideLayout()) showTab("studio");
+    }
     // Back to the button that opened it, else to the output in Studio.
     const usable = (el) => el && el.isConnected && el.offsetParent !== null;
     const summary = readerReturn && $("summary", readerReturn);
@@ -579,8 +583,12 @@
     const ws = workspace();
     if (!handle || !ws) return;
     const side = handle.dataset.resize;
-    sideVars(side).forEach((name) => ws.style.removeProperty(name));
-    storeWidth(sideVars(side)[0], null);
+    // The default width may not leave the chat its room next to a widened other panel: re-fit.
+    withoutAnimation(ws, () => {
+      sideVars(side).forEach((name) => ws.style.removeProperty(name));
+      storeWidth(sideVars(side)[0], null);
+      fitPanels(ws);
+    });
   });
 
   // Collapsible Sources panel on wide layouts, as in NotebookLM: more room for the chat and

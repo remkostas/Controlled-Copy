@@ -76,6 +76,12 @@ def test_tc_stu_008_no_automatic_reading_view_on_a_phone(page, server_url):
     page.click(".studio-action:has-text('Briefing')")
     page.wait_for_selector("#studio-outputs details.output[open]")
     assert not page.locator("#output-reader").is_visible()
+    # Opened by hand, closing goes back to the Studio tab with focus on Open (release audit).
+    page.click("#studio-outputs details.output[open] [data-read-output]")
+    page.locator("#output-reader").wait_for()
+    page.click("[data-reader-close]")
+    assert page.locator(".mobile-tabs [data-tab='studio']").get_attribute("aria-selected") == "true"
+    assert page.evaluate("() => document.activeElement.matches('[data-read-output]')"), "back to Open"
     assert page.js_errors == []
 
 
