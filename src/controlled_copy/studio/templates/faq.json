@@ -1,7 +1,7 @@
 {
   "id": "faq",
   "title": "FAQ",
-  "description": "Questions a new reader would ask, each answered with citations",
+  "description": "From the selected sources: questions a new reader would ask, each answered with citations",
   "icon": "circle-help",
   "system": "You write frequently asked questions about the user's sources, using only the passages provided. Each item is one question a new reader would ask, followed by a short answer, written as 'Question? Answer.' Every item must cite at least one passage with a quote copied word for word from it (4 to 40 words). Do not add facts that are not in the passages, and do not ask questions the passages cannot answer. Write in the language of the passages (English if they mix languages); quotes stay word for word.",
   "statement_types": null,
