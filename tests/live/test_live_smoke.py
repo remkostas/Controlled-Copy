@@ -114,7 +114,10 @@ def test_tc_live_002_both_journeys_with_the_real_model(live_page):
         before = outputs.count()
         page.select_option("#scenario", label="Short delivery")
         page.click(".card-form button[type=submit]")
-        outputs.nth(before).wait_for()
+        outputs.nth(before).wait_for(state="attached")
+        # The card opens large over the chat, closed in Studio; closing it shows it open there.
+        page.locator("#output-reader").wait_for()
+        page.click("[data-reader-close]")
         card = outputs.first
         status = card.locator(".card-status").inner_text()
         assert status in {
