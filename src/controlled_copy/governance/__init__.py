@@ -4,10 +4,10 @@ is on; the core never imports this package (D-032)."""
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from controlled_copy.clock import berlin_today
 from controlled_copy.config import Settings
 from controlled_copy.plugins import Registry, StudioAction
 from controlled_copy.services import Services
@@ -45,7 +45,7 @@ def _view_hook(services: Services, notebook: Any, context: dict[str, Any]) -> No
         "sites": options["sites"],
         "roles": roles,
         "default_role": default_role() if default_role() in roles else (roles[0] if roles else ""),
-        "today": datetime.now(UTC).date().isoformat(),
+        "today": berlin_today(),
         "scenarios": scenarios() if notebook.kind == WORKSPACE_KIND else [],
         "has_metadata": any(d.origin != "none" for d in documents_of(rows)),
         "workspace": notebook.kind == WORKSPACE_KIND,

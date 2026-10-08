@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import JSONResponse, Response
 
+from controlled_copy.clock import berlin_today
 from controlled_copy.errors import UserFacingError
 from controlled_copy.governance import rules
 from controlled_copy.governance.card import CardInput, context_options, run_card
@@ -38,7 +39,7 @@ def default_context(rows: list, site: str, role: str, as_of: str) -> rules.Conte
         preferred = default_role()
         role = preferred if preferred in roles else (roles[0] if roles else "")
     try:
-        when = date.fromisoformat(as_of) if as_of else datetime.now(UTC).date()
+        when = date.fromisoformat(as_of or berlin_today())
     except ValueError as exc:
         raise StudioError("Enter the date as YYYY-MM-DD.", 422) from exc
     return rules.Context(site=site, role=role, as_of=when)
