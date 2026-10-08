@@ -352,6 +352,8 @@ select {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
   background: var(--surface-raised);
+  /* Set, not inherited: inside the dark top bar the inherited colour is the light chrome text. */
+  color: var(--text);
   line-height: var(--lh-body);
   caret-color: var(--focus);
 }
@@ -492,9 +494,26 @@ select {
 }
 .doc-control summary {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
   cursor: pointer;
+  color: var(--text);
+  font-weight: 500;
+}
+.doc-control summary:hover {
+  border-style: solid;
+}
+.doc-control[open] summary {
+  border-style: solid;
+}
+.doc-control__hint {
+  display: block;
+  font-weight: 400;
+  font-size: var(--fs-xs);
   color: var(--text-muted);
 }
 .doc-control__fields {
@@ -504,7 +523,7 @@ select {
 }
 .doc-control__pair {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--sp-2);
 }
 .doc-control__pair .field {
@@ -558,6 +577,24 @@ select {
 .workspace.is-reading {
   grid-template-columns: var(--col-reader) minmax(0, 1fr) var(--col-studio);
 }
+/* The workspace page is exactly one window high in every layout: only the panels scroll,
+   so opening a citation or scrolling past a panel never moves the page itself. */
+body.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* fallback where dvh is not supported */
+  height: 100dvh;
+  overflow: hidden;
+}
+body.app-shell > .topbar,
+body.app-shell > .mobile-tabs {
+  flex: none;
+}
+body.app-shell > .workspace {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
 .panel {
   display: flex;
   flex-direction: column;
@@ -604,6 +641,9 @@ select {
   background: var(--surface-chrome-3);
 }
 .panel__body {
+  /* Positioned, so absolutely positioned content (visually hidden table captions) stays
+     inside the scroll box instead of giving the locked page extra height. */
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -817,9 +857,16 @@ details.paste > summary.btn {
   gap: var(--sp-3);
 }
 .viewer__bar {
+  position: sticky;
+  top: calc(-1 * var(--sp-4));
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: var(--sp-2);
+  margin: calc(-1 * var(--sp-4)) calc(-1 * var(--sp-4)) 0;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-panel-alt);
+  border-bottom: 1px solid var(--border);
 }
 .viewer__title {
   font-size: var(--fs-lg);
@@ -1217,6 +1264,11 @@ details.paste > summary.btn {
   font-weight: 600;
   font-size: var(--fs-sm);
 }
+.output__subject {
+  font-size: var(--fs-sm);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
 .output__meta {
   font-family: var(--font-mono);
   font-size: var(--fs-2xs);
@@ -1243,8 +1295,8 @@ details.paste > summary.btn {
   margin: 0;
   padding-left: var(--sp-4);
   display: grid;
-  gap: var(--sp-2);
-  font-size: var(--fs-sm);
+  gap: var(--sp-3);
+  font-size: var(--fs-md);
 }
 
 /* Landing and video pages */
@@ -1388,7 +1440,6 @@ details.paste > summary.btn {
   .workspace,
   .workspace.is-reading {
     display: block;
-    height: auto;
   }
   .workspace[data-tab] .panel {
     display: none;
@@ -1397,7 +1448,7 @@ details.paste > summary.btn {
   .workspace[data-tab="chat"] .panel--chat,
   .workspace[data-tab="studio"] .panel--studio {
     display: flex;
-    min-height: calc(100dvh - 7rem);
+    height: 100%;
   }
   .sheet {
     padding: var(--sp-8) var(--sp-5) var(--sp-6);
@@ -1510,6 +1561,16 @@ details.paste > summary.btn {
 }
 .card-warning {
   margin-top: var(--sp-3);
+  padding-left: var(--sp-3);
+  border-left: 3px solid var(--border);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.card-warning strong {
+  color: var(--text);
+}
+.card-warning__details summary {
+  cursor: pointer;
 }
 .card-warning__excerpt {
   font-size: var(--fs-sm);

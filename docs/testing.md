@@ -89,6 +89,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-ANS-07 | Timeout handled | TC-ANS-007 | integration | Fake that exceeds the timeout | Clear message within the time limit |
 | FR-ANS-08 | Citation opens the passage | TC-ANS-008 | e2e | Click a citation chip | Viewer opens, passage highlighted and visible |
 | FR-ANS-09 | Answers follow the language of the question; quotes stay in the language of their source | TC-ANS-009 | unit, integration | The prompts; a German source and a German question | No prompt fixes the answer language; the German answer keeps its verified German quote |
+| FR-ANS-10 | Answers know today's date | TC-ANS-010 | unit, integration | Any question; dates around midnight and the summer-time switches | The answer prompt carries today's date in Germany and says it is not evidence |
 
 ### Follow-ups (stage 1)
 
@@ -97,6 +98,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-FUP-01 | Follow-ups rewritten with the last two turns | TC-FUP-001 | integration | Turn 1 about packaging; turn 2 "and if it is wet?" | Rewrite contains the topic; retrieval uses it |
 | FR-FUP-02 | The rewritten question is shown | TC-FUP-002 | api | Same | Response fragment shows the search question |
 | FR-FUP-03 | Citations only from the current retrieval | TC-FUP-003 | unit | Fake answer citing a passage from turn 1 not retrieved now | Citation removed |
+| FR-FUP-04 | New chat starts over; a new topic is searched as asked | TC-FUP-004 | unit, integration, e2e | Two turns, then New chat; New chat while an answer is generated; a new topic after earlier turns; first answer in a browser | Turns deleted, sources kept, no rewrite afterwards; an answer that started before New chat is not stored; only the owner can clear; the button appears with the first answer without a reload; the rewrite prompt keeps a new topic unchanged (the real model's behaviour is a live check) |
 
 ### Studio (stage 1)
 
@@ -105,6 +107,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-STU-01 | Studio outputs (Briefing, FAQ, study guide) with sections and verified citations | TC-STU-001 | integration | Notebook with two sources; fake briefing | All template sections present; every citation verified |
 | FR-STU-02 | Three suggested questions, cached | TC-STU-002 | integration | Add a source; reload twice | Three questions; generated once per source change |
 | FR-STU-03 | Templates are data | TC-STU-003 | unit | Load the template files | Validate against the template schema; no template-specific code path |
+| FR-STU-06 | A new output opens in view with older ones closed; a card header names its situation | TC-STU-006 | integration, e2e | Run three Briefings; ask a card | Only the newest output open and in view; header shows the situation, shortened when long |
 
 ### Limits, retention, logging (stage 1)
 
@@ -143,7 +146,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-GOV-01 | Per-visitor workspace copy | TC-GOV-001 | integration | Two sessions open the Inbound Operations workspace; one deletes a document | The other session still has it |
 | FR-GOV-02 | Reset re-seeds without embedding calls | TC-GOV-002 | integration | Modify the workspace, press Reset | Seed state restored; the embedding fake was not called |
 | FR-GOV-03 | Authoritative set rules | TC-GOV-003 | unit | Documents covering: approved, draft, obsolete, future effective date, other site, other role, superseded revision | Only approved, effective, matching, not superseded documents are authoritative; each excluded one carries its reason |
-| FR-GOV-04 | Excluded documents raise warnings, never requirements | TC-GOV-004 | integration | Situation matching the obsolete revision | Warning banner names it; no requirement cites it |
+| FR-GOV-04 | Excluded documents raise warnings, never requirements | TC-GOV-004 | integration | Situation matching the obsolete revision; a match only in a document without metadata; an off-topic situation | No requirement cites an excluded document. An obsolete, draft or other-site match is a quiet note under Applicability; a match only in a document without metadata stays as a visible box under the status; a refusal shows no applicability. The Markdown copy follows the screen |
 | FR-GOV-05 | Identifier extraction and lookup | TC-GOV-005 | unit | Text with `GR-204`, a document ID, and no code | Correct extraction |
 | FR-GOV-05 | | TC-GOV-006 | integration | Situation with `GR-299` (undocumented) | Status "expert confirmation required"; message names the code |
 | FR-GOV-06 | Statement types enforced | TC-GOV-007 | unit | Fake card with a "requirement" whose quote fails, or whose source is excluded | Downgraded to inference or missing evidence |

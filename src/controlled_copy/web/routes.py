@@ -520,6 +520,18 @@ def ask_question(
     return render(request, "partials/turn.html", {"t": turn})
 
 
+@router.post("/notebooks/{notebook_id}/chat/clear")
+def clear_chat(request: Request, notebook_id: str, services: WriteDep) -> Response:
+    """New chat: the notebook's turns are deleted, so the next question has no earlier context."""
+    notebook = owned_notebook(services, notebook_id)
+    if notebook is None:
+        return notice(request, "Notebook not found.", 404, "#toast")
+    removed = services.repo.clear_chat(notebook)
+    _discard(services, [])
+    log_event("chat_cleared", session=services.sid, notebook=notebook_id, messages=removed)
+    return json_or_redirect(request, {"cleared": removed}, f"/app?nb={notebook_id}")
+
+
 @router.post("/notebooks/{notebook_id}/suggestions", response_class=HTMLResponse)
 def suggestions(request: Request, notebook_id: str, services: WriteDep) -> Response:
     """Generating questions calls the model, spends budget and writes the cache: a POST with

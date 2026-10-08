@@ -112,15 +112,34 @@
   function openViewer() {
     const ws = workspace();
     const browser = $("#source-browser");
+    const widening = Boolean(ws) && !ws.classList.contains("is-reading");
     if (ws) ws.classList.add("is-reading");
     if (browser) browser.hidden = true;
     showTab("sources");
     const cited = $("#cited");
     const panelBody = $("#sources-panel .panel__body");
-    if (cited) {
-      cited.scrollIntoView({ block: "center" });
-    } else if (panelBody) {
-      panelBody.scrollTop = 0;
+    if (!cited) {
+      if (panelBody) panelBody.scrollTop = 0;
+      return;
+    }
+    const center = () => cited.scrollIntoView({ block: "center" });
+    center();
+    // The reading column widens with an animation and the text reflows while it does, which
+    // moves the passage: centre it again once the column has its final width.
+    if (widening) {
+      let done = false;
+      const settle = () => {
+        if (done) return;
+        done = true;
+        ws.removeEventListener("transitionend", onEnd);
+        center();
+      };
+      // Only the column animation counts: transitions of children (a hover colour) bubble here too.
+      const onEnd = (event) => {
+        if (event.target === ws && event.propertyName === "grid-template-columns") settle();
+      };
+      ws.addEventListener("transitionend", onEnd);
+      setTimeout(settle, 400);
     }
   }
 
@@ -220,12 +239,28 @@
         $$("#doc-control input, #doc-control select").forEach((field) => (field.value = ""));
       }
     }
+    // The first answer makes a chat to start over from: show New chat without a reload.
+    if (target.id === "pending-turn" && event.detail.xhr && event.detail.xhr.status < 300) {
+      const newChat = $("#new-chat");
+      if (newChat) newChat.hidden = false;
+    }
     if (target.id === "toast") {
       window.setTimeout(() => target.replaceChildren(), 8000);
     }
     if (target.id === "studio-outputs") {
       const empty = $("#outputs-empty");
       if (empty) empty.remove();
+      // A new output arrives at the top: keep only it open and bring it into view, so it is
+      // clear what was just made and an older output is not read by mistake.
+      const outputs = $$("details.output", target);
+      if (outputs.length) {
+        outputs.forEach((output, index) => (output.open = index === 0));
+        // Scroll only the Studio panel, never the page (it is locked to the window).
+        const panel = target.closest(".panel__body");
+        if (panel) {
+          panel.scrollTop += outputs[0].getBoundingClientRect().top - panel.getBoundingClientRect().top;
+        }
+      }
     }
   });
 

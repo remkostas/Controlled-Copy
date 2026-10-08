@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ nb.title }} · {{ product_name }}{% endblock %}
-{% block body_attrs %} hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'{% endblock %}
+{% block body_attrs %} class="app-shell" hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'{% endblock %}
 {% block content %}
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <header class="topbar">
@@ -41,6 +41,8 @@
     <header class="panel__head">
       <h2 class="panel__title" id="chat-title">Chat</h2>
       <div class="panel__head-actions">
+        <button type="button" class="btn btn--ghost btn--sm" id="new-chat" hx-post="/notebooks/{{ nb.id }}/chat/clear"
+          hx-confirm="Start a new chat? The current chat is removed; the sources and Studio outputs stay."{% if not turns %} hidden{% endif %}>{{ icon('square-pen') }} New chat</button>
         {% if nb.kind == 'personal' %}
         <button type="button" class="btn btn--ghost btn--sm" hx-delete="/notebooks/{{ nb.id }}"
           hx-confirm="Delete the notebook “{{ nb.title }}” with all its sources, chat and Studio outputs? This cannot be undone.">{{ icon('trash-2') }} Delete notebook</button>
@@ -70,7 +72,7 @@
             <button class="btn btn--primary btn--icon" type="submit" aria-label="Ask" {% if read_only %}disabled{% endif %}>{{ icon('send-horizontal') }}</button>
           </div>
           <p class="composer__meta">
-            <span>Follow-ups use the last two turns.</span>
+            <span>Follow-ups use the last two turns; New chat starts over.</span>
             <span class="counter" id="question-counter" data-max="{{ limits.question_chars }}">0 / {{ '{:,}'.format(limits.question_chars) }}</span>
           </p>
         </form>
