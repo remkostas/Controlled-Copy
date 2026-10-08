@@ -139,7 +139,12 @@
     const widening = Boolean(ws) && !ws.classList.contains("is-reading");
     // A citation shows its source even when the panel is collapsed (the stored choice stays).
     if (ws && ws.classList.contains("sources-collapsed")) setSourcesCollapsed(ws, false, false);
-    if (ws) ws.classList.add("is-reading");
+    if (ws) {
+      withoutAnimation(ws, () => {
+        ws.classList.add("is-reading");
+        fitPanels(ws);
+      });
+    }
     if (browser) browser.hidden = true;
     showTab("sources");
     const cited = $("#cited");
@@ -173,7 +178,12 @@
     const slot = $("#viewer-slot");
     if (slot) slot.replaceChildren();
     const ws = workspace();
-    if (ws) ws.classList.remove("is-reading");
+    if (ws) {
+      withoutAnimation(ws, () => {
+        ws.classList.remove("is-reading");
+        fitPanels(ws);
+      });
+    }
     const browser = $("#source-browser");
     if (browser) browser.hidden = false;
     $$(".cite[aria-current]").forEach((c) => c.removeAttribute("aria-current"));
@@ -375,7 +385,31 @@
       for (const side of ["sources", "studio"]) {
         if (sidePanel(ws, side)) setSideWidth(ws, side, targetWidth(ws, side), false);
       }
+      fitPanels(ws);
     });
+  }
+
+  // Keep the chat at least CHAT_MIN wide after anything that changes the side columns: opening
+  // or closing a source (the Sources column switches between its own width and the reader's), a
+  // restored width, or a narrower window. The Sources side gives way first, then Studio. Widths
+  // set here are not stored, so the visitor's own choice comes back when there is room again.
+  function fitPanels(ws) {
+    if (!wideLayout()) return;
+    const sources = sidePanel(ws, "sources");
+    const studio = sidePanel(ws, "studio");
+    if (!sources || !studio) return;
+    const room = ws.clientWidth - CHAT_MIN;
+    let left = sources.offsetWidth;
+    let right = studio.offsetWidth;
+    if (left + right <= room) return;
+    if (!ws.classList.contains("sources-collapsed")) {
+      left = Math.max(SIDE_MIN, room - right);
+      ws.style.setProperty(widthVar(ws, "sources"), `${Math.round(left)}px`);
+    }
+    if (left + right > room) {
+      right = Math.max(SIDE_MIN, room - left);
+      ws.style.setProperty("--col-studio", `${Math.round(right)}px`);
+    }
   }
 
   document.addEventListener("pointerdown", (event) => {
