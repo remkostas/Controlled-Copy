@@ -112,15 +112,34 @@
   function openViewer() {
     const ws = workspace();
     const browser = $("#source-browser");
+    const widening = Boolean(ws) && !ws.classList.contains("is-reading");
     if (ws) ws.classList.add("is-reading");
     if (browser) browser.hidden = true;
     showTab("sources");
     const cited = $("#cited");
     const panelBody = $("#sources-panel .panel__body");
-    if (cited) {
-      cited.scrollIntoView({ block: "center" });
-    } else if (panelBody) {
-      panelBody.scrollTop = 0;
+    if (!cited) {
+      if (panelBody) panelBody.scrollTop = 0;
+      return;
+    }
+    const center = () => cited.scrollIntoView({ block: "center" });
+    center();
+    // The reading column widens with an animation and the text reflows while it does, which
+    // moves the passage: centre it again once the column has its final width.
+    if (widening) {
+      let done = false;
+      const settle = () => {
+        if (done) return;
+        done = true;
+        ws.removeEventListener("transitionend", onEnd);
+        center();
+      };
+      // Only the column animation counts: transitions of children (a hover colour) bubble here too.
+      const onEnd = (event) => {
+        if (event.target === ws && event.propertyName === "grid-template-columns") settle();
+      };
+      ws.addEventListener("transitionend", onEnd);
+      setTimeout(settle, 400);
     }
   }
 
