@@ -224,6 +224,13 @@
     }
   });
 
+  // A request that never reached the server (connection lost, the network changed) swaps
+  // nothing, so say so instead of leaving the visitor in front of a page that does not change.
+  // A typed question stays in the box, so pressing Enter again retries it.
+  document.addEventListener("htmx:sendError", () => {
+    toast("The connection was interrupted, so nothing was sent. Please try again.", false);
+  });
+
   document.addEventListener("htmx:afterRequest", (event) => {
     const elt = event.detail.elt;
     if (elt && elt.id === "ask-form") {
