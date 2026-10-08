@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import sqlite3
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -13,6 +12,7 @@ from pydantic import BaseModel, Field
 from controlled_copy.answering import prompts
 from controlled_copy.answering.citations import CitationNumbering, StatementOut, verify_statements
 from controlled_copy.answering.generate import generate
+from controlled_copy.clock import berlin_today
 from controlled_copy.errors import PROVIDER_UNAVAILABLE, UserFacingError
 from controlled_copy.limits import DAILY_LIMIT_MESSAGE
 from controlled_copy.logs import log_event
@@ -169,20 +169,6 @@ def refusal(searched_sources: int, query: str, reason: str | None) -> dict[str, 
         "search_query": query,
         "reason": reason,
     }
-
-
-def _last_sunday(year: int, month: int) -> datetime:
-    """01:00 UTC on the last Sunday of the month: when Central European summer time changes."""
-    day = datetime(year, month + 1, 1, 1, tzinfo=UTC) - timedelta(days=1)
-    return day - timedelta(days=(day.weekday() + 1) % 7)
-
-
-def berlin_today(now: datetime | None = None) -> str:
-    """Today's date in Germany, where the demo's visitors are. Computed from the EU rule rather
-    than a time-zone database, which the slim container image does not guarantee."""
-    now = now or datetime.now(UTC)
-    summer = _last_sunday(now.year, 3) <= now < _last_sunday(now.year, 10)
-    return (now + timedelta(hours=2 if summer else 1)).date().isoformat()
 
 
 def _store(

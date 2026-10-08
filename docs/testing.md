@@ -156,7 +156,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-GOV-06 | Statement types enforced | TC-GOV-007 | unit | Fake card with a "requirement" whose quote fails, or whose source is excluded | Downgraded to inference or missing evidence |
 | FR-GOV-07 | Status precedence | TC-GOV-008 | unit | Combinations of conflict, unknown source, missing info, all supported | Primary status follows the precedence in product-plan.md |
 | FR-GOV-08 | Uploaded metadata marked as asserted | TC-GOV-009 | integration | Upload Markdown claiming approved status | Badge shows "asserted by uploader" |
-| FR-GOV-09 | Context bar filters by site, role and date | TC-GOV-010 | integration | Set the date before an effective date | That document becomes excluded with the reason "not yet effective" |
+| FR-GOV-09 | Context bar filters by site, role and date | TC-GOV-010 | integration | Set the date before an effective date; leave the date empty at 00:30 in Germany | That document becomes excluded with the reason "not yet effective"; an empty date means today in Germany, like the chat |
 | FR-UI-03 | Journey B end to end | TC-UI-004 | e2e | Open workspace, run scenarios 1, 5, 6, open evidence, Reset | Every step works in a real browser |
 
 ### Reversibility (all layers)
