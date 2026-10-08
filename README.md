@@ -28,16 +28,23 @@ Built in four days with AI coding agents, on synthetic data: [how it was built](
 ## How it works
 
 ```mermaid
-flowchart LR
-    Q["Question"] --> S["Search the sources:<br/>keywords + meaning"]
-    C["Resolution Card<br/>situation"] --> R["Rules: approved,<br/>in effect, this site"]
+flowchart TD
+    U["Upload: PDF, TXT or Markdown"] --> P["Cut into passages,<br/>each with its exact place"]
+    P --> I["Indexed twice:<br/>by words and by meaning"]
+    I --> Q
+    I --> ST
+    I --> C
+    Q["Chat: a question"] --> S["Search the passages"]
+    C["Resolution Card: a situation"] --> R["Rules first: approved,<br/>in effect, this site and role"]
     R --> S
-    S --> F{"Strong<br/>match?"}
-    F -- no --> N["Not in the<br/>sources"]
-    F -- yes --> M["Model: statements<br/>with quotes"]
-    M --> V{"Quote in<br/>passage?"}
-    V -- no --> X["Statement<br/>removed"]
-    V -- yes --> A["Cited<br/>answer"]
+    S --> F{"Good<br/>match?"}
+    F -- no --> N["Not in the sources"]
+    F -- yes --> M
+    ST["Studio: Summary, Briefing,<br/>FAQ, study guide"] --> SP["Passages from across<br/>each selected source"]
+    SP --> M["The model writes statements,<br/>each with a word-for-word quote"]
+    M --> V{"Quote found<br/>in its passage?"}
+    V -- no --> X["Statement removed"]
+    V -- yes --> A["Shown, linked to<br/>the passage"]
     classDef stop fill:#f4f4f5,stroke:#a1a1aa,color:#3f3f46
     classDef done fill:#dcfce7,stroke:#16a34a,color:#14532d
     classDef rule fill:#fef3c7,stroke:#d97706,color:#78350f
@@ -46,7 +53,13 @@ flowchart LR
     class C,R rule
 ```
 
-Uploads are split into passages with exact offsets and indexed twice, as full text and as vectors, in one SQLite file. One FastAPI process serves htmx pages; models run through OpenRouter (BGE-M3 embeddings, GPT-6 Luna with Gemini 3.5 Flash Lite as fallback) with zero-data-retention routing requested, on a small server in Germany. More: [architecture](docs/architecture.md).
+- **Upload:** the text is cut into passages of a few paragraphs, and each passage keeps its exact place in the document, so a citation can open it. Every passage is indexed twice: by its words, for exact terms and codes, and by its meaning (an embedding), for questions in other words.
+- **Chat:** a question searches both indexes. If no passage matches well, the answer is "Not in the selected sources" and no model is asked.
+- **Studio:** a Summary, Briefing, FAQ or study guide reads passages spread across each selected source.
+- **Resolution Card:** fixed rules first pick the documents that count (approved, in effect, this site and role). Only their passages go to the model; the others are listed as not applied, with the reason.
+- **Every answer and output:** the model must write statements that each quote a passage word for word. The server looks for every quote in its passage and removes any statement whose quote is not there.
+
+**Under the hood:** one Python service (FastAPI, pages rendered on the server with htmx) and one SQLite database file, on a small server in Germany. The models run through OpenRouter, with zero data retention requested: BGE-M3 for the embeddings, GPT-6 Luna for the answers, and Gemini 3.5 Flash Lite as the fallback. More: [architecture](docs/architecture.md).
 
 ## Evidence
 
