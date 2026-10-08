@@ -39,7 +39,9 @@ def test_tc_out_001_the_card_exports_status_items_applicability_and_quotes(works
     assert "**Status: Supported by an approved instruction**" in text
     assert "**Context:** site HAM-01 · warehouse operator · as of 2026-10-07" in text
     assert "- **Requirement:** Post only the | open quantity. [1]" in text
-    assert "> **Not applied: SOP-INB-001 rev 2** (obsolete)" in text
+    assert "> **Not applied" not in text, "an obsolete revision is not a top warning"
+    note = text.index("Not applied: SOP-INB-001 rev 2 (obsolete) also matched this situation")
+    assert note > text.index("## Applicability"), "the note sits under Applicability, as on screen"
     assert "| Not applied | Reason |" in text and "| SOP-INB-001 rev 2 | obsolete |" in text
     assert "[1] GUIDE-WMS-003 rev 1" in text or "[1] SOP-INB-001 rev 3" in text
     quote = body["output"]["citations"][0]["quote"]
@@ -108,3 +110,11 @@ def test_full_audit_the_card_export_carries_the_new_card_lines():
     text = card_markdown(output, "2026-10-06T10:00:00+00:00")
     assert "**Who decides:** Stop and ask the person responsible" in text
     assert "Applicable but not selected, so not used: POST-1 rev 2" in text
+
+
+def test_tc_out_001_a_refused_card_exports_without_applicability(workspace):
+    body = workspace.card("What is the forklift speed limit in the yard?").json()
+    assert body["output"]["card"]["status"] == "refusal"
+    text = workspace.visitor.client.get(f"/notebooks/{workspace.id}/outputs/{body['output_id']}.md").text
+    assert "## Applicability" not in text and "| Not applied |" not in text
+    assert "Not applied:" not in text

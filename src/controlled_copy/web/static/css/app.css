@@ -161,7 +161,8 @@
   --panel-head-h: 2.5rem;
   --col-sources: 18.5rem;
   --col-studio: 21rem;
-  --col-reader: 36rem;
+  /* The reader never squeezes the chat below 24rem; it shrinks first. */
+  --col-reader: clamp(18rem, calc(100vw - var(--col-studio) - 24rem), 36rem);
   --chat-measure: 46rem;
 
   /* Motion */
@@ -352,6 +353,8 @@ select {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
   background: var(--surface-raised);
+  /* Set, not inherited: inside the dark top bar the inherited colour is the light chrome text. */
+  color: var(--text);
   line-height: var(--lh-body);
   caret-color: var(--focus);
 }
@@ -492,9 +495,26 @@ select {
 }
 .doc-control summary {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
   cursor: pointer;
+  color: var(--text);
+  font-weight: 500;
+}
+.doc-control summary:hover {
+  border-style: solid;
+}
+.doc-control[open] summary {
+  border-style: solid;
+}
+.doc-control__hint {
+  display: block;
+  font-weight: 400;
+  font-size: var(--fs-xs);
   color: var(--text-muted);
 }
 .doc-control__fields {
@@ -504,7 +524,7 @@ select {
 }
 .doc-control__pair {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--sp-2);
 }
 .doc-control__pair .field {
@@ -541,6 +561,12 @@ select {
 .topbar__note .icon {
   color: var(--accent);
 }
+.topbar .topbar__logout {
+  color: var(--text-on-chrome);
+}
+.topbar .topbar__logout:hover {
+  background: var(--surface-chrome-3);
+}
 
 /* Workspace grid */
 .workspace {
@@ -551,6 +577,11 @@ select {
 }
 .workspace.is-reading {
   grid-template-columns: var(--col-reader) minmax(0, 1fr) var(--col-studio);
+}
+.workspace.is-resizing {
+  transition: none;
+  cursor: col-resize;
+  user-select: none;
 }
 /* The workspace page is exactly one window high in every layout: only the panels scroll,
    so opening a citation or scrolling past a panel never moves the page itself. */
@@ -571,11 +602,46 @@ body.app-shell > .workspace {
   height: auto;
 }
 .panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
   min-width: 0;
   border-right: 1px solid var(--border);
+}
+/* Drag handles on the inner edges of the Sources and Studio panels (wide layouts only). */
+.resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 5;
+  width: 0.75rem;
+  cursor: col-resize;
+  touch-action: none;
+}
+.resizer--sources {
+  right: -0.375rem;
+}
+.resizer--studio {
+  left: -0.375rem;
+}
+.resizer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 1px);
+  width: 2px;
+  background: transparent;
+  transition: background var(--dur) var(--ease-out);
+}
+.resizer:hover::after,
+.resizer:focus-visible::after,
+.workspace.is-resizing .resizer::after {
+  background: var(--focus);
+}
+.resizer:focus-visible {
+  outline: none;
 }
 .panel:last-child {
   border-right: 0;
@@ -1239,6 +1305,11 @@ details.paste > summary.btn {
   font-weight: 600;
   font-size: var(--fs-sm);
 }
+.output__subject {
+  font-size: var(--fs-sm);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
 .output__meta {
   font-family: var(--font-mono);
   font-size: var(--fs-2xs);
@@ -1265,8 +1336,8 @@ details.paste > summary.btn {
   margin: 0;
   padding-left: var(--sp-4);
   display: grid;
-  gap: var(--sp-2);
-  font-size: var(--fs-sm);
+  gap: var(--sp-3);
+  font-size: var(--fs-md);
 }
 
 /* Landing and video pages */
@@ -1372,7 +1443,7 @@ details.paste > summary.btn {
   :root {
     --col-sources: 16rem;
     --col-studio: 18rem;
-    --col-reader: 28rem;
+    --col-reader: clamp(16rem, calc(100vw - var(--col-studio) - 22rem), 28rem);
   }
   .topbar__note span {
     display: none;
@@ -1439,6 +1510,9 @@ details.paste > summary.btn {
   .workspace,
   .workspace.is-reading {
     display: block;
+  }
+  .resizer {
+    display: none;
   }
   .workspace[data-tab] .panel {
     display: none;
@@ -1560,6 +1634,16 @@ details.paste > summary.btn {
 }
 .card-warning {
   margin-top: var(--sp-3);
+  padding-left: var(--sp-3);
+  border-left: 3px solid var(--border);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.card-warning strong {
+  color: var(--text);
+}
+.card-warning__details summary {
+  cursor: pointer;
 }
 .card-warning__excerpt {
   font-size: var(--fs-sm);

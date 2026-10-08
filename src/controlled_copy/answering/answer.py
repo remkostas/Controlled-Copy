@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -90,6 +91,8 @@ def ask(services: Services, notebook: OwnedNotebook, question: str, selected_ids
     source_ids = [row["id"] for row in sources]
 
     try:
+        # New chat raises the generation; an answer that started before it is not stored.
+        chat_epoch = repo.chat_epoch(notebook)
         turns = history_turns(repo.list_turns(notebook))
         history = [(q, text) for q, text, _ in turns]
         # Every source behind this turn: the selection, and the history a rewrite draws on.
@@ -111,9 +114,11 @@ def ask(services: Services, notebook: OwnedNotebook, question: str, selected_ids
                 best_cosine=round(retrieval.best_cosine, 3),
                 passages=len(retrieval.passages),
             )
-            return _store(services, notebook, question, search_query, answer, lineage)
+            return _store(services, notebook, question, search_query, answer, lineage, chat_epoch)
 
-        messages, mapping = prompts.answer_messages(search_query or question, retrieval.passages)
+        messages, mapping = prompts.answer_messages(
+            search_query or question, retrieval.passages, today=berlin_today()
+        )
         payload, result = generate(
             services, messages, schema=prompts.ANSWER_SCHEMA, schema_name="answer", model_cls=AnswerOut
         )
@@ -150,7 +155,7 @@ def ask(services: Services, notebook: OwnedNotebook, question: str, selected_ids
         best_cosine=round(retrieval.best_cosine, 3),
         model=result.model,
     )
-    return _store(services, notebook, question, search_query, answer, lineage)
+    return _store(services, notebook, question, search_query, answer, lineage, chat_epoch)
 
 
 def refusal(searched_sources: int, query: str, reason: str | None) -> dict[str, Any]:
@@ -166,6 +171,20 @@ def refusal(searched_sources: int, query: str, reason: str | None) -> dict[str, 
     }
 
 
+def _last_sunday(year: int, month: int) -> datetime:
+    """01:00 UTC on the last Sunday of the month: when Central European summer time changes."""
+    day = datetime(year, month + 1, 1, 1, tzinfo=UTC) - timedelta(days=1)
+    return day - timedelta(days=(day.weekday() + 1) % 7)
+
+
+def berlin_today(now: datetime | None = None) -> str:
+    """Today's date in Germany, where the demo's visitors are. Computed from the EU rule rather
+    than a time-zone database, which the slim container image does not guarantee."""
+    now = now or datetime.now(UTC)
+    summer = _last_sunday(now.year, 3) <= now < _last_sunday(now.year, 10)
+    return (now + timedelta(hours=2 if summer else 1)).date().isoformat()
+
+
 def _store(
     services: Services,
     notebook: OwnedNotebook,
@@ -173,11 +192,13 @@ def _store(
     search_query: str | None,
     answer: dict[str, Any],
     lineage: set[str],
+    chat_epoch: int,
 ) -> TurnResult:
     """Persist the turn with its lineage: every selected source and the sources behind the
     history used for a rewrite, so deleting any of them removes the turn (S-05)."""
-    stored = services.repo.add_turn(notebook, question, answer, search_query, lineage, "ok")
+    stored = services.repo.add_turn(notebook, question, answer, search_query, lineage, "ok", chat_epoch)
     if stored.status == TOMBSTONE:
-        # A source was deleted while the model was answering: answer with what was stored.
+        # A source was deleted or New chat ran while the model was answering: answer with
+        # what was stored.
         return TurnResult(stored.id, "", None, {"kind": "tombstone"}, TOMBSTONE)
     return TurnResult(stored.id, question, search_query, answer)

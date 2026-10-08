@@ -157,6 +157,7 @@ def workspace_context(
         "can_create_notebook": sum(n.kind == "personal" for n in notebooks)
         < settings.max_notebooks_per_visitor,
         "limits": limits_view(settings),
+        "retention_days": settings.retention_days,
         "ui": {
             "topbar_partials": list(request.app.state.registry.topbar_partials),
             "chat_partials": list(request.app.state.registry.chat_partials),
@@ -326,6 +327,18 @@ def delete_notebook(request: Request, notebook_id: str, services: WriteDep) -> R
     _discard(services, files)
     log_event("notebook_deleted", session=services.sid, notebook=notebook_id, files=len(files))
     return json_or_redirect(request, {"deleted": notebook_id}, "/app")
+
+
+@router.post("/logout")
+def logout(request: Request, services: WriteDep) -> Response:
+    """An anonymous session cannot be resumed once its cookie is gone, so logging out deletes
+    its notebooks, sources, chats and outputs now instead of after the retention window."""
+    files = services.repo.delete_session(services.sid)
+    _discard(services, files)
+    log_event("logged_out", session=services.sid, files=len(files))
+    response = json_or_redirect(request, {"logged_out": True}, "/")
+    response.delete_cookie(SESSION_COOKIE, path="/")
+    return response
 
 
 # Sources -------------------------------------------------------------------------
@@ -505,6 +518,18 @@ def ask_question(
         )
     turn = views.turn_view(result.turn_id, result.question, result.search_query, result.answer, result.status)
     return render(request, "partials/turn.html", {"t": turn})
+
+
+@router.post("/notebooks/{notebook_id}/chat/clear")
+def clear_chat(request: Request, notebook_id: str, services: WriteDep) -> Response:
+    """New chat: the notebook's turns are deleted, so the next question has no earlier context."""
+    notebook = owned_notebook(services, notebook_id)
+    if notebook is None:
+        return notice(request, "Notebook not found.", 404, "#toast")
+    removed = services.repo.clear_chat(notebook)
+    _discard(services, [])
+    log_event("chat_cleared", session=services.sid, notebook=notebook_id, messages=removed)
+    return json_or_redirect(request, {"cleared": removed}, f"/app?nb={notebook_id}")
 
 
 @router.post("/notebooks/{notebook_id}/suggestions", response_class=HTMLResponse)
