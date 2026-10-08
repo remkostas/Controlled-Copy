@@ -264,7 +264,135 @@
     }
   });
 
+  // Resizable side panels on wide layouts: drag the inner edge of Sources or Studio, or focus
+  // it and use the arrow keys; double-click resets. The chat always keeps CHAT_MIN pixels.
+  // Widths are a per-browser convenience, so storage failures are ignored.
+  const WIDTHS_KEY = "cc-panel-widths";
+  const SIDE_MIN = 224;
+  const CHAT_MIN = 352;
+  const KEY_STEP = 24;
+
+  function storedWidths() {
+    try {
+      return JSON.parse(window.localStorage.getItem(WIDTHS_KEY)) || {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function storeWidth(name, width) {
+    try {
+      const widths = storedWidths();
+      if (width === null) delete widths[name];
+      else widths[name] = width;
+      window.localStorage.setItem(WIDTHS_KEY, JSON.stringify(widths));
+    } catch (error) {
+      // Private window or blocked storage: the width still applies to this page.
+    }
+  }
+
+  const wideLayout = () => !window.matchMedia("(max-width: 900px)").matches;
+  const sidePanel = (ws, side) => $(side === "studio" ? ".panel--studio" : ".panel--sources", ws);
+  const widthVar = (ws, side) =>
+    side === "studio" ? "--col-studio" : ws.classList.contains("is-reading") ? "--col-reader" : "--col-sources";
+
+  function setSideWidth(ws, side, wanted, remember) {
+    const other = sidePanel(ws, side === "studio" ? "sources" : "studio");
+    const max = Math.max(SIDE_MIN, ws.clientWidth - (other ? other.offsetWidth : 0) - CHAT_MIN);
+    const width = Math.round(Math.min(Math.max(wanted, SIDE_MIN), max));
+    const name = widthVar(ws, side);
+    ws.style.setProperty(name, `${width}px`);
+    if (remember) storeWidth(name, width);
+    const handle = $(`[data-resize='${side}']`, ws);
+    if (handle) {
+      handle.setAttribute("aria-valuemin", String(SIDE_MIN));
+      handle.setAttribute("aria-valuemax", String(max));
+      handle.setAttribute("aria-valuenow", String(width));
+    }
+  }
+
+  // Apply width changes without the column animation. The browser must compute the new
+  // widths while "is-resizing" is still set; otherwise a style update after the class is
+  // removed animates the change anyway (seen as a half-applied arrow-key step in CI).
+  function withoutAnimation(ws, change) {
+    ws.classList.add("is-resizing");
+    change();
+    void ws.offsetWidth; // flush styles now, with the animation off
+    window.requestAnimationFrame(() => ws.classList.remove("is-resizing"));
+  }
+
+  // The width a panel is heading to: the set value, not the animated one mid-transition.
+  function targetWidth(ws, side) {
+    const set = parseFloat(ws.style.getPropertyValue(widthVar(ws, side)));
+    return Number.isFinite(set) ? set : sidePanel(ws, side).offsetWidth;
+  }
+
+  function applyStoredWidths() {
+    const ws = workspace();
+    if (!ws || !wideLayout()) return;
+    const widths = storedWidths();
+    withoutAnimation(ws, () => {
+      for (const name of ["--col-sources", "--col-reader", "--col-studio"]) {
+        if (typeof widths[name] === "number") ws.style.setProperty(name, `${widths[name]}px`);
+      }
+      // Re-clamp for this window size without overwriting what was stored.
+      for (const side of ["sources", "studio"]) {
+        if (sidePanel(ws, side)) setSideWidth(ws, side, targetWidth(ws, side), false);
+      }
+    });
+  }
+
+  document.addEventListener("pointerdown", (event) => {
+    const handle = event.target.closest("[data-resize]");
+    const ws = workspace();
+    if (!handle || !ws || !wideLayout()) return;
+    event.preventDefault();
+    const side = handle.dataset.resize;
+    handle.setPointerCapture(event.pointerId);
+    ws.classList.add("is-resizing");
+    const move = (e) => {
+      const box = ws.getBoundingClientRect();
+      setSideWidth(ws, side, side === "studio" ? box.right - e.clientX : e.clientX - box.left, true);
+    };
+    const stop = () => {
+      ws.classList.remove("is-resizing");
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", stop);
+      handle.removeEventListener("pointercancel", stop);
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", stop);
+    handle.addEventListener("pointercancel", stop);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const handle = event.target.closest && event.target.closest("[data-resize]");
+    const ws = workspace();
+    if (!handle || !ws || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    event.preventDefault();
+    const side = handle.dataset.resize;
+    // The arrow moves the edge: right widens Sources, left widens Studio.
+    const grow = (event.key === "ArrowRight") === (side === "sources") ? KEY_STEP : -KEY_STEP;
+    withoutAnimation(ws, () => setSideWidth(ws, side, targetWidth(ws, side) + grow, true));
+  });
+
+  document.addEventListener("dblclick", (event) => {
+    const handle = event.target.closest("[data-resize]");
+    const ws = workspace();
+    if (!handle || !ws) return;
+    const name = widthVar(ws, handle.dataset.resize);
+    ws.style.removeProperty(name);
+    storeWidth(name, null);
+  });
+
+  let resizeTimer = 0;
+  window.addEventListener("resize", () => {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(applyStoredWidths, 150);
+  });
+
   document.addEventListener("DOMContentLoaded", () => {
+    applyStoredWidths();
     updateSelectionCount();
     const box = $("#question");
     if (box) updateCounter(box);
