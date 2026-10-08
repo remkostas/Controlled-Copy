@@ -31,7 +31,9 @@ Built in four days with AI coding agents, on synthetic data: [how it was built](
 flowchart TD
     U["Upload: PDF, TXT or Markdown"] --> P["Cut into passages,<br/>each with its exact place"]
     P --> I["Indexed twice:<br/>by words and by meaning"]
-    I --> Q & ST & C
+    I --> Q
+    I --> ST
+    I --> C
     Q["Chat: a question"] --> S["Search the passages"]
     C["Resolution Card: a situation"] --> R["Rules first: approved,<br/>in effect, this site and role"]
     R --> S
