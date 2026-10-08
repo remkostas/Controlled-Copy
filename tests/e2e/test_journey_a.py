@@ -128,7 +128,8 @@ def test_tc_ui_003_text_meets_wcag_aa_contrast(page, server_url):
     ask(page, "What is the forklift speed limit in the yard?")
     page.click(".studio-action:has-text('Briefing')")
     page.wait_for_selector("#studio-outputs details.output[open]")
-    failures += page.evaluate(CONTRAST_JS)
+    failures += page.evaluate(CONTRAST_JS)  # with the Briefing open in the reading view
+    page.click("[data-reader-close]")
     answer.locator("button.cite").first.click()
     page.wait_for_selector("#viewer-slot mark#cited")
     failures += page.evaluate(CONTRAST_JS)

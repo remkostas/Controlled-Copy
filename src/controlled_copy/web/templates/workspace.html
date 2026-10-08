@@ -78,6 +78,14 @@
         </form>
       </div>
     </div>
+    <section class="reader" id="output-reader" role="dialog" aria-modal="false" aria-labelledby="reader-title" hidden>
+      <header class="panel__head reader__head">
+        <h2 class="panel__title reader__title" id="reader-title"></h2>
+        <span class="reader__meta"></span>
+        <button type="button" class="btn btn--ghost btn--sm reader__close" data-reader-close>{{ icon('x') }} Close</button>
+      </header>
+      <div class="reader__body"></div>
+    </section>
   </section>
 
   <section class="panel panel--studio" id="studio-panel" aria-labelledby="studio-title">
