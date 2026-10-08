@@ -471,7 +471,8 @@ select {
   font-weight: 500;
 }
 .nb-switch select {
-  max-width: 20rem;
+  min-width: 0;
+  max-width: min(20rem, 100%);
   height: 2rem;
   padding: 0 var(--sp-6) 0 var(--sp-3);
   border: 1px solid var(--border-chrome);
@@ -489,7 +490,8 @@ select {
   color: var(--accent);
 }
 .model-select select {
-  max-width: 12rem;
+  min-width: 0;
+  max-width: min(12rem, 100%);
   height: 2rem;
   padding: 0 var(--sp-6) 0 var(--sp-3);
   border: 1px solid var(--border-chrome);
@@ -557,19 +559,8 @@ select {
 .topbar .btn:hover {
   background: var(--surface-chrome-3);
 }
-.topbar__note {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  font-size: var(--fs-xs);
-  color: var(--text-on-chrome-muted);
-  white-space: nowrap;
-}
-.topbar__note .icon {
-  color: var(--accent);
-}
 .topbar .topbar__logout {
+  margin-left: auto;
   color: var(--text-on-chrome);
 }
 .topbar .topbar__logout:hover {
@@ -623,7 +614,8 @@ body.app-shell {
   overflow: hidden;
 }
 body.app-shell > .topbar,
-body.app-shell > .mobile-tabs {
+body.app-shell > .mobile-tabs,
+body.app-shell > .appfoot {
   flex: none;
 }
 body.app-shell > .workspace {
@@ -667,7 +659,7 @@ body.app-shell > .workspace {
 }
 .resizer:hover::after,
 .resizer:focus-visible::after,
-.workspace.is-resizing .resizer::after {
+.resizer.is-dragging::after {
   background: var(--focus);
 }
 .resizer:focus-visible {
@@ -1115,6 +1107,9 @@ details.paste > summary.btn {
   display: grid;
   gap: var(--sp-2);
 }
+.turn {
+  overflow-wrap: anywhere;
+}
 .question {
   justify-self: end;
   max-width: 85%;
@@ -1376,6 +1371,11 @@ details.paste > summary.btn {
 .output > summary::-webkit-details-marker {
   display: none;
 }
+/* The output open in the reading view. */
+.output[aria-current="true"] {
+  background: var(--surface-panel-alt);
+  box-shadow: inset 3px 0 0 var(--c-steel-400);
+}
 .output__name {
   font-weight: 600;
   font-size: var(--fs-sm);
@@ -1487,6 +1487,14 @@ details.paste > summary.btn {
   flex: 1;
   min-width: 0;
 }
+/* "Show" and "Hide" take the same room, so the field does not change width. */
+.field__reveal [data-reveal] {
+  min-width: 4rem;
+}
+.access .input,
+.access > .btn {
+  height: 2.5rem;
+}
 .access {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -1520,12 +1528,62 @@ details.paste > summary.btn {
 .cite--plain {
   cursor: default;
 }
-.legal-links {
+/* Workspace footer: the AI note and the legal links, visible in every layout and panel state. */
+.appfoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-1) var(--sp-4);
+  padding: var(--sp-1) var(--sp-4);
+  border-top: 1px solid var(--border);
+  background: var(--surface-panel);
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.appfoot__note {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.appfoot__note .icon {
+  vertical-align: 0;
+}
+.appfoot__links {
   display: flex;
   gap: var(--sp-4);
-  margin-top: var(--sp-6);
-  font-size: var(--fs-xs);
+}
+.appfoot a {
   color: var(--text-muted);
+}
+.appfoot a:hover {
+  color: var(--text);
+}
+
+/* Confirmation dialog (replaces the browser's own). */
+.confirm {
+  width: min(28rem, calc(100vw - 2rem));
+  margin: auto;
+  padding: var(--sp-5);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow: var(--shadow-pop);
+}
+.confirm::backdrop {
+  background: rgb(22 26 30 / 0.45);
+}
+.confirm__text {
+  font-size: var(--fs-sm);
+  line-height: var(--lh-body);
+}
+.confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-5);
 }
 .sheet__foot {
   display: flex;
@@ -1545,30 +1603,29 @@ details.paste > summary.btn {
 .mobile-tabs {
   display: none;
 }
-@media (max-width: 1600px) {
-  /* With the model picker the top bar is full: keep the note as an icon with a tooltip,
-     its text stays available to screen readers. */
-  .topbar:has(.model-select) .topbar__note span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
-}
 @media (max-width: 1180px) {
   :root {
     --col-sources: 16rem;
     --col-studio: 18rem;
     --col-reader: clamp(16rem, calc(100vw - var(--col-studio) - 22rem), 28rem);
   }
-  .topbar__note span {
-    display: none;
-  }
 }
 .topbar__tiny {
   display: none;
+}
+/* Narrow desktop windows and zoomed-in pages: New notebook and Log out as icons (their labels
+   stay for screen readers), the demo button without "the ... demo". */
+@media (max-width: 1280px) {
+  .topbar__long,
+  .topbar__new .topbar__label,
+  .topbar__logout .topbar__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 @media (max-width: 900px) {
   .panel__toggle {
@@ -1609,7 +1666,20 @@ details.paste > summary.btn {
   .model-select > .icon {
     display: none;
   }
-  .topbar__note,
+  .topbar__demo {
+    min-width: 7.5rem;
+  }
+  .topbar__mid {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .topbar__tiny {
+    display: inline;
+  }
   .topbar__divider {
     display: none;
   }
@@ -1882,22 +1952,11 @@ details.paste > summary.btn {
   }
 }
 
-/* Narrow phones (320 to 400 px): the header stays two rows. The demo button says "Demo" on
-   screen; screen readers still get "Open the Inbound Operations demo". */
+/* Narrow phones (320 to 400 px): the header stays two rows. (On every phone the demo button
+   says "Demo" on screen; screen readers still get "Open the Inbound Operations demo".) */
 @media (max-width: 400px) {
   .topbar {
     padding-inline: var(--sp-3);
-  }
-  .topbar__mid {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-  .topbar__tiny {
-    display: inline;
   }
   .model-select select {
     max-width: 7rem;

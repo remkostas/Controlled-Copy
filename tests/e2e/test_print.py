@@ -15,7 +15,8 @@ def briefing(page, server_url):
     upload(page, SOP)
     page.wait_for_selector(".source .badge:has-text('SOP-INB-001')")
     page.click(".studio-action:has-text('Briefing')")
-    page.wait_for_selector("#studio-outputs details.output[open]")
+    page.locator("#output-reader").wait_for()
+    page.click("[data-reader-close]")  # back to the chat; Studio shows the output open
     return page.locator("#studio-outputs details.output[open] a:has-text('Print')")
 
 

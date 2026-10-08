@@ -142,3 +142,20 @@ def test_tc_ans_008_a_hovered_chip_still_lands_on_the_passage(browser, server_ur
         assert in_panel_view(page), f"passage in view after a {dwell_ms} ms hover"
     finally:
         context.close()
+
+
+def test_tc_ui_001_a_long_unbroken_question_does_not_widen_the_chat(page, server_url):
+    """Round 2: 1,500 characters without a space pushed the refusal past the chat panel."""
+    from tests.e2e.test_journey_a import SOP, login, upload
+
+    login(page, server_url)
+    upload(page, SOP)
+    page.wait_for_selector(".source .badge:has-text('SOP-INB-001')")
+    page.fill("#question", "a" * 1500)
+    page.press("#question", "Enter")
+    page.locator("#chat-inner article.turn:not(#pending-turn)").first.wait_for()
+    log = page.evaluate(
+        "() => { const l = document.querySelector('#chat-log'); return [l.scrollWidth, l.clientWidth]; }"
+    )
+    assert log[0] <= log[1] + 1, f"the chat scrolls sideways: {log}"
+    assert page.js_errors == []

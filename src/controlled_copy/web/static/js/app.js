@@ -209,7 +209,12 @@
   }
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && $("#viewer-slot [data-viewer]")) closeViewer();
+    // Escape closes one thing at a time: an open passage first, then the reading view. In a
+    // confirmation dialog it only cancels the dialog.
+    if (event.key === "Escape" && !(event.target.closest && event.target.closest("dialog"))) {
+      if ($("#viewer-slot [data-viewer]")) closeViewer();
+      else closeReader();
+    }
     const box = event.target;
     if (box.id === "question" && event.key === "Enter" && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
@@ -253,6 +258,26 @@
       $$(".cite[aria-current]").forEach((c) => c.removeAttribute("aria-current"));
       cite.setAttribute("aria-current", "true");
     }
+  });
+
+  // Confirmations in the page's own dialog instead of the browser's: the same question, the action
+  // named on its button, and Cancel (or Escape) focused first so nothing is deleted by accident.
+  document.addEventListener("htmx:confirm", (event) => {
+    const dialog = $("#confirm-dialog");
+    const question = event.detail.question;
+    if (!question || !dialog || typeof dialog.showModal !== "function") return;
+    event.preventDefault();
+    $("[data-confirm-text]", dialog).textContent = question;
+    $("[data-confirm-ok]", dialog).textContent = event.detail.elt.dataset.confirmLabel || "OK";
+    dialog.returnValue = "";
+    dialog.addEventListener(
+      "close",
+      () => {
+        if (dialog.returnValue === "confirm") event.detail.issueRequest(true);
+      },
+      { once: true }
+    );
+    dialog.showModal();
   });
 
   // A request whose reply never arrived (connection lost, the network changed) swaps nothing,
@@ -334,8 +359,9 @@
   });
 
   // Reading view: a Studio output opens large over the chat, because the Studio column is narrow
-  // and a new output is easy to miss below its buttons. The list in Studio keeps every output;
-  // "Open" shows one again. Close, Escape or a citation (which opens its passage) return.
+  // and a new output is easy to miss below its buttons. The list in Studio keeps every output,
+  // closed while one is read, with that one marked; "Open" shows one again. A citation opens its
+  // passage in Sources next to it. Close or Escape return to the chat.
   let readerOpener = null;
   let readerReturn = null;
 
@@ -360,6 +386,11 @@
     // goes back to where the visitor was when it closes.
     readerOpener = document.activeElement !== document.body ? document.activeElement : null;
     readerReturn = output;
+    $$("#studio-outputs details.output").forEach((item) => {
+      item.open = false;
+      if (item === output) item.setAttribute("aria-current", "true");
+      else item.removeAttribute("aria-current");
+    });
     $$(".panel--chat > :not(.reader)").forEach((el) => (el.inert = true));
     reader.hidden = false;
     showTab("chat");
@@ -367,13 +398,15 @@
     $("[data-reader-close]", reader).focus();
   }
 
-  function closeReader(restoreFocus = true) {
+  function closeReader() {
     const reader = $("#output-reader");
     if (!reader || reader.hidden) return;
     reader.hidden = true;
     $(".reader__body", reader).replaceChildren();
     $$(".panel--chat > :not(.reader)").forEach((el) => (el.inert = false));
-    if (!restoreFocus) return;
+    // Studio shows the output that was read, open, with its buttons.
+    $$("#studio-outputs details.output[aria-current]").forEach((item) => item.removeAttribute("aria-current"));
+    if (readerReturn && readerReturn.isConnected) readerReturn.open = true;
     // Back to the button that opened it, else to the output in Studio.
     const usable = (el) => el && el.isConnected && el.offsetParent !== null;
     const summary = readerReturn && $("summary", readerReturn);
@@ -388,17 +421,14 @@
       return;
     }
     if (event.target.closest("[data-reader-close]")) closeReader();
-    // A citation opens its passage in the Sources panel; the chat comes back with it.
-    else if (event.target.closest("#output-reader .cite")) closeReader(false);
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !$("#viewer-slot [data-viewer]")) closeReader();
   });
 
   // Resizable side panels on wide layouts: drag the inner edge of Sources or Studio, or focus
   // it and use the arrow keys; double-click resets. The chat always keeps CHAT_MIN pixels.
-  // Widths are a per-browser convenience, so storage failures are ignored.
+  // Widths are a per-browser convenience, so storage failures are ignored. Sources has one
+  // width for its list and an open source once the visitor sets it, so opening a passage, a
+  // new chat or another notebook keeps the layout; until then an open source gets the wider
+  // reading default.
   const WIDTHS_KEY = "cc-panel-widths";
   const SIDE_MIN = 224;
   const CHAT_MIN = 352;
@@ -425,22 +455,30 @@
 
   const wideLayout = () => !window.matchMedia("(max-width: 900px)").matches;
   const sidePanel = (ws, side) => $(side === "studio" ? ".panel--studio" : ".panel--sources", ws);
+  // The variable in use now, and every variable a side's width sets (the first is stored).
   const widthVar = (ws, side) =>
     side === "studio" ? "--col-studio" : ws.classList.contains("is-reading") ? "--col-reader" : "--col-sources";
+  const sideVars = (side) => (side === "studio" ? ["--col-studio"] : ["--col-sources", "--col-reader"]);
+
+  function maxWidth(ws, side) {
+    const other = sidePanel(ws, side === "studio" ? "sources" : "studio");
+    return Math.max(SIDE_MIN, ws.clientWidth - (other ? other.offsetWidth : 0) - CHAT_MIN);
+  }
+
+  function describeHandle(ws, side, width, max) {
+    const handle = $(`[data-resize='${side}']`, ws);
+    if (!handle) return;
+    handle.setAttribute("aria-valuemin", String(SIDE_MIN));
+    handle.setAttribute("aria-valuemax", String(max));
+    handle.setAttribute("aria-valuenow", String(Math.round(width)));
+  }
 
   function setSideWidth(ws, side, wanted, remember) {
-    const other = sidePanel(ws, side === "studio" ? "sources" : "studio");
-    const max = Math.max(SIDE_MIN, ws.clientWidth - (other ? other.offsetWidth : 0) - CHAT_MIN);
+    const max = maxWidth(ws, side);
     const width = Math.round(Math.min(Math.max(wanted, SIDE_MIN), max));
-    const name = widthVar(ws, side);
-    ws.style.setProperty(name, `${width}px`);
-    if (remember) storeWidth(name, width);
-    const handle = $(`[data-resize='${side}']`, ws);
-    if (handle) {
-      handle.setAttribute("aria-valuemin", String(SIDE_MIN));
-      handle.setAttribute("aria-valuemax", String(max));
-      handle.setAttribute("aria-valuenow", String(width));
-    }
+    sideVars(side).forEach((name) => ws.style.setProperty(name, `${width}px`));
+    if (remember) storeWidth(sideVars(side)[0], width);
+    describeHandle(ws, side, width, max);
   }
 
   // Apply width changes without the column animation. The browser must compute the new
@@ -459,25 +497,27 @@
     return Number.isFinite(set) ? set : sidePanel(ws, side).offsetWidth;
   }
 
+  // The stored widths, clamped for this window size without overwriting what was stored; the
+  // defaults where nothing is stored. A width that only fitPanels set is dropped here.
   function applyStoredWidths() {
     const ws = workspace();
     if (!ws || !wideLayout()) return;
     const widths = storedWidths();
     withoutAnimation(ws, () => {
-      for (const name of ["--col-sources", "--col-reader", "--col-studio"]) {
-        if (typeof widths[name] === "number") ws.style.setProperty(name, `${widths[name]}px`);
-      }
-      // Re-clamp for this window size without overwriting what was stored.
       for (const side of ["sources", "studio"]) {
-        if (sidePanel(ws, side)) setSideWidth(ws, side, targetWidth(ws, side), false);
+        if (!sidePanel(ws, side)) continue;
+        sideVars(side).forEach((name) => ws.style.removeProperty(name));
+        const stored = widths[sideVars(side)[0]];
+        if (typeof stored === "number") setSideWidth(ws, side, stored, false);
+        else describeHandle(ws, side, sidePanel(ws, side).offsetWidth, maxWidth(ws, side));
       }
       fitPanels(ws);
     });
   }
 
   // Keep the chat at least CHAT_MIN wide after anything that changes the side columns: opening
-  // or closing a source (the Sources column switches between its own width and the reader's), a
-  // restored width, or a narrower window. The Sources side gives way first, then Studio. Widths
+  // or closing a source (without a set width the Sources column widens to read), a restored
+  // width, or a narrower window. The Sources side gives way first, then Studio. Widths
   // set here are not stored, so the visitor's own choice comes back when there is room again.
   function fitPanels(ws) {
     if (!wideLayout()) return;
@@ -506,12 +546,14 @@
     const side = handle.dataset.resize;
     handle.setPointerCapture(event.pointerId);
     ws.classList.add("is-resizing");
+    handle.classList.add("is-dragging"); // only the edge being dragged lights up
     const move = (e) => {
       const box = ws.getBoundingClientRect();
       setSideWidth(ws, side, side === "studio" ? box.right - e.clientX : e.clientX - box.left, true);
     };
     const stop = () => {
       ws.classList.remove("is-resizing");
+      handle.classList.remove("is-dragging");
       handle.removeEventListener("pointermove", move);
       handle.removeEventListener("pointerup", stop);
       handle.removeEventListener("pointercancel", stop);
@@ -536,9 +578,9 @@
     const handle = event.target.closest("[data-resize]");
     const ws = workspace();
     if (!handle || !ws) return;
-    const name = widthVar(ws, handle.dataset.resize);
-    ws.style.removeProperty(name);
-    storeWidth(name, null);
+    const side = handle.dataset.resize;
+    sideVars(side).forEach((name) => ws.style.removeProperty(name));
+    storeWidth(sideVars(side)[0], null);
   });
 
   // Collapsible Sources panel on wide layouts, as in NotebookLM: more room for the chat and

@@ -25,6 +25,9 @@ def test_tc_stu_006_only_the_newest_output_stays_open(page, server_url):
         studio.evaluate(TO_BOTTOM_JS)
         page.click(".studio-action:has-text('Briefing')")
         outputs.nth(count - 1).wait_for(state="attached")
+    # The newest is read large over the chat, marked in Studio; closing it leaves it open there.
+    assert outputs.first.get_attribute("aria-current") == "true"
+    page.click("[data-reader-close]")
     assert [outputs.nth(i).evaluate("el => el.open") for i in range(3)] == [True, False, False]
     assert outputs.first.evaluate(IN_VIEW_JS)
     assert page.evaluate("() => scrollY") == 0, "only the Studio panel scrolls, never the page"

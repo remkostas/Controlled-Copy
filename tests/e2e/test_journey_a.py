@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from tests.conftest import ACCESS_CODE, CORPUS
+from tests.e2e.conftest import confirm
 
 pytestmark = [pytest.mark.e2e, pytest.mark.stage1]
 
@@ -46,7 +47,7 @@ def test_tc_ui_001_three_panel_layout_on_1366x768(page, server_url):
         assert box["x"] >= 0 and box["x"] + box["width"] <= 1366 + 1
         assert box["height"] > 600
     assert boxes["chat"]["width"] > boxes["sources"]["width"]
-    assert page.locator(".topbar__note").is_visible()
+    assert page.locator(".appfoot__note").is_visible()
     assert page.js_errors == []
 
 
@@ -82,10 +83,11 @@ def test_tc_ui_002_journey_a_end_to_end(page, server_url):
     assert "Not in the selected sources" in refusal.inner_text()
     # Studio Briefing.
     page.click(".studio-action:has-text('Briefing')")
-    page.wait_for_selector("#studio-outputs details.output[open]")
+    page.locator("#output-reader").wait_for()  # open large over the chat, closed in Studio
     assert page.locator("#studio-outputs .output__section h3").count() == 4
-    # Delete the source (confirmation dialog accepted by the fixture).
+    # Delete the source, confirmed in the app's dialog.
     page.click(".source__delete")
+    confirm(page, "Delete")
     page.wait_for_selector(".empty:has-text('No sources yet')")
     assert page.locator(".source").count() == 0
     assert page.locator("text=Answer removed").count() >= 1
@@ -127,7 +129,7 @@ def test_tc_ui_003_text_meets_wcag_aa_contrast(page, server_url):
     answer = ask(page, "What is the purpose of the procedure?")
     ask(page, "What is the forklift speed limit in the yard?")
     page.click(".studio-action:has-text('Briefing')")
-    page.wait_for_selector("#studio-outputs details.output[open]")
+    page.locator("#output-reader").wait_for()
     failures += page.evaluate(CONTRAST_JS)  # with the Briefing open in the reading view
     page.click("[data-reader-close]")
     answer.locator("button.cite").first.click()

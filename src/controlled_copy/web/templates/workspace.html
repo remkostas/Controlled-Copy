@@ -23,8 +23,7 @@
   </form>
   {% endif %}
   {% for partial in ui.topbar_partials %}{% include partial %}{% endfor %}
-  <p class="topbar__note" title="Answers are AI-generated. Check the cited passage.">{{ icon('info') }}<span>Answers are AI-generated. Check the cited passage.</span></p>
-  <button type="button" class="btn btn--ghost btn--sm topbar__logout" hx-post="/logout"
+  <button type="button" class="btn btn--ghost btn--sm topbar__logout" hx-post="/logout" data-confirm-label="Log out"
     hx-confirm="Log out? Your notebooks, sources, chats and Studio outputs in this session are deleted now (otherwise {{ retention_days }} days after your last visit)." title="Log out">{{ icon('log-out') }} <span class="topbar__label">Log out</span></button>
 </header>
 
@@ -42,9 +41,9 @@
       <h2 class="panel__title" id="chat-title">Chat</h2>
       <div class="panel__head-actions">
         <button type="button" class="btn btn--ghost btn--sm" id="new-chat" hx-post="/notebooks/{{ nb.id }}/chat/clear"
-          hx-confirm="Start a new chat? The current chat is removed; the sources and Studio outputs stay."{% if not turns %} hidden{% endif %}>{{ icon('square-pen') }} New chat</button>
+          data-confirm-label="Start a new chat" hx-confirm="Start a new chat? The current chat is removed; the sources and Studio outputs stay."{% if not turns %} hidden{% endif %}>{{ icon('square-pen') }} New chat</button>
         {% if nb.kind == 'personal' %}
-        <button type="button" class="btn btn--ghost btn--sm" hx-delete="/notebooks/{{ nb.id }}"
+        <button type="button" class="btn btn--ghost btn--sm" hx-delete="/notebooks/{{ nb.id }}" data-confirm-label="Delete notebook"
           hx-confirm="Delete the notebook “{{ nb.title }}” with all its sources, chat and Studio outputs? This cannot be undone.">{{ icon('trash-2') }} Delete notebook</button>
         {% endif %}
       </div>
@@ -118,4 +117,19 @@
     </div>
   </section>
 </main>
+
+<footer class="appfoot">
+  <p class="appfoot__note">{{ icon('info') }}<span>Answers are AI-generated. Check the cited passage.</span></p>
+  <p class="appfoot__links">{% include "partials/legal_links.html" %}</p>
+</footer>
+
+<dialog class="confirm" id="confirm-dialog" aria-labelledby="confirm-text">
+  <form method="dialog">
+    <p class="confirm__text" id="confirm-text" data-confirm-text></p>
+    <p class="confirm__actions">
+      <button class="btn" value="cancel" autofocus>Cancel</button>
+      <button class="btn btn--primary" value="confirm" data-confirm-ok>OK</button>
+    </p>
+  </form>
+</dialog>
 {% endblock %}

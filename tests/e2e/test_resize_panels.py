@@ -95,3 +95,39 @@ def test_tc_ui_008_no_handles_in_the_tab_layout(page, server_url):
     login(page, server_url)
     assert page.locator("[data-resize]:visible").count() == 0
     assert page.js_errors == []
+
+
+def test_tc_ui_008_only_the_dragged_edge_lights_up(page, server_url):
+    page.set_viewport_size({"width": 1366, "height": 768})
+    login(page, server_url)
+    box = page.locator("[data-resize='studio']").bounding_box()
+    page.mouse.move(box["x"] + box["width"] / 2, box["y"] + 300)
+    page.mouse.down()
+    page.mouse.move(box["x"] - 40, box["y"] + 300)
+    page.wait_for_timeout(100)  # the line's colour transition (instant with reduced motion, yet a frame)
+    line = "el => getComputedStyle(el, '::after').backgroundColor"
+    dragged = page.locator("[data-resize='studio']").evaluate(line)
+    other = page.locator("[data-resize='sources']").evaluate(line)
+    page.mouse.up()
+    assert dragged != other, "the dragged edge is highlighted"
+    assert other == "rgba(0, 0, 0, 0)", "the other edge stays plain"
+    assert page.js_errors == []
+
+
+def test_tc_ui_008_a_set_sources_width_holds_for_a_passage_and_a_reload(page, server_url, long_source):  # noqa: F811
+    """Round 2: an open source used its own width, so a width set while reading looked lost after
+    New chat or another notebook (both reload the page), and a set width changed on opening."""
+    page.set_viewport_size({"width": 1366, "height": 768})
+    login(page, server_url)
+    drag(page, "[data-resize='sources']", 60)
+    listed = width(page, ".panel--sources")
+    cite_target(page, long_source)
+    assert width(page, ".panel--sources") == pytest.approx(listed, abs=4), "opening keeps the set width"
+    drag(page, "[data-resize='sources']", -40)  # changed while reading
+    reading = width(page, ".panel--sources")
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(300)
+    assert width(page, ".panel--sources") == pytest.approx(reading, abs=4), "the list keeps it"
+    page.reload()
+    assert width(page, ".panel--sources") == pytest.approx(reading, abs=4), "and so does a reload"
+    assert page.js_errors == []

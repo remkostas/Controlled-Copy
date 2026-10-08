@@ -57,7 +57,17 @@ def page(browser, server_url):
     errors: list[str] = []
     page.on("pageerror", lambda exc: errors.append(str(exc)))
     page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
-    page.on("dialog", lambda dialog: dialog.accept())
+    # The app confirms in its own dialog; a browser dialog would be a regression.
+    page.on("dialog", lambda dialog: (errors.append(f"browser dialog: {dialog.message}"), dialog.dismiss()))
     page.js_errors = errors
     yield page
     context.close()
+
+
+def confirm(page, label: str | None = None) -> None:
+    """Answer the app's confirmation dialog with its action button."""
+    ok = page.locator("#confirm-dialog[open] [data-confirm-ok]")
+    ok.wait_for()
+    if label:
+        assert ok.inner_text() == label
+    ok.click()

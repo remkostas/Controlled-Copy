@@ -1,10 +1,10 @@
 {% if nb.kind == 'ops_workspace' %}
-<button type="button" class="btn btn--sm" hx-post="/workspace/reset"
+<button type="button" class="btn btn--sm topbar__demo" hx-post="/workspace/reset" data-confirm-label="Reset the demo"
   hx-confirm="Reset the Inbound Operations demo to its original documents? Your uploads, chat and cards in the demo are deleted; your other notebooks stay.">{{ icon('refresh-ccw') }} <span>Reset <span class="topbar__long">the Inbound Operations </span>demo</span></button>
 {% else %}
 {% set workspaces = notebooks | selectattr('kind', 'equalto', 'ops_workspace') | list %}
 {% for n in workspaces %}
-<a class="btn btn--sm" href="/app?nb={{ n.id }}">{{ icon('book-open') }} <span><span class="topbar__long">Open the </span><span class="topbar__mid">Inbound Operations</span><span class="topbar__long"> demo</span><span class="topbar__tiny" aria-hidden="true">Demo</span></span></a>
+<a class="btn btn--sm topbar__demo" href="/app?nb={{ n.id }}">{{ icon('book-open') }} <span><span class="topbar__long">Open the </span><span class="topbar__mid">Inbound Operations</span><span class="topbar__long"> demo</span><span class="topbar__tiny" aria-hidden="true">Demo</span></span></a>
 {% else %}
 {# No copy yet (seeding failed at login, or the layer was switched on later): pages never
    write, so the copy is made by this CSRF-checked POST (full audit re-check RCK-05). #}
