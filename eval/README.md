@@ -20,7 +20,7 @@ Commit `535a152`, 2026-10-08, GPT-6 Luna with the deployed settings:
 | Resolution Cards | 13 of 14 | E-09 (a damaged delivery without detail) chose "expert confirmation required" instead of "context incomplete": the more cautious status |
 | Reworded | 11 of 11 | |
 
-The same question can get a different card from one run to the next; E-09 passed on earlier commits. A pass means the expected sources, quotes and actions are there, not that a person confirmed every statement, and the sets are small, so the numbers are indicative. Each run writes a file with every case, every check, the commit and a hash of the case file; the release runs are in commit `6043168`, and the runs made during development are in the Git history.
+The same question can get a different card from one run to the next; E-09 passed on earlier commits. A pass means the expected sources, quotes and actions are there, not that a person confirmed every statement, and the sets are small, so the numbers are indicative. Each run writes a file with every case, every check, the commit and a hash of the case file; the release runs are in commit `6043168` of PR #51, and the runs made during development are in the Git history.
 
 ## Run it
 
