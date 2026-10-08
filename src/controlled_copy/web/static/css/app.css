@@ -728,6 +728,48 @@ body.app-shell > .workspace {
   background: var(--surface-panel);
 }
 
+/* Reading view over the chat panel (Studio outputs, large) */
+.reader {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-paper);
+}
+.reader[hidden] {
+  display: none;
+}
+.reader__title {
+  flex: none;
+  white-space: nowrap;
+}
+.reader__meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-xs);
+  color: var(--text-on-chrome);
+  opacity: 0.8;
+}
+.reader__close {
+  margin-left: auto;
+}
+.reader__body {
+  /* Positioned, like .panel__body, so visually hidden table captions stay inside the scroll box. */
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--sp-6) var(--sp-8);
+}
+.reader__body .output__body {
+  max-width: var(--chat-measure);
+  margin: 0 auto;
+  font-size: var(--fs-md, 1rem);
+}
+
 /* Sources */
 .add-source {
   display: grid;

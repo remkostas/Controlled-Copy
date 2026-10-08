@@ -310,6 +310,7 @@
       window.setTimeout(() => target.replaceChildren(), 8000);
     }
     if (target.id === "studio-outputs") {
+      const made = event.detail.xhr && event.detail.xhr.status < 300;
       const empty = $("#outputs-empty");
       if (empty) empty.remove();
       // Asked for from the chat: on the phone layout, show the Studio tab where it landed.
@@ -325,8 +326,58 @@
         if (panel) {
           panel.scrollTop += outputs[0].getBoundingClientRect().top - panel.getBoundingClientRect().top;
         }
+        // On a wide screen the new output also opens large over the chat, where it is seen at once.
+        if (made && wideLayout()) openReader(outputs[0]);
       }
     }
+  });
+
+  // Reading view: a Studio output opens large over the chat, because the Studio column is narrow
+  // and a new output is easy to miss below its buttons. The list in Studio keeps every output;
+  // "Open" shows one again. Close, Escape or a citation (which opens its passage) return.
+  function openReader(output) {
+    const reader = $("#output-reader");
+    const body = output && $(".output__body", output);
+    if (!reader || !body) return;
+    const text = (selector) => {
+      const el = $(selector, output);
+      return el ? el.textContent.trim() : "";
+    };
+    $(".reader__title", reader).textContent = text(".output__name");
+    $(".reader__meta", reader).textContent = [text(".output__subject"), text(".output__meta")]
+      .filter(Boolean)
+      .join(" · ");
+    const copy = body.cloneNode(true);
+    $$("[id]", copy).forEach((el) => el.removeAttribute("id"));
+    $$("[data-read-output]", copy).forEach((el) => el.remove());
+    $(".reader__body", reader).replaceChildren(copy);
+    if (window.htmx) window.htmx.process(copy);
+    reader.hidden = false;
+    showTab("chat");
+    $(".reader__body", reader).scrollTop = 0;
+    $("[data-reader-close]", reader).focus();
+  }
+
+  function closeReader() {
+    const reader = $("#output-reader");
+    if (!reader || reader.hidden) return;
+    reader.hidden = true;
+    $(".reader__body", reader).replaceChildren();
+  }
+
+  document.addEventListener("click", (event) => {
+    const open = event.target.closest("[data-read-output]");
+    if (open) {
+      openReader(open.closest("details.output"));
+      return;
+    }
+    if (event.target.closest("[data-reader-close]")) closeReader();
+    // A citation opens its passage in the Sources panel; the chat comes back with it.
+    else if (event.target.closest("#output-reader .cite")) closeReader();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !$("#viewer-slot [data-viewer]")) closeReader();
   });
 
   // Resizable side panels on wide layouts: drag the inner edge of Sources or Studio, or focus
