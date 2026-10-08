@@ -78,4 +78,8 @@ def test_tc_ui_012_expanding_after_widening_studio_leaves_the_chat_room(page, se
         "() => document.querySelector('.panel--sources').getBoundingClientRect().width > 200"
     )
     assert width(page, ".panel--chat") >= CHAT_MIN - 2, width(page, ".panel--chat")
+    # Release audit: resetting the Sources width by double-click must re-fit too.
+    page.dblclick("[data-resize='sources']")
+    page.wait_for_timeout(100)
+    assert width(page, ".panel--chat") >= CHAT_MIN - 2, width(page, ".panel--chat")
     assert page.js_errors == []
