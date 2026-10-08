@@ -61,7 +61,7 @@ def corpus() -> tuple[str, tuple[SeedDocument, ...]]:
 def demo_config() -> dict[str, Any]:
     """The curated workspace's settings from demo-data/scenarios.json: its title, the default
     site and role of the context bar and the example situations. The domain lives there,
-    not in code (guardrail 3 in docs/reviews.md)."""
+    not in code."""
     path = demo_data_dir() / "scenarios.json"
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
 

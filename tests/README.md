@@ -21,4 +21,4 @@ Run them with the commands in [AGENTS.md](../AGENTS.md#gates-run-before-every-co
 
 ## Files named after review rounds
 
-Five files hold regression tests written while fixing findings from independent reviews, kept together so each finding's test is easy to trace: `integration/test_codex_pr1.py`, `integration/test_full_audit_core.py`, `integration/test_recheck2_core.py`, `integration/test_audit_regressions.py` and `governance/test_full_audit_fixes.py`. Each test is named after the behaviour it checks. [docs/reviews.md](../docs/reviews.md) lists the review rounds and what their finding IDs mean.
+Five files hold regression tests written while fixing findings from independent reviews: `integration/test_codex_pr1.py`, `integration/test_full_audit_core.py`, `integration/test_recheck2_core.py`, `integration/test_audit_regressions.py` and `governance/test_full_audit_fixes.py`. Each test is named after the behaviour it checks.

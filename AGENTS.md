@@ -51,4 +51,4 @@ ruff check src tests && ruff format --check src tests
 ## Writing
 
 - Plain English, short sentences, no em dashes.
-- Commit messages say what changed and why, in words a reader outside the project can follow. When a review finding is the reason, name it once (for example "pre-delivery audit PDA-03"); [docs/reviews.md](docs/reviews.md) explains the IDs.
+- Commit messages say what changed and why, in words a reader outside the project can follow. When a review finding is the reason, name it once (for example "pre-delivery audit PDA-03").

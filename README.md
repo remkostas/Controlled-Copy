@@ -50,8 +50,8 @@ Uploads are split into passages with exact offsets and indexed twice, as full te
 
 ## Evidence
 
-- **More than 500 automated tests** with a deterministic fake model, in CI with every optional layer off and on, including browser tests ([where to start](tests/README.md), [current report](docs/test-report.md)). Most carry the ID of the test case they implement; the regression tests added during the reviews are named after what they guard.
-- **Real model, on the released commit `535a152`:** 6 of 6 questions on a public 48-page PDF, 13 of 14 Resolution Cards (the miss chose the more cautious status), 11 of 11 reworded cases written before their first run. Scored by code, misses included ([results](eval/results/README.md)).
+- **More than 500 automated tests** with a deterministic fake model, in CI with every optional layer off and on, including browser tests ([where to start](tests/README.md)). Most carry the ID of the test case they implement; the regression tests added during the reviews are named after what they guard.
+- **Real model, on the released commit `535a152`:** 6 of 6 questions on a public 48-page PDF, 13 of 14 Resolution Cards (the miss chose the more cautious status), 11 of 11 reworded cases written before their first run. Scored by code, misses included ([evaluation](eval/README.md)).
 
 ## Limitations
 
@@ -74,6 +74,6 @@ Docker Compose with Caddy: [deployment](docs/deployment.md). Browser tests need 
 
 ## More
 
-[How it was built](docs/how-it-was-built.md) · [decisions](docs/decisions.md) · [review rounds](docs/reviews.md) · [security](SECURITY.md) · milestones: PR #1 (core), #19 (document control), #20 (model picker, export), #21 to #50 (fixes after my own tests and the audits).
+[How it was built](docs/how-it-was-built.md) · [decisions](docs/decisions.md) · [security](SECURITY.md) · milestones: PR #1 (core), #19 (document control), #20 (model picker, export), #21 to #50 (fixes after my own tests and the audits).
 
 Synthetic demo data only; please do not upload personal documents. [Privacy notice](https://controlled-copy.remkostas.com/privacy). Sessions are deleted at log out or seven days after the last visit. Credits: [htmx](https://htmx.org) (0BSD), [IBM Plex](https://github.com/IBM/plex) (OFL 1.1), [Lucide](https://lucide.dev) (ISC); NIST AI 100-1 is downloaded for the evaluation, not redistributed. MIT License.

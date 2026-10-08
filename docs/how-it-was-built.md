@@ -22,4 +22,4 @@ Built in four days with AI coding agents. Claude Code implemented it; Codex and 
 1. **A citation opened one page too far on the first click (#4).** The text reflowed while the reading column animated wider. The viewer now re-centres when the column's own animation ends, and the test hovers before it clicks, as a person does.
 2. **Uploads failed under daytime load.** A midday probe showed the embedding route answering bursts with HTTP 429. Uploads now retry with growing, randomised waits within a time budget, and say "busy, nothing was stored" if it still fails.
 
-Reference, if you want the detail: [decisions](decisions.md), [review rounds](reviews.md).
+The decisions behind the IDs in commit messages are in [decisions](decisions.md). Commit messages also name review findings by their ID (for example PDA-01); the review reports themselves stay outside the repository.

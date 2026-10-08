@@ -12,7 +12,7 @@ The decision log behind Controlled Copy, shortened for readers outside the proje
 | ID | Date (2026-10) | Decision | Why | Who decided |
 | :--- | :--- | :--- | :--- | :--- |
 | D-001 | 05 | Work under a codename until the scope is clear; the name follows the product. Final name: Controlled Copy | "SourceFrame", the first candidate, was too close to an existing product | Remko |
-| D-003 | 05 | A NotebookLM clone first, with a light governed-documents layer second | The assignment asks for a clone; most other submissions already cover generic features, so a small, real differentiation helps | Remko |
+| D-003 | 05 | A NotebookLM clone first, with a light governed-documents layer second | The assignment asks for a clone; one layer on top shows where cited answers matter most at work: documents that must be current and approved | Remko |
 | D-004 | 05 | Demo persona: a warehouse operator asking about controlled instructions; the generic core serves anyone | A concrete person makes the problem clear quickly and gives objective test cases | Recommended, then accepted |
 | D-005, D-006 | 05 | Core workflow and scope for Friday: text only, no audio or video | Everything in scope either completes the NotebookLM core or serves the governed layer | Remko (text only); the rest recommended, then accepted |
 | D-007, D-015, D-027 | 05 | Embeddings and generation through OpenRouter, zero-data-retention routing, `data_collection: deny`. Embedding model BGE-M3 | One provider and one key; no model download; small server. The privacy cost (text goes to the provider) is disclosed | Remko |
