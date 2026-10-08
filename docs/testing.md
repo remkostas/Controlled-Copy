@@ -144,6 +144,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | NFR-UI-01 | Readable contrast | TC-UI-003 | e2e | Automated contrast check on the main screens | Text meets WCAG AA contrast |
 | FR-UI-08 | Resizable side panels; the chat keeps room | TC-UI-008 | e2e | Drag and arrow-key the panel edges; reload; double-click; open a citation at 1000 and 1366 px | Widths follow and are kept per browser; reset works; the chat never drops below 22rem; no handles in the tab layout |
 | FR-UI-09 | The phone header stays compact | TC-UI-009 | e2e | Workspace at 390 × 844 with every layer on | Header at most 100 px (was 189); short labels on screen, full accessible names; full labels on a desktop |
+| FR-UI-10 | The top bar reads as one bar | TC-UI-010 | e2e | Workspace at 1366 × 768 with every layer on | Notebook and model menus use the buttons' font, size and weight; the demo button's label is one piece of text, without gaps inside |
 
 ### Governance (stage 2)
 
