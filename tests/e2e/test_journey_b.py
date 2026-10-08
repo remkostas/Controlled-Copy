@@ -3,6 +3,7 @@
 import pytest
 
 from tests.conftest import ACCESS_CODE
+from tests.e2e.conftest import confirm
 
 pytestmark = [pytest.mark.e2e, pytest.mark.stage2]
 
@@ -27,7 +28,11 @@ def build_card(page, scenario: str):
     assert page.input_value("#situation"), "choosing a scenario fills the situation"
     page.fill("#card-date", "2026-10-07")
     page.click(".card-form button[type=submit]")
-    outputs.nth(before).wait_for()
+    outputs.nth(before).wait_for(state="attached")
+    # On a wide screen the card opens large over the chat; closing it shows it open in Studio.
+    if page.viewport_size["width"] > 900:
+        page.locator("#output-reader").wait_for()
+        page.click("[data-reader-close]")
     return outputs.first
 
 
@@ -69,6 +74,7 @@ def test_tc_ui_004_journey_b_end_to_end(page, server_url):
     # Reset restores the original documents and removes the cards.
     before = page.url
     page.click("button:has-text('Reset the Inbound Operations demo')")
+    confirm(page, "Reset the demo")
     page.wait_for_url(lambda url: url != before)  # a fresh copy has a new notebook ID
     page.wait_for_selector("h1:has-text('Inbound Operations')")
     assert page.locator("#studio-outputs details.output").count() == 0
@@ -86,8 +92,8 @@ def test_req_01_a_refused_card_renders_and_survives_a_reload(page, server_url):
     before = outputs.count()
     page.fill("#situation", "What is the forklift speed limit in the yard?")
     page.click(".card-form button[type=submit]")
-    outputs.nth(before).wait_for()
-    assert "Not in the selected sources" in outputs.first.inner_text()
+    outputs.nth(before).wait_for(state="attached")
+    assert "Not in the selected sources" in page.locator("#output-reader").inner_text()
     page.reload()
     page.wait_for_selector("h1:has-text('Inbound Operations')")
     assert "Not in the selected sources" in page.locator("#studio-outputs").inner_text()

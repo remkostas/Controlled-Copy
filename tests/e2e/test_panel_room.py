@@ -43,12 +43,12 @@ def test_tc_ui_008_closing_a_source_in_a_narrower_window_leaves_the_chat_room(pa
     assert page.js_errors == []
 
 
-def test_tc_ui_008_a_restored_wide_reader_leaves_the_chat_room(page, server_url, long_source):  # noqa: F811
+def test_tc_ui_008_a_restored_wide_sources_width_leaves_the_chat_room(page, server_url, long_source):  # noqa: F811
     page.set_viewport_size({"width": 1000, "height": 768})
     login(page, server_url)
     page.evaluate(
         "w => localStorage.setItem('cc-panel-widths', w)",
-        json.dumps({"--col-reader": 675, "--col-studio": 400}),
+        json.dumps({"--col-sources": 675, "--col-studio": 400}),
     )
     page.reload()
     cite_target(page, long_source)

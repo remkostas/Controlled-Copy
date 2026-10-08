@@ -19,7 +19,7 @@
       {% endfor %}
     </div>
     <button type="button" class="btn btn--ghost btn--icon source__delete" title="Delete {{ s.title }}" aria-label="Delete {{ s.title }}"
-      hx-delete="/sources/{{ s.id }}" hx-confirm="Delete “{{ s.title }}” and everything derived from it? This cannot be undone.">
+      hx-delete="/sources/{{ s.id }}" data-confirm-label="Delete" hx-confirm="Delete “{{ s.title }}” and everything derived from it? This cannot be undone.">
       {{ icon('trash-2') }}
     </button>
   </li>

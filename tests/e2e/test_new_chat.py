@@ -2,6 +2,7 @@
 
 import pytest
 
+from tests.e2e.conftest import confirm
 from tests.e2e.test_journey_a import SOP, ask, login, upload
 
 pytestmark = [pytest.mark.e2e, pytest.mark.stage1]
@@ -15,8 +16,9 @@ def test_tc_fup_004_new_chat_appears_after_the_first_answer(page, server_url):
     ask(page, "What is the purpose of the inbound receiving procedure?")
     new_chat = page.locator("#new-chat")
     new_chat.wait_for(state="visible")
+    new_chat.click()
     with page.expect_navigation():
-        new_chat.click()  # the confirmation is accepted by the fixture
+        confirm(page, "Start a new chat")
     assert page.locator("#chat-inner article.turn:not(#pending-turn)").count() == 0
     assert not page.locator("#new-chat").is_visible()
     assert page.js_errors == []

@@ -20,9 +20,11 @@ def test_tc_stu_007_summary_from_the_chat(page, server_url, width, height):
         page.click(".mobile-tabs [data-tab='chat']")
     page.click("[data-chat-summary]")
     output = page.locator("#studio-outputs details.output").first
-    output.wait_for()
+    output.wait_for(state="attached")
     assert "Summary" in output.locator(".output__name").inner_text()
-    headings = [h.lower() for h in output.locator(".output__section h3").all_inner_texts()]
+    # A wide screen shows it large over the chat; a phone in the Studio tab.
+    shown = page.locator("#output-reader") if width > 900 else output
+    headings = [h.lower() for h in shown.locator(".output__section h3").all_inner_texts()]
     assert headings == ["in short", "main topics"]
-    assert output.is_visible(), "the Studio panel (or tab) shows the new Summary"
+    assert shown.is_visible(), "the new Summary is on screen"
     assert page.js_errors == []
