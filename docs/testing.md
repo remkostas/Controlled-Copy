@@ -146,6 +146,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-UI-09 | The phone header stays compact | TC-UI-009 | e2e | Workspace at 390 × 844 with every layer on | Header at most 100 px (was 189); short labels on screen, full accessible names; full labels on a desktop |
 | FR-UI-10 | The top bar reads as one bar | TC-UI-010 | e2e | Workspace at 1366 × 768 with every layer on | Notebook and model menus use the buttons' font, size and weight; the demo button's label is one piece of text, without gaps inside |
 | FR-UI-11 | A lost connection is reported | TC-UI-011 | e2e | Go offline, ask a question, go online, press Enter again | A message says nothing was sent; the question stays in the box; the retry is answered |
+| FR-UI-12 | The Sources panel can be collapsed | TC-UI-012 | e2e | Collapse at 1366 px, reload, expand; collapse, then open a citation; switch to a phone width | The chat gains the room and the choice is kept; a citation shows the panel again; no collapse in the tab layout |
 
 ### Governance (stage 2)
 

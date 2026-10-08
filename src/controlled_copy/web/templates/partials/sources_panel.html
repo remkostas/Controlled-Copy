@@ -3,6 +3,8 @@
   <header class="panel__head">
     <h2 class="panel__title" id="sources-title">Sources</h2>
     <span class="panel__count" id="source-count">{{ sources|length }}/{{ limits.max_sources }}</span>
+    <button type="button" class="btn btn--ghost btn--icon panel__toggle" data-collapse="sources" aria-controls="sources-panel"
+      aria-expanded="true" aria-label="Hide sources" title="Hide sources">{{ icon('panel-left-close', 'panel__toggle-close') }}{{ icon('panel-left-open', 'panel__toggle-open') }}</button>
   </header>
   <div class="panel__body">
     <div id="viewer-slot" aria-live="polite">{% if initial_viewer %}{{ initial_viewer }}{% endif %}</div>

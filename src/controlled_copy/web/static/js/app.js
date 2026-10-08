@@ -137,6 +137,8 @@
     const ws = workspace();
     const browser = $("#source-browser");
     const widening = Boolean(ws) && !ws.classList.contains("is-reading");
+    // A citation shows its source even when the panel is collapsed (the stored choice stays).
+    if (ws && ws.classList.contains("sources-collapsed")) setSourcesCollapsed(ws, false, false);
     if (ws) ws.classList.add("is-reading");
     if (browser) browser.hidden = true;
     showTab("sources");
@@ -419,14 +421,64 @@
     storeWidth(name, null);
   });
 
+  // Collapsible Sources panel on wide layouts, as in NotebookLM: more room for the chat and
+  // Studio once the sources are picked. The choice is kept per browser.
+  const COLLAPSE_KEY = "cc-sources-collapsed";
+
+  function storedCollapsed() {
+    try {
+      return window.localStorage.getItem(COLLAPSE_KEY) === "1";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function setSourcesCollapsed(ws, collapsed, remember) {
+    ws.classList.toggle("sources-collapsed", collapsed);
+    const button = $("[data-collapse='sources']", ws);
+    if (button) {
+      const label = collapsed ? "Show sources" : "Hide sources";
+      button.setAttribute("aria-expanded", String(!collapsed));
+      button.setAttribute("aria-label", label);
+      button.title = label;
+    }
+    if (remember) {
+      try {
+        window.localStorage.setItem(COLLAPSE_KEY, collapsed ? "1" : "0");
+      } catch (error) {
+        // Private window or blocked storage: the choice still applies to this page.
+      }
+    }
+  }
+
+  function applyCollapsed() {
+    const ws = workspace();
+    if (!ws) return;
+    const wanted = wideLayout() && storedCollapsed() && !ws.classList.contains("is-reading");
+    if (wanted !== ws.classList.contains("sources-collapsed")) {
+      withoutAnimation(ws, () => setSourcesCollapsed(ws, wanted, false));
+    }
+  }
+
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-collapse='sources']");
+    const ws = workspace();
+    if (!button || !ws) return;
+    setSourcesCollapsed(ws, !ws.classList.contains("sources-collapsed"), true);
+  });
+
   let resizeTimer = 0;
   window.addEventListener("resize", () => {
     window.clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(applyStoredWidths, 150);
+    resizeTimer = window.setTimeout(() => {
+      applyStoredWidths();
+      applyCollapsed();
+    }, 150);
   });
 
   document.addEventListener("DOMContentLoaded", () => {
     applyStoredWidths();
+    applyCollapsed();
     updateSelectionCount();
     const box = $("#question");
     if (box) updateCounter(box);
