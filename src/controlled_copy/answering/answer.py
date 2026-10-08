@@ -19,7 +19,7 @@ from controlled_copy.logs import log_event
 from controlled_copy.providers.base import ProviderError
 from controlled_copy.retrieval.search import retrieve
 from controlled_copy.services import Services
-from controlled_copy.storage.repo import TOMBSTONE, OwnedNotebook
+from controlled_copy.storage.repo import CHAT_CLEARED, TOMBSTONE, OwnedNotebook
 
 
 class AnswerOut(BaseModel):
@@ -183,8 +183,11 @@ def _store(
     """Persist the turn with its lineage: every selected source and the sources behind the
     history used for a rewrite, so deleting any of them removes the turn (S-05)."""
     stored = services.repo.add_turn(notebook, question, answer, search_query, lineage, "ok", chat_epoch)
+    if stored.status == CHAT_CLEARED:
+        # New chat ran while the model was answering: nothing was stored, and the visitor is told
+        # why (not that a source was deleted).
+        return TurnResult(stored.id, "", None, {"kind": "chat_cleared"}, CHAT_CLEARED)
     if stored.status == TOMBSTONE:
-        # A source was deleted or New chat ran while the model was answering: answer with
-        # what was stored.
+        # A source was deleted while the model was answering: answer with what was stored.
         return TurnResult(stored.id, "", None, {"kind": "tombstone"}, TOMBSTONE)
     return TurnResult(stored.id, question, search_query, answer)

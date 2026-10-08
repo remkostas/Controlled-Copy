@@ -13,3 +13,4 @@ def test_tc_out_002_a_card_prints_with_its_status_and_applicability(workspace):
     assert body["output"]["card"]["status_label"] in page
     assert "The WMS shows error GR-204" in page and "as of 2026-10-07" in page
     assert "<h3>Applicability</h3>" in page
+    assert "#viewer-slot" not in page, "no buttons that would open a passage on paper"

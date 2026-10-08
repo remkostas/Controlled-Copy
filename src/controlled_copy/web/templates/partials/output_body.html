@@ -8,7 +8,7 @@
   {% if sec.entries %}
   <ul>
     {% for it in sec.entries %}
-    <li>{% if it.type_label %}<span class="badge">{{ it.type_label }}</span> {% endif %}{{ it.text }} {{ cites(it.cites) }}</li>
+    <li>{% if it.type_label %}<span class="badge">{{ it.type_label }}</span> {% endif %}{{ it.text }} {{ cites(it.cites, plain=plain_cites|default(false)) }}</li>
     {% endfor %}
   </ul>
   {% else %}

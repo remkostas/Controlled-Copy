@@ -1468,6 +1468,16 @@ details.paste > summary.btn {
 .sheet--text li {
   max-width: 68ch;
 }
+/* Hidden frame that holds the printable page while the browser prints it. */
+.print-frame {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 0;
+}
+.cite--plain {
+  cursor: default;
+}
 .legal-links {
   display: flex;
   gap: var(--sp-4);

@@ -46,6 +46,7 @@ from controlled_copy.web.deps import (
 )
 from controlled_copy.web.markdown import output_markdown
 from controlled_copy.web.security import (
+    PRINT_CSP,
     SESSION_COOKIE,
     code_matches,
     csrf_token,
@@ -624,9 +625,12 @@ def output_for_print(request: Request, notebook_id: str, output_id: str, service
     response = render(
         request,
         "print.html",
-        {"o": view, "notebook": notebook, "printed": views.time_label(utcnow())},
+        {"o": view, "notebook": notebook, "printed": views.time_label(utcnow()), "plain_cites": True},
     )
     response.headers["Cache-Control"] = "no-store"
+    # The workspace prints this page in a hidden frame, so only this site may frame it.
+    response.headers["Content-Security-Policy"] = PRINT_CSP
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
     return response
 
 

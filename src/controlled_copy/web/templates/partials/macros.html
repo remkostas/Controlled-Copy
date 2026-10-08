@@ -1,6 +1,10 @@
-{% macro cites(items) -%}
+{% macro cites(items, plain=false) -%}
 {%- for c in items -%}
+{%- if plain -%}
+<span class="cite cite--plain" title="{{ c.label }}">{{ c.n }}</span>
+{%- else -%}
 <button type="button" class="cite" hx-get="{{ c.url }}" hx-target="#viewer-slot" hx-swap="innerHTML" title="{{ c.label }}" aria-label="Citation {{ c.n }}: {{ c.label }}">{{ c.n }}</button>
+{%- endif -%}
 {%- endfor -%}
 {%- endmacro %}
 
