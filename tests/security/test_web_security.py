@@ -59,6 +59,8 @@ def test_tc_sec_002_state_changing_requests_need_the_csrf_token(visitor, db):
             {"data": {"question": "q", "source_ids": [source_id]}},
         ),
         ("post", f"/notebooks/{visitor.notebook_id}/studio/briefing", {"data": {"source_ids": [source_id]}}),
+        ("post", f"/notebooks/{visitor.notebook_id}/chat/clear", {}),
+        ("post", "/logout", {}),
     ]
     for method, path, kwargs in attempts:
         for headers in (
