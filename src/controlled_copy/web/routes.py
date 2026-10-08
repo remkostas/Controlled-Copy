@@ -157,6 +157,7 @@ def workspace_context(
         "can_create_notebook": sum(n.kind == "personal" for n in notebooks)
         < settings.max_notebooks_per_visitor,
         "limits": limits_view(settings),
+        "retention_days": settings.retention_days,
         "ui": {
             "topbar_partials": list(request.app.state.registry.topbar_partials),
             "chat_partials": list(request.app.state.registry.chat_partials),
@@ -326,6 +327,18 @@ def delete_notebook(request: Request, notebook_id: str, services: WriteDep) -> R
     _discard(services, files)
     log_event("notebook_deleted", session=services.sid, notebook=notebook_id, files=len(files))
     return json_or_redirect(request, {"deleted": notebook_id}, "/app")
+
+
+@router.post("/logout")
+def logout(request: Request, services: WriteDep) -> Response:
+    """An anonymous session cannot be resumed once its cookie is gone, so logging out deletes
+    its notebooks, sources, chats and outputs now instead of after the retention window."""
+    files = services.repo.delete_session(services.sid)
+    _discard(services, files)
+    log_event("logged_out", session=services.sid, files=len(files))
+    response = json_or_redirect(request, {"logged_out": True}, "/")
+    response.delete_cookie(SESSION_COOKIE, path="/")
+    return response
 
 
 # Sources -------------------------------------------------------------------------

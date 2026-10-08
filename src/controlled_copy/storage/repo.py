@@ -341,6 +341,8 @@ class Repo:
             raise ValueError("every chunk needs exactly one vector")
         source_id = new_id()
         with transaction(self.conn):
+            # The visitor logged out or deleted the notebook while this upload was indexed.
+            self._require_notebook(_owned(new.notebook))
             if limit is not None and self.count_sources(new.notebook) >= limit:
                 raise sources_full(limit)
             if char_limit is not None and self.count_chars(new.notebook) + len(new.text) > char_limit:
@@ -667,6 +669,21 @@ class Repo:
         return int(row["n"])
 
     # Retention ------------------------------------------------------------------
+    def delete_session(self, sid: str) -> list[str]:
+        """Log out: delete the session with all its data now, as the purge would after the
+        retention window. Returns the uploaded files to remove."""
+        with transaction(self.conn):
+            files = [
+                row["file_path"]
+                for row in self.conn.execute(
+                    "SELECT s.file_path FROM source s JOIN notebook n ON n.id = s.notebook_id "
+                    "WHERE n.session_id = ? AND s.file_path IS NOT NULL",
+                    (sid,),
+                )
+            ]
+            self.conn.execute("DELETE FROM visitor_session WHERE id = ?", (sid,))
+        return files
+
     def purge_expired(self, retention_hours: int, now: datetime | None = None) -> tuple[int, list[str]]:
         """Delete sessions not seen within the retention window, with all their data."""
         now = now or datetime.now(UTC)
