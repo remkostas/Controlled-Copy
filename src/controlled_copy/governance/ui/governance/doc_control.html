@@ -1,5 +1,5 @@
 <details class="doc-control">
-  <summary>{{ icon('file-search') }} Document control (optional)</summary>
+  <summary>{{ icon('file-search') }} <span>Document control (optional)<span class="doc-control__hint">Revision, status and site for the next source, used by the Resolution Card</span></span></summary>
   <div id="doc-control" class="doc-control__fields">
     <p class="muted doc-control__note">Applies to the next upload or paste and replaces any front matter in the file. Shown as "asserted by uploader".{% if nb.kind == 'ops_workspace' %} In this workspace only the curated documents are controlled, so the Resolution Card lists your document as not applied; use a personal notebook to build cards on your own documents.{% endif %}</p>
     <div class="field">
@@ -21,15 +21,14 @@
         </select>
       </div>
     </div>
-    <div class="doc-control__pair">
-      <div class="field">
-        <label for="doc-effective">Effective from</label>
-        <input class="input" id="doc-effective" name="doc_effective_from" type="date">
-      </div>
-      <div class="field">
-        <label for="doc-site">Site</label>
-        <input class="input" id="doc-site" name="doc_site" maxlength="40" placeholder="site code or all" autocomplete="off">
-      </div>
+    {# A date field needs more room than half the Sources column: one field per row. #}
+    <div class="field">
+      <label for="doc-effective">Effective from</label>
+      <input class="input" id="doc-effective" name="doc_effective_from" type="date">
+    </div>
+    <div class="field">
+      <label for="doc-site">Site</label>
+      <input class="input" id="doc-site" name="doc_site" maxlength="40" placeholder="site code, or all" autocomplete="off">
     </div>
     <div class="field">
       <label for="doc-roles">Roles (comma-separated, empty for every role)</label>

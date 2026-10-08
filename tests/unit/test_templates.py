@@ -35,3 +35,10 @@ def test_tc_stu_003_no_template_specific_code_path():
     source = Path(engine.__file__).read_text() + Path(engine.__file__).with_name("actions.py").read_text()
     for template_id in engine.core_templates():
         assert f'"{template_id}"' not in source and f"'{template_id}'" not in source
+
+
+def test_tc_stu_003_descriptions_say_studio_reads_the_sources():
+    # First-time users could not tell whether Studio uses the chat or the sources (issue #13).
+    for path in sorted(engine.TEMPLATE_DIR.glob("*.json")):
+        description = engine.load_template(path).description
+        assert description.startswith("From the selected sources: "), path.name

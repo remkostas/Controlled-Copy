@@ -239,12 +239,28 @@
         $$("#doc-control input, #doc-control select").forEach((field) => (field.value = ""));
       }
     }
+    // The first answer makes a chat to start over from: show New chat without a reload.
+    if (target.id === "pending-turn" && event.detail.xhr && event.detail.xhr.status < 300) {
+      const newChat = $("#new-chat");
+      if (newChat) newChat.hidden = false;
+    }
     if (target.id === "toast") {
       window.setTimeout(() => target.replaceChildren(), 8000);
     }
     if (target.id === "studio-outputs") {
       const empty = $("#outputs-empty");
       if (empty) empty.remove();
+      // A new output arrives at the top: keep only it open and bring it into view, so it is
+      // clear what was just made and an older output is not read by mistake.
+      const outputs = $$("details.output", target);
+      if (outputs.length) {
+        outputs.forEach((output, index) => (output.open = index === 0));
+        // Scroll only the Studio panel, never the page (it is locked to the window).
+        const panel = target.closest(".panel__body");
+        if (panel) {
+          panel.scrollTop += outputs[0].getBoundingClientRect().top - panel.getBoundingClientRect().top;
+        }
+      }
     }
   });
 
