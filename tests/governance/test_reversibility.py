@@ -69,7 +69,7 @@ def test_tc_rev_003_switching_the_layer_off_hides_it(settings):
         page = client.get("/app").text
         assert "Inbound Operations" not in page
         assert "Resolution Card" not in page
-        assert "Reset workspace" not in page
+        assert "/workspace/reset" not in page
         assert client.post("/workspace/reset").status_code in (403, 404, 405)
 
 

@@ -68,7 +68,7 @@ def test_tc_ui_004_journey_b_end_to_end(page, server_url):
 
     # Reset restores the original documents and removes the cards.
     before = page.url
-    page.click("button:has-text('Reset workspace')")
+    page.click("button:has-text('Reset the Inbound Operations demo')")
     page.wait_for_url(lambda url: url != before)  # a fresh copy has a new notebook ID
     page.wait_for_selector("h1:has-text('Inbound Operations')")
     assert page.locator("#studio-outputs details.output").count() == 0
