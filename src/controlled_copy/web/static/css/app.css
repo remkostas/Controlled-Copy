@@ -352,6 +352,8 @@ select {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
   background: var(--surface-raised);
+  /* Set, not inherited: inside the dark top bar the inherited colour is the light chrome text. */
+  color: var(--text);
   line-height: var(--lh-body);
   caret-color: var(--focus);
 }
