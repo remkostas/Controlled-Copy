@@ -1036,6 +1036,9 @@ details.paste > summary.btn {
   color: var(--text-muted);
   max-width: 60ch;
 }
+.chat-intro__summary {
+  justify-self: start;
+}
 .turn {
   display: grid;
   gap: var(--sp-2);

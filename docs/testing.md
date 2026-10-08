@@ -109,6 +109,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-STU-02 | Three suggested questions, cached | TC-STU-002 | integration | Add a source; reload twice | Three questions; generated once per source change |
 | FR-STU-03 | Templates are data | TC-STU-003 | unit | Load the template files | Validate against the template schema; no template-specific code path |
 | FR-STU-06 | A new output opens in view with older ones closed; a card header names its situation | TC-STU-006 | integration, e2e | Run three Briefings; ask a card | Only the newest output open and in view; header shows the situation, shortened when long |
+| FR-STU-07 | A short, cited Summary of the selected sources, first in Studio and one click from the chat | TC-STU-007 | unit, integration, e2e | Add a source; press "Summarise the selected sources" in the chat on a desktop and a phone layout | The Summary (In short, Main topics) appears in Studio with verified citations; on a phone the Studio tab opens; Summary is the first Studio action |
 
 ### Limits, retention, logging (stage 1)
 
