@@ -33,7 +33,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-ACC-05 | Data is scoped to the session | TC-ACC-005 | integration | Two sessions, each with a notebook containing a unique canary string | Neither session can list, search, view or delete the other's data; foreign IDs return 404 |
 | FR-LEG-01 | A privacy notice, readable without logging in | TC-LEG-001 | api | GET /privacy with operator settings | 200 with the controller, legal basis, recipients (Hetzner, OpenRouter), the configured retention and the right to complain; strict CSP |
 | FR-LEG-02 | Privacy and Impressum are linked from every page | TC-LEG-002 | api | Start page, video page, workspace; IMPRESSUM_URL set and unset; unsafe values | Both links on every page; no Impressum link without a URL; a non-https IMPRESSUM_URL or an invalid OPERATOR_EMAIL refuses to start |
-| FR-ACC-06 | Log out ends the session and deletes its data | TC-ACC-006 | integration | Log out with a source and a chat | Cookie cleared, workspace no longer reachable, the session's rows and files deleted, other sessions untouched |
+| FR-ACC-06 | Log out ends the session and deletes its data | TC-ACC-006 | integration | Log out with a source and a chat | Cookie cleared, workspace no longer reachable, the session's rows and files deleted, other sessions untouched; the session row and every notebook of it, including the Inbound Operations copy, are gone |
 | FR-ACC-07 | The access code can be shown while typing | TC-ACC-007 | api, e2e | Type the code, press Show, then Hide, then submit | The field switches between hidden and visible text, the button says Show or Hide with its pressed state, login works; without the page script the button stays hidden |
 
 ### Notebooks (stage 1)
@@ -112,7 +112,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-STU-03 | Templates are data | TC-STU-003 | unit | Load the template files | Validate against the template schema; no template-specific code path |
 | FR-STU-06 | A new output opens in view with older ones closed; a card header names its situation | TC-STU-006 | integration, e2e | Run three Briefings; ask a card | Only the newest output open and in view; header shows the situation, shortened when long |
 | FR-STU-07 | A short, cited Summary of the selected sources, first in Studio and one click from the chat | TC-STU-007 | unit, integration, e2e | Add a source; press "Summarise the selected sources" in the chat on a desktop and a phone layout | The Summary (In short, Main topics) appears in Studio with verified citations; on a phone the Studio tab opens; Summary is the first Studio action |
-| FR-STU-08 | A new Studio output opens large over the chat | TC-STU-008 | e2e | Briefing at 1366 px; Close, Open, Escape; a citation in the reading view; a phone | It covers the chat panel with its title; Studio keeps the output; Open, Close and Escape work; a citation opens its passage and closes the view; no automatic view on a phone |
+| FR-STU-08 | A new Studio output opens large over the chat | TC-STU-008 | e2e | Briefing at 1366 px; Close, Open, Escape; a citation in the reading view; a phone | It covers the chat panel with its title; Studio keeps the output; Open, Close and Escape work; a citation opens its passage and closes the view; no automatic view on a phone; while open, the covered chat cannot be reached by keyboard, and closing returns focus to Open or the output |
 
 ### Limits, retention, logging (stage 1)
 
@@ -144,10 +144,10 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-UI-02 | Journey A end to end | TC-UI-002 | e2e | Create notebook, upload, ask, open citation, follow-up, refusal, Briefing, delete source | Every step works in a real browser |
 | NFR-UI-01 | Readable contrast | TC-UI-003 | e2e | Automated contrast check on the main screens | Text meets WCAG AA contrast |
 | FR-UI-08 | Resizable side panels; the chat keeps room | TC-UI-008 | e2e | Drag and arrow-key the panel edges; reload; double-click; open a citation at 1000 and 1366 px | Widths follow and are kept per browser; reset works; the chat never drops below 22rem; no handles in the tab layout; opening or closing a source after resizing, a restored reader width or a narrower window still leaves the chat 22rem |
-| FR-UI-09 | The phone header stays compact | TC-UI-009 | e2e | Workspace at 390 × 844 with every layer on | Header at most 100 px (was 189); short labels on screen, full accessible names; full labels on a desktop |
+| FR-UI-09 | The phone header stays compact | TC-UI-009 | e2e | Workspace at 390 × 844 with every layer on | Header at most 100 px (was 189); short labels on screen, full accessible names; full labels on a desktop; at 320, 360, 375 and 390 px in both notebooks, with Log out on screen |
 | FR-UI-10 | The top bar reads as one bar | TC-UI-010 | e2e | Workspace at 1366 × 768 with every layer on | Notebook and model menus use the buttons' font, size and weight; the demo button's label is one piece of text, without gaps inside |
-| FR-UI-11 | A lost connection is reported | TC-UI-011 | e2e | Go offline, ask a question, go online, press Enter again | A message says nothing was sent; the question stays in the box; the retry is answered |
-| FR-UI-12 | The Sources panel can be collapsed | TC-UI-012 | e2e | Collapse at 1366 px, reload, expand; collapse, then open a citation; switch to a phone width | The chat gains the room and the choice is kept; a citation shows the panel again; no collapse in the tab layout |
+| FR-UI-11 | A lost connection is reported | TC-UI-011 | e2e | Go offline, ask a question, go online, press Enter again | A message says nothing was sent; the question stays in the box; the retry is answered; the message does not claim the request was not processed |
+| FR-UI-12 | The Sources panel can be collapsed | TC-UI-012 | e2e | Collapse at 1366 px, reload, expand; collapse, then open a citation; switch to a phone width | The chat gains the room and the choice is kept; a citation shows the panel again; no collapse in the tab layout; expanding after Studio was widened still leaves the chat its room |
 
 ### Governance (stage 2)
 
@@ -160,7 +160,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-GOV-05 | Identifier extraction and lookup | TC-GOV-005 | unit | Text with `GR-204`, a document ID, and no code | Correct extraction |
 | FR-GOV-05 | | TC-GOV-006 | integration | Situation with `GR-299` (undocumented) | Status "expert confirmation required"; message names the code |
 | FR-GOV-06 | Statement types enforced | TC-GOV-007 | unit | Fake card with a "requirement" whose quote fails, or whose source is excluded | Downgraded to inference or missing evidence |
-| FR-GOV-07 | Status precedence | TC-GOV-008 | unit | Combinations of conflict, unknown source, missing info, all supported | Primary status follows the precedence in product-plan.md |
+| FR-GOV-07 | Status precedence | TC-GOV-008 | unit | Combinations of conflict, unknown source, missing info, all supported | Primary status follows the fixed precedence in `governance/rules.py` |
 | FR-GOV-08 | Uploaded metadata marked as asserted | TC-GOV-009 | integration | Upload Markdown claiming approved status | Badge shows "asserted by uploader" |
 | FR-GOV-09 | Context bar filters by site, role and date | TC-GOV-010 | integration | Set the date before an effective date; leave the date empty at 00:30 in Germany | That document becomes excluded with the reason "not yet effective"; an empty date means today in Germany, like the chat |
 | FR-UI-03 | Journey B end to end | TC-UI-004 | e2e | Open workspace, run scenarios 1, 5, 6, open evidence, Reset | Every step works in a real browser |
@@ -195,7 +195,7 @@ Replaces the persona switcher planned earlier (never built; Remko asked for a mo
 
 ### Evaluation (real model, published as measured)
 
-G-01 to G-06 (generic path) and E-01 to E-14 (governed path), specified in demo-corpus-and-eval.md. Marker `eval`, run manually and before the video. Retrieval metrics (hit@k, mean reciprocal rank) from the same cases feed the model bake-off. Only results that record a clean commit and the case-file hash count as evidence (see `eval/results/README.md`).
+G-01 to G-06 (generic path) and E-01 to E-14 (governed path), specified in `eval/README.md` and the case files next to it. Marker `eval`, run manually and before the video. Retrieval metrics (hit@k, mean reciprocal rank) from the same cases feed the model bake-off. Only results that record a clean commit and the case-file hash count as evidence (see `eval/results/README.md`).
 
 The scorer itself is tested offline with hand-made responses, so a pass cannot come from the right words in a quote next to a wrong statement:
 

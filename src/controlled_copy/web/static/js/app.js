@@ -255,11 +255,12 @@
     }
   });
 
-  // A request that never reached the server (connection lost, the network changed) swaps
-  // nothing, so say so instead of leaving the visitor in front of a page that does not change.
-  // A typed question stays in the box, so pressing Enter again retries it.
+  // A request whose reply never arrived (connection lost, the network changed) swaps nothing,
+  // so say so instead of leaving the visitor in front of a page that does not change. The server
+  // may still have finished it, so the message does not claim either way. A typed question stays
+  // in the box for a retry.
   document.addEventListener("htmx:sendError", () => {
-    toast("The connection was interrupted, so nothing was sent. Please try again.", false);
+    toast("The connection was interrupted before the reply arrived. Reload the page to see whether it was saved, or try again.", false);
   });
 
   document.addEventListener("htmx:afterRequest", (event) => {
@@ -335,6 +336,9 @@
   // Reading view: a Studio output opens large over the chat, because the Studio column is narrow
   // and a new output is easy to miss below its buttons. The list in Studio keeps every output;
   // "Open" shows one again. Close, Escape or a citation (which opens its passage) return.
+  let readerOpener = null;
+  let readerReturn = null;
+
   function openReader(output) {
     const reader = $("#output-reader");
     const body = output && $(".output__body", output);
@@ -352,17 +356,29 @@
     $$("[data-read-output]", copy).forEach((el) => el.remove());
     $(".reader__body", reader).replaceChildren(copy);
     if (window.htmx) window.htmx.process(copy);
+    // What it covers cannot be reached by keyboard or screen reader while it is open, and focus
+    // goes back to where the visitor was when it closes.
+    readerOpener = document.activeElement !== document.body ? document.activeElement : null;
+    readerReturn = output;
+    $$(".panel--chat > :not(.reader)").forEach((el) => (el.inert = true));
     reader.hidden = false;
     showTab("chat");
     $(".reader__body", reader).scrollTop = 0;
     $("[data-reader-close]", reader).focus();
   }
 
-  function closeReader() {
+  function closeReader(restoreFocus = true) {
     const reader = $("#output-reader");
     if (!reader || reader.hidden) return;
     reader.hidden = true;
     $(".reader__body", reader).replaceChildren();
+    $$(".panel--chat > :not(.reader)").forEach((el) => (el.inert = false));
+    if (!restoreFocus) return;
+    // Back to the button that opened it, else to the output in Studio.
+    const usable = (el) => el && el.isConnected && el.offsetParent !== null;
+    const summary = readerReturn && $("summary", readerReturn);
+    const target = usable(readerOpener) ? readerOpener : usable(summary) ? summary : null;
+    if (target) target.focus();
   }
 
   document.addEventListener("click", (event) => {
@@ -373,7 +389,7 @@
     }
     if (event.target.closest("[data-reader-close]")) closeReader();
     // A citation opens its passage in the Sources panel; the chat comes back with it.
-    else if (event.target.closest("#output-reader .cite")) closeReader();
+    else if (event.target.closest("#output-reader .cite")) closeReader(false);
   });
 
   document.addEventListener("keydown", (event) => {
@@ -560,7 +576,10 @@
     if (!ws) return;
     const wanted = wideLayout() && storedCollapsed() && !ws.classList.contains("is-reading");
     if (wanted !== ws.classList.contains("sources-collapsed")) {
-      withoutAnimation(ws, () => setSourcesCollapsed(ws, wanted, false));
+      withoutAnimation(ws, () => {
+        setSourcesCollapsed(ws, wanted, false);
+        fitPanels(ws);
+      });
     }
   }
 
@@ -568,7 +587,13 @@
     const button = event.target.closest("[data-collapse='sources']");
     const ws = workspace();
     if (!button || !ws) return;
-    setSourcesCollapsed(ws, !ws.classList.contains("sources-collapsed"), true);
+    const collapse = !ws.classList.contains("sources-collapsed");
+    // Expanding brings back the Sources width, which may no longer leave the chat its room
+    // (Studio may have been widened meanwhile): switch without the animation and re-fit.
+    withoutAnimation(ws, () => {
+      setSourcesCollapsed(ws, collapse, true);
+      fitPanels(ws);
+    });
   });
 
   let resizeTimer = 0;

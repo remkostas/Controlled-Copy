@@ -61,3 +61,21 @@ def test_tc_ui_012_no_collapse_in_the_tab_layout(page, server_url):
     )
     assert not toggle(page).is_visible()
     assert page.js_errors == []
+
+
+def test_tc_ui_012_expanding_after_widening_studio_leaves_the_chat_room(page, server_url):
+    from tests.e2e.test_resize_panels import CHAT_MIN, drag
+
+    page.set_viewport_size({"width": 1366, "height": 768})
+    login(page, server_url)
+    toggle(page).click()
+    page.wait_for_function(
+        "() => document.querySelector('.panel--sources').getBoundingClientRect().width < 60"
+    )
+    drag(page, "[data-resize='studio']", -900)  # as wide as the collapsed Sources allow
+    toggle(page).click()
+    page.wait_for_function(
+        "() => document.querySelector('.panel--sources').getBoundingClientRect().width > 200"
+    )
+    assert width(page, ".panel--chat") >= CHAT_MIN - 2, width(page, ".panel--chat")
+    assert page.js_errors == []

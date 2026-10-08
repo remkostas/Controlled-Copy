@@ -22,6 +22,9 @@ def test_tc_acc_006_log_out_deletes_the_session_and_its_data(make_visitor, db, s
     ]
     assert chunk_ids
     assert files and all((settings.uploads_dir / f).exists() for f in files)
+    session_id = db.execute("SELECT session_id FROM notebook WHERE id = ?", (alice.notebook_id,)).fetchone()[
+        0
+    ]
 
     response = alice.client.post("/logout", headers={**alice.headers, "HX-Request": "true"})
     assert response.status_code == 200 and response.headers["HX-Redirect"] == "/"
@@ -41,6 +44,9 @@ def test_tc_acc_006_log_out_deletes_the_session_and_its_data(make_visitor, db, s
         db.execute(f"SELECT COUNT(*) FROM chunk_fts WHERE rowid IN ({marks})", chunk_ids).fetchone()[0] == 0
     )
     assert db.execute("SELECT COUNT(*) FROM notebook WHERE id = ?", (bob.notebook_id,)).fetchone()[0] == 1
+    # The session itself and every notebook it owned are gone, not only the one in view.
+    assert db.execute("SELECT COUNT(*) FROM visitor_session WHERE id = ?", (session_id,)).fetchone()[0] == 0
+    assert db.execute("SELECT COUNT(*) FROM notebook WHERE session_id = ?", (session_id,)).fetchone()[0] == 0
 
 
 def test_tc_acc_006_the_workspace_offers_log_out(visitor):

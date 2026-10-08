@@ -4,7 +4,7 @@
 {% else %}
 {% set workspaces = notebooks | selectattr('kind', 'equalto', 'ops_workspace') | list %}
 {% for n in workspaces %}
-<a class="btn btn--sm" href="/app?nb={{ n.id }}">{{ icon('book-open') }} <span><span class="topbar__long">Open the </span>Inbound Operations<span class="topbar__long"> demo</span></span></a>
+<a class="btn btn--sm" href="/app?nb={{ n.id }}">{{ icon('book-open') }} <span><span class="topbar__long">Open the </span><span class="topbar__mid">Inbound Operations</span><span class="topbar__long"> demo</span><span class="topbar__tiny" aria-hidden="true">Demo</span></span></a>
 {% else %}
 {# No copy yet (seeding failed at login, or the layer was switched on later): pages never
    write, so the copy is made by this CSRF-checked POST (full audit re-check RCK-05). #}

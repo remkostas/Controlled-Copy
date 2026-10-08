@@ -56,3 +56,20 @@ def test_tc_stu_008_no_automatic_reading_view_on_a_phone(page, server_url):
     page.wait_for_selector("#studio-outputs details.output[open]")
     assert not page.locator("#output-reader").is_visible()
     assert page.js_errors == []
+
+
+def test_tc_stu_008_the_reading_view_keeps_and_returns_keyboard_focus(page, server_url):
+    page.set_viewport_size({"width": 1366, "height": 768})
+    briefing(page, server_url)
+    page.locator("#output-reader").wait_for()
+    # What it covers cannot be reached while it is open.
+    assert page.evaluate("() => document.querySelector('.panel--chat .chat').inert")
+    assert page.evaluate("() => document.activeElement.closest('#output-reader') !== null")
+    page.keyboard.press("Escape")
+    assert not page.evaluate("() => document.querySelector('.panel--chat .chat').inert")
+    focused = "() => { const el = document.activeElement; return el !== document.body && el.offsetParent !== null; }"
+    assert page.evaluate(focused), "focus comes back to a visible control"
+    page.click("#studio-outputs details.output[open] [data-read-output]")
+    page.click("[data-reader-close]")
+    assert page.evaluate("() => document.activeElement.matches('[data-read-output]')"), "back to Open"
+    assert page.js_errors == []

@@ -279,7 +279,7 @@ def action_reasons(case: dict[str, Any], items: list[dict[str, Any]], backed: se
 def check_card(
     case: dict[str, Any], status: int, body: dict[str, Any], app: AppClient, texts: dict[str, str]
 ) -> dict[str, Any]:
-    """The mechanical checks of demo-corpus-and-eval.md for one Resolution Card."""
+    """The mechanical checks for one Resolution Card (eval/README.md describes them)."""
     if status != 200:
         return {"kind": f"error {status}", "error": body.get("error"), "reasons": [f"status {status}"]}
     output = body["output"]

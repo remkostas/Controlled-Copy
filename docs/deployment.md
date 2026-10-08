@@ -16,7 +16,7 @@ An `A` record for the site name pointing at the server, not proxied, so Caddy ca
 ## 3. Code and settings
 
 ```
-git clone <repository URL> controlled-copy && cd controlled-copy
+git clone https://github.com/remkostas/Controlled-Copy.git controlled-copy && cd controlled-copy
 cp .env.example .env && chmod 600 .env
 python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # for APP_SECRET_KEY
 ```

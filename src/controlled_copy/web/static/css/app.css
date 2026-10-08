@@ -1567,6 +1567,9 @@ details.paste > summary.btn {
     display: none;
   }
 }
+.topbar__tiny {
+  display: none;
+}
 @media (max-width: 900px) {
   .panel__toggle {
     display: none;
@@ -1876,5 +1879,27 @@ details.paste > summary.btn {
     padding: 0;
     font-size: 0.75em;
     vertical-align: super;
+  }
+}
+
+/* Narrow phones (320 to 400 px): the header stays two rows. The demo button says "Demo" on
+   screen; screen readers still get "Open the Inbound Operations demo". */
+@media (max-width: 400px) {
+  .topbar {
+    padding-inline: var(--sp-3);
+  }
+  .topbar__mid {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .topbar__tiny {
+    display: inline;
+  }
+  .model-select select {
+    max-width: 7rem;
   }
 }
