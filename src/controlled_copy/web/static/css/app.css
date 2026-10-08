@@ -1403,6 +1403,15 @@ details.paste > summary.btn {
   transform: rotate(-4deg);
   opacity: 0.9;
 }
+.field__reveal {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+}
+.field__reveal .input {
+  flex: 1;
+  min-width: 0;
+}
 .access {
   display: grid;
   grid-template-columns: 1fr auto;

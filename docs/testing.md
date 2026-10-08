@@ -32,6 +32,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | FR-ACC-04 | All workspace routes need a session | TC-ACC-004 | api | Every `/app`, notebook, source and studio route without a cookie | 303 to `/` or 401; no data |
 | FR-ACC-05 | Data is scoped to the session | TC-ACC-005 | integration | Two sessions, each with a notebook containing a unique canary string | Neither session can list, search, view or delete the other's data; foreign IDs return 404 |
 | FR-ACC-06 | Log out ends the session and deletes its data | TC-ACC-006 | integration | Log out with a source and a chat | Cookie cleared, workspace no longer reachable, the session's rows and files deleted, other sessions untouched |
+| FR-ACC-07 | The access code can be shown while typing | TC-ACC-007 | api, e2e | Type the code, press Show, then Hide, then submit | The field switches between hidden and visible text, the button says Show or Hide with its pressed state, login works; without the page script the button stays hidden |
 
 ### Notebooks (stage 1)
 
