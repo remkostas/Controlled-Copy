@@ -31,3 +31,27 @@ def test_doc_02_a_partly_skipped_case_is_reported_as_partial(tmp_path):
     assert rows["TC-ACC-001"] == "partial (1 of 2 skipped)"
     assert rows["TC-ACC-002"] == "pass"
     assert "1 partly skipped" in done.stdout
+
+
+def test_tests_without_a_case_id_are_counted_not_hidden(tmp_path):
+    """Pre-delivery audit (Codex PDA-05): regression tests without a TC ID appear in the report,
+    and a failing one fails the report."""
+    junit = tmp_path / "junit.xml"
+    junit.write_text(
+        """<testsuites><testsuite name="t">
+<testcase classname="tests.x" name="test_tc_acc_002_a" />
+<testcase classname="tests.x" name="test_logout_race" />
+<testcase classname="tests.x" name="test_refusal_export"><failure message="x" /></testcase>
+</testsuite></testsuites>"""
+    )
+    done = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "test_report.py"), str(junit), str(ROOT / "docs/testing.md")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert (
+        "Other tests (regression tests without a test-case ID): 2 run, 1 pass, 1 fail, 0 skipped."
+        in done.stdout
+    )
+    assert done.returncode == 1

@@ -1,6 +1,6 @@
 # Testing
 
-Every requirement has an ID, every test case has an ID, type, stage and expected result, and every automated test carries its TC ID in its name (`test_tc_<area>_<nnn>_<behaviour>`), so results map back to requirements. `scripts/test_report.py` turns a JUnit XML run into a Markdown table (requirement → test cases → result).
+Every requirement has an ID, and every test case has an ID, type, stage and expected result. A test that implements a test case carries its TC ID in its name (`test_tc_<area>_<nnn>_<behaviour>`), so results map back to requirements. Every test case in the catalogue has at least one test. Regression tests written for review findings check a specific failure and often have no TC ID; the report counts them separately. `scripts/test_report.py` turns a JUnit XML run into a Markdown table (requirement → test cases → result).
 
 Run the stage 1 gate locally:
 
@@ -15,7 +15,7 @@ python scripts/test_report.py reports/junit.xml
 - **Test case IDs:** `TC-<area>-<nnn>`. Automated tests are named `test_tc_<area>_<nnn>_<behaviour>` (for example `test_tc_src_004_rejects_renamed_binary`).
 - **pytest markers:** a type (`unit`, `integration`, `api`, `e2e`, `security`, `eval`, `smoke_live`) and a stage (`stage1`, `stage2`, `stage3`). Example: `pytest -m "stage1 and not eval"` runs the core gate.
 - **Model calls:** unit, integration, api, e2e and security tests use a fake model provider (deterministic, no network, no cost). Only `eval` and `smoke_live` call the real model.
-- **Report:** a script turns the JUnit XML into a Markdown table (requirement → test cases → pass or fail), committed as the test report for each PR.
+- **Report:** a script turns the JUnit XML into a Markdown table (requirement → test cases → pass or fail), counting tests without a test-case ID separately. CI publishes it as an artifact on every run.
 - **Repository document:** the catalogue below becomes `docs/testing.md` in the product repository (justified as a separate document because of its size).
 
 ## 2. Requirements and test cases
@@ -195,7 +195,7 @@ Replaces the persona switcher planned earlier (never built; Remko asked for a mo
 
 ### Evaluation (real model, published as measured)
 
-G-01 to G-06 (generic path) and E-01 to E-14 (governed path), specified in `eval/README.md` and the case files next to it. Marker `eval`, run manually and before the video. Retrieval metrics (hit@k, mean reciprocal rank) from the same cases feed the model bake-off. Only results that record a clean commit and the case-file hash count as evidence (see `eval/results/README.md`).
+G-01 to G-06 (generic path), E-01 to E-14 and H-01 to H-11 (governed path), specified in `eval/README.md` and the case files next to it. Marker `eval`, run by hand, never in CI. The release results are summarised in `eval/README.md`.
 
 The scorer itself is tested offline with hand-made responses, so a pass cannot come from the right words in a quote next to a wrong statement:
 

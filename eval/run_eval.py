@@ -447,6 +447,7 @@ def write_report(
     slug = model.replace("/", "_")
     name = f"{stamp}-{slug}-{set_name}{'-subset' if subset else ''}"
     json_path, md_path = EVAL / "results" / f"{name}.json", EVAL / "results" / f"{name}.md"
+    json_path.parent.mkdir(exist_ok=True)
     case_file = {"governed": "cases_governed.json", "holdout": "cases_governed_holdout.json"}.get(
         set_name, "cases_generic.json"
     )

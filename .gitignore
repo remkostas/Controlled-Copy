@@ -42,3 +42,6 @@ reports/
 
 # Evaluation downloads and raw runs
 eval/.cache/
+
+# Evaluation runs (summarised in eval/README.md)
+eval/results/

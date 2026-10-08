@@ -1,8 +1,34 @@
 # Architecture
 
-## ADR-001: Module layout and the plugin registration point
+One FastAPI process renders the pages (Jinja and htmx), keeps everything in one SQLite file, and calls models through OpenRouter. This page follows a question through the system first, then the data and the security boundaries, and ends with the one structural decision: how the optional layers plug in.
 
-**Status:** Accepted (by default during the overnight build, for review)
+## How a question is answered
+
+```
+browser ──htmx POST /notebooks/{id}/ask──> FastAPI route (session + CSRF checked)
+  1. follow-up?  last two turns + question ──model──> standalone search question
+  2. retrieval:  FTS5 top 20  +  vector top 20 (exact cosine, numpy)  ──RRF──> top 6
+  3. evidence floor: weak best match and no exact identifier hit ──> refusal before any answer is generated
+                 (only the question has been embedded)
+  4. answer:     question + 6 delimited passages ──model, JSON schema──> statements + quotes
+  5. verify:     every quote must occur in its cited passage (normalised); failed citations removed
+  6. render:     statements with numbered citation chips, or the refusal
+```
+
+## Data
+
+SQLite in WAL mode with foreign keys on and `secure_delete` on, so deleted rows are overwritten. Every row hangs off a visitor session: session → notebook → source → chunk → vector and full-text row. Deleting any parent removes its children in one transaction; a trigger keeps the FTS5 index in step with the chunk table. Vectors are float32 blobs; search is exact (a few thousand chunks per notebook at most).
+
+## Security boundaries
+
+- Browser to app: access code, signed session cookie, CSRF token on every state-changing request, strict Content Security Policy (no inline script, no third-party origins), escaped output everywhere.
+- App to model provider: only chunk text (embeddings, once at upload) and the question with the top passages (generation). Requests ask OpenRouter for zero-data-retention endpoints and no data collection.
+- Uploaded files: type decided by content, size and page limits, PDF parsing in a separate process with a time and memory limit.
+- Logs: IDs, sizes, durations, token counts and status only. Never document text, questions or answers.
+
+## Decision record ADR-001: module layout and the plugin registration point
+
+**Status:** Proposed by Claude Code during the first build night; accepted by Remko when he reviewed and merged Stage 1 (PR #1)
 **Date:** 2026-10-05
 
 ### Context
@@ -45,26 +71,3 @@ Two layers exist: `governance` (stage 2, `FEATURE_GOVERNANCE`: the Inbound Opera
 - Turning the layer off is a configuration change; the core test suite runs with the flag off on every pull request (TC-REV-001).
 - Layer migrations only add tables or nullable columns, so a stage 1 database keeps working after stage 2 migrations (TC-REV-002).
 - The registry is a small, explicit surface. Anything a plugin needs that it does not offer becomes a visible change to `plugins.py`.
-
-## Request path for a question
-
-```
-browser ──htmx POST /notebooks/{id}/ask──> FastAPI route (session + CSRF checked)
-  1. follow-up?  last two turns + question ──model──> standalone search question
-  2. retrieval:  FTS5 top 20  +  vector top 20 (exact cosine, numpy)  ──RRF──> top 6
-  3. evidence floor: weak best match and no exact identifier hit ──> refusal, no model call
-  4. answer:     question + 6 delimited passages ──model, JSON schema──> statements + quotes
-  5. verify:     every quote must occur in its cited passage (normalised); failed citations removed
-  6. render:     statements with numbered citation chips, or the refusal
-```
-
-## Data
-
-SQLite in WAL mode with foreign keys on and `secure_delete` on, so deleted rows are overwritten. Every row hangs off a visitor session: session → notebook → source → chunk → vector and full-text row. Deleting any parent removes its children in one transaction; a trigger keeps the FTS5 index in step with the chunk table. Vectors are float32 blobs; search is exact (a few thousand chunks per notebook at most).
-
-## Security boundaries
-
-- Browser to app: access code, signed session cookie, CSRF token on every state-changing request, strict Content Security Policy (no inline script, no third-party origins), escaped output everywhere.
-- App to model provider: only chunk text (embeddings, once at upload) and the question with the top passages (generation). Requests ask OpenRouter for zero-data-retention endpoints and no data collection.
-- Uploaded files: type decided by content, size and page limits, PDF parsing in a separate process with a time and memory limit.
-- Logs: IDs, sizes, durations, token counts and status only. Never document text, questions or answers.
