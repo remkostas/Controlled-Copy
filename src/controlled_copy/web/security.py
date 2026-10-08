@@ -26,6 +26,8 @@ CSP = "; ".join(
         "frame-ancestors 'none'",
     ]
 )
+# The printable page is loaded into a hidden frame by the workspace, so this site may frame it.
+PRINT_CSP = CSP.replace("frame-ancestors 'none'", "frame-ancestors 'self'")
 
 
 def _mac(secret: bytes, purpose: str, value: str) -> str:

@@ -26,6 +26,11 @@
     <p class="refusal__head">{{ icon('ban') }} Not in the selected sources</p>
     <p>Searched {{ a.searched_sources }} selected source{{ '' if a.searched_sources == 1 else 's' }}{% if a.search_query %} for <q>{{ a.search_query }}</q>{% endif %} and found no passage that answers this{% if a.reason %}. {{ a.reason }}{% else %}.{% endif %}</p>
   </div>
+  {% elif a.kind == 'chat_cleared' %}
+  <div class="refusal" role="status">
+    <p class="refusal__head">{{ icon('info') }} Not kept</p>
+    <p>This answer arrived after New chat, so it was not kept.</p>
+  </div>
   {% elif a.kind == 'tombstone' %}
   <div class="refusal" role="status">
     <p class="refusal__head">{{ icon('trash-2') }} Answer removed</p>

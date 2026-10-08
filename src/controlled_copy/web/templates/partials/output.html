@@ -11,7 +11,7 @@
     <p class="output__actions">
       <button type="button" class="btn btn--sm" data-copy-markdown="{{ o.md_url }}">{{ icon('copy') }} Copy as Markdown</button>
       <a class="btn btn--sm btn--ghost" href="{{ o.md_url }}?download=true" download>{{ icon('file-text') }} Download .md</a>
-      <a class="btn btn--sm btn--ghost" href="{{ o.print_url }}" target="_blank" rel="noopener">{{ icon('files') }} Print</a>
+      <a class="btn btn--sm btn--ghost" href="{{ o.print_url }}" target="_blank" rel="noopener" data-print-frame>{{ icon('printer') }} Print</a>
     </p>
     {% endif %}
   </div>

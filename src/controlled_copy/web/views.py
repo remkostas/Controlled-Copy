@@ -10,7 +10,7 @@ from typing import Any
 
 from controlled_copy.answering.citations import located_label
 from controlled_copy.answering.prompts import document_label
-from controlled_copy.storage.repo import TOMBSTONE
+from controlled_copy.storage.repo import CHAT_CLEARED, TOMBSTONE
 from controlled_copy.studio.engine import core_templates
 
 KIND_LABELS = {"pdf": "PDF", "md": "Markdown", "txt": "Text", "paste": "Pasted text"}
@@ -100,6 +100,8 @@ def model_label(model: str | None, fallback: bool = False) -> str | None:
 def answer_view(answer: dict[str, Any], status: str = "ok") -> dict[str, Any]:
     if status == TOMBSTONE:
         return {"kind": "tombstone"}
+    if status == CHAT_CLEARED:
+        return {"kind": "chat_cleared"}
     citations = {int(c["n"]): c for c in answer.get("citations", [])}
     statements = [
         {"text": s["text"], "cites": _cite_views(s.get("cites", []), citations)}

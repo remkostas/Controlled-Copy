@@ -28,6 +28,14 @@ def test_tc_out_002_a_briefing_prints_with_the_stamp_and_its_quotes(visitor):
     for citation in output["citations"]:
         assert f'<li value="{citation["n"]}">' in page
         assert citation["quote"].split()[0] in page
+    # Paper has no viewer: citations are plain numbers, not buttons that open a passage.
+    assert 'class="cite cite--plain"' in page and "#viewer-slot" not in page
+    # The workspace prints this page in a hidden frame, so this site, and only it, may frame it.
+    assert "frame-ancestors 'self'" in response.headers["content-security-policy"]
+    assert response.headers["x-frame-options"] == "SAMEORIGIN"
+    workspace = visitor.client.get("/app")
+    assert "frame-ancestors 'none'" in workspace.headers["content-security-policy"]
+    assert workspace.headers["x-frame-options"] == "DENY"
 
 
 def test_tc_out_002_another_visitor_cannot_print_it(make_visitor):

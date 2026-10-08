@@ -11,6 +11,25 @@
   document.addEventListener("click", (event) => {
     if (event.target.closest("[data-print]")) window.print();
   });
+
+  // Print from the workspace without leaving it: the printable page loads in a hidden frame and
+  // opens the print dialog itself. Without the script the link opens that page in a new tab.
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest("a[data-print-frame]");
+    if (!link) return;
+    event.preventDefault();
+    let frame = document.getElementById("print-frame");
+    if (!frame) {
+      frame = document.createElement("iframe");
+      frame.id = "print-frame";
+      frame.className = "print-frame";
+      frame.title = "Print view";
+      frame.setAttribute("aria-hidden", "true");
+      frame.tabIndex = -1;
+      document.body.append(frame);
+    }
+    frame.src = link.href;
+  });
   document.addEventListener("DOMContentLoaded", () => {
     if (document.body.hasAttribute("data-autoprint")) window.setTimeout(() => window.print(), 300);
   });

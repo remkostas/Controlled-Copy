@@ -25,6 +25,8 @@ from controlled_copy.logs import log_event
 from controlled_copy.storage.db import transaction, utcnow
 
 TOMBSTONE = "source_deleted"
+# A turn whose answer arrived after New chat: nothing was stored.
+CHAT_CLEARED = "chat_cleared"
 
 
 class CapacityReached(UserFacingError):
@@ -540,7 +542,7 @@ class Repo:
         with transaction(self.conn):
             self._require_notebook(notebook_id)
             if chat_epoch is not None and self._chat_epoch(notebook_id) != chat_epoch:
-                return Stored(turn_id, TOMBSTONE)
+                return Stored(turn_id, CHAT_CLEARED)
             if not self._all_sources_exist(notebook_id, lineage):
                 # A source was deleted while the model was answering: keep no derived text.
                 question, answer, search_query, lineage, status = "", {}, None, [], TOMBSTONE

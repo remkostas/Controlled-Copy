@@ -14,7 +14,7 @@
   <div>
     <p><strong>Not applied: {{ w.label }}</strong> ({{ w.reason }})</p>
     <p class="card-warning__excerpt">“{{ w.excerpt }}”
-      <button type="button" class="cite" hx-get="/sources/{{ w.source_id }}?start={{ w.start }}&end={{ w.end }}" hx-target="#viewer-slot" hx-swap="innerHTML" title="Open {{ w.label }} · {{ w.locator }}" aria-label="Open the passage in {{ w.label }}">{{ icon('book-open') }}</button>
+      {% if not plain_cites|default(false) %}<button type="button" class="cite" hx-get="/sources/{{ w.source_id }}?start={{ w.start }}&end={{ w.end }}" hx-target="#viewer-slot" hx-swap="innerHTML" title="Open {{ w.label }} · {{ w.locator }}" aria-label="Open the passage in {{ w.label }}">{{ icon('book-open') }}</button>{% endif %}
     </p>
   </div>
 </div>
@@ -35,7 +35,7 @@
   <h3>{{ sec.title }}</h3>
   <ul class="card-items">
     {% for it in sec.entries %}
-    <li class="card-item"><span class="type type--{{ it.type or 'none' }}">{{ it.type_label or 'Item' }}</span> {{ it.text }} {{ cites(it.cites) }}</li>
+    <li class="card-item"><span class="type type--{{ it.type or 'none' }}">{{ it.type_label or 'Item' }}</span> {{ it.text }} {{ cites(it.cites, plain=plain_cites|default(false)) }}</li>
     {% endfor %}
   </ul>
 </section>
@@ -65,7 +65,7 @@
   {% for w in c.warnings if not w.reason.startswith('status unknown') %}
   <div class="card-warning" role="note">
     <p><strong>Not applied: {{ w.label }}</strong> ({{ w.reason }}) also matched this situation; nothing above is taken from it.
-      <button type="button" class="cite" hx-get="/sources/{{ w.source_id }}?start={{ w.start }}&end={{ w.end }}" hx-target="#viewer-slot" hx-swap="innerHTML" title="Open {{ w.label }} · {{ w.locator }}" aria-label="Open the passage in {{ w.label }}">{{ icon('book-open') }}</button>
+      {% if not plain_cites|default(false) %}<button type="button" class="cite" hx-get="/sources/{{ w.source_id }}?start={{ w.start }}&end={{ w.end }}" hx-target="#viewer-slot" hx-swap="innerHTML" title="Open {{ w.label }} · {{ w.locator }}" aria-label="Open the passage in {{ w.label }}">{{ icon('book-open') }}</button>{% endif %}
     </p>
     <details class="card-warning__details"><summary>What it says</summary><p class="card-warning__excerpt">“{{ w.excerpt }}”</p></details>
   </div>

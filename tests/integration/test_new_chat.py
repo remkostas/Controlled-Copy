@@ -73,8 +73,11 @@ def test_tc_fup_004_an_answer_still_running_during_new_chat_is_not_stored(visito
         return default_responder(request)
 
     fake.responder = clear_while_answering
-    assert visitor.ask("And damaged ones?").status_code == 200
+    response = visitor.ask("And damaged ones?")
+    assert response.status_code == 200
     assert chat_rows(db, visitor.notebook_id) == 0, "the old conversation must not come back"
+    # The visitor is told the chat was cleared, not that a source was deleted.
+    assert response.json()["answer"] == {"kind": "chat_cleared"}
 
     fake.responder = default_responder
     calls_before = len(fake.chat_calls)
