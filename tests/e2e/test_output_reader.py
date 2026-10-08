@@ -66,6 +66,26 @@ def test_tc_stu_008_a_citation_opens_its_passage_next_to_the_reading_view(page, 
     assert page.js_errors == []
 
 
+def test_tc_stu_008_open_straight_from_the_studio_list(page, server_url):
+    """Round 3: an output opens large without expanding it in Studio first, and stays as it was."""
+    page.set_viewport_size({"width": 1366, "height": 768})
+    briefing(page, server_url)
+    page.click("[data-reader-close]")
+    output = page.locator("#studio-outputs details.output").first
+    output.locator("summary").click()  # close it in the list
+    assert not output.evaluate("el => el.open")
+    quick = page.locator("#studio-outputs .output__quick-open").first
+    assert quick.get_attribute("aria-label") == "Open Briefing large over the chat"
+    quick.click()
+    reader = page.locator("#output-reader")
+    reader.wait_for()
+    assert reader.locator(".output__section").count() >= 1
+    page.click("[data-reader-close]")
+    assert not output.evaluate("el => el.open"), "closed in the list, as before"
+    assert page.evaluate("() => document.activeElement.classList.contains('output__quick-open')")
+    assert page.js_errors == []
+
+
 def test_tc_stu_008_no_automatic_reading_view_on_a_phone(page, server_url):
     page.set_viewport_size({"width": 390, "height": 844})
     login(page, server_url)

@@ -471,8 +471,8 @@ select {
   font-weight: 500;
 }
 .nb-switch select {
-  min-width: 0;
-  max-width: min(20rem, 100%);
+  width: 12rem;
+  max-width: 100%;
   height: 2rem;
   padding: 0 var(--sp-6) 0 var(--sp-3);
   border: 1px solid var(--border-chrome);
@@ -569,30 +569,42 @@ select {
 
 /* Workspace grid */
 .workspace {
+  --left: var(--col-sources);
+  --right: var(--col-studio);
   display: grid;
-  grid-template-columns: var(--col-sources) minmax(0, 1fr) var(--col-studio);
+  grid-template-columns: var(--left) minmax(0, 1fr) var(--right);
   height: calc(100dvh - var(--topbar-h));
   transition: grid-template-columns var(--dur) var(--ease-out);
 }
 .workspace.is-reading {
-  grid-template-columns: var(--col-reader) minmax(0, 1fr) var(--col-studio);
+  --left: var(--col-reader);
 }
-/* Collapsed Sources panel (wide layouts only; the script never sets it on the tab layout). */
+/* Collapsed Sources or Studio panel (wide layouts only; the script never sets them on the tab
+   layout). */
 .workspace.sources-collapsed {
-  grid-template-columns: var(--col-rail) minmax(0, 1fr) var(--col-studio);
+  --left: var(--col-rail);
+}
+.workspace.studio-collapsed {
+  --right: var(--col-rail);
 }
 .sources-collapsed .panel--sources .panel__body,
 .sources-collapsed .panel--sources .resizer,
 .sources-collapsed #sources-title,
 .sources-collapsed #source-count,
+.studio-collapsed .panel--studio .panel__body,
+.studio-collapsed .panel--studio .resizer,
+.studio-collapsed #studio-title,
 .panel__toggle .panel__toggle-open,
-.sources-collapsed .panel__toggle .panel__toggle-close {
+.sources-collapsed .panel--sources .panel__toggle-close,
+.studio-collapsed .panel--studio .panel__toggle-close {
   display: none;
 }
-.sources-collapsed .panel__toggle .panel__toggle-open {
+.sources-collapsed .panel--sources .panel__toggle-open,
+.studio-collapsed .panel--studio .panel__toggle-open {
   display: inline;
 }
-.sources-collapsed .panel--sources .panel__head {
+.sources-collapsed .panel--sources .panel__head,
+.studio-collapsed .panel--studio .panel__head {
   justify-content: center;
   padding: 0;
 }
@@ -1094,6 +1106,7 @@ details.paste > summary.btn {
   padding-bottom: var(--sp-2);
 }
 .chat-intro h1 {
+  overflow-wrap: anywhere;
   font-size: var(--fs-2xl);
 }
 .chat-intro p {
@@ -1348,6 +1361,21 @@ details.paste > summary.btn {
 .studio-outputs {
   display: grid;
   gap: var(--sp-3);
+}
+.studio-outputs > * {
+  min-width: 0;
+}
+/* "Open" on every output, also while it is closed in the list. */
+.output-item {
+  position: relative;
+}
+.output-item > .output > summary {
+  padding-right: 3rem;
+}
+.output__quick-open {
+  position: absolute;
+  top: var(--sp-2);
+  right: var(--sp-2);
 }
 .studio-outputs__title {
   font-size: var(--fs-xs);
@@ -1896,6 +1924,7 @@ details.paste > summary.btn {
 }
 .applicability th,
 .applicability td {
+  overflow-wrap: anywhere;
   padding: var(--sp-1) var(--sp-2);
   border-bottom: 1px solid var(--rule-paper);
   text-align: left;

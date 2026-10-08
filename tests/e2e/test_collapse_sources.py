@@ -1,4 +1,5 @@
-"""FR-UI-12: the Sources panel can be collapsed for more room, as in NotebookLM (stage 1)."""
+"""FR-UI-12: the Sources and Studio panels can be collapsed for more room, as in NotebookLM
+(stage 1)."""
 
 import pytest
 
@@ -82,4 +83,35 @@ def test_tc_ui_012_expanding_after_widening_studio_leaves_the_chat_room(page, se
     page.dblclick("[data-resize='sources']")
     page.wait_for_timeout(100)
     assert width(page, ".panel--chat") >= CHAT_MIN - 2, width(page, ".panel--chat")
+    assert page.js_errors == []
+
+
+def test_tc_ui_012_studio_collapses_too_and_is_kept(page, server_url):
+    page.set_viewport_size({"width": 1366, "height": 768})
+    login(page, server_url)
+    chat = width(page, ".panel--chat")
+    studio = page.locator("[data-collapse='studio']")
+    assert studio.get_attribute("aria-label") == "Hide Studio"
+    studio.click()
+    page.wait_for_function(
+        "() => document.querySelector('.panel--studio').getBoundingClientRect().width < 60"
+    )
+    assert width(page, ".panel--chat") > chat + 200, "the chat gains the room"
+    assert studio.get_attribute("aria-label") == "Show Studio"
+    assert not page.locator(".studio-actions").is_visible()
+    page.reload()
+    assert width(page, ".panel--studio") < 60, "kept after a reload"
+    toggle(page).click()  # both collapsed: the chat takes the window
+    page.wait_for_function(
+        "() => document.querySelector('.panel--sources').getBoundingClientRect().width < 60"
+    )
+    assert width(page, ".panel--chat") > 1366 - 2 * 60 - 4
+    page.locator("[data-collapse='studio']").click()
+    page.wait_for_function(
+        "() => document.querySelector('.panel--studio').getBoundingClientRect().width > 200"
+    )
+    assert page.locator(".studio-actions").is_visible()
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.click(".mobile-tabs [data-tab='studio']")
+    assert not page.locator("[data-collapse='studio']").is_visible(), "no collapse in the tab layout"
     assert page.js_errors == []

@@ -54,3 +54,23 @@ def test_tc_ui_001_a_situation_without_spaces_does_not_widen_studio(page, server
     page.click("[data-reader-close]")
     assert page.locator(".panel--studio .panel__body").evaluate(sideways) <= 1
     assert page.js_errors == []
+
+
+def test_tc_ui_001_an_open_card_stays_inside_a_narrow_studio(page, server_url):
+    """Round 3: the applicability table's IDs made an open card about 317 px wide, so it grew to the
+    right at the default width and overflowed at Studio's minimum."""
+    from tests.e2e.test_resize_panels import drag
+
+    page.set_viewport_size({"width": 1652, "height": 900})
+    login(page, server_url)
+    page.select_option("#nb-select", label="Inbound Operations")
+    page.wait_for_selector("h1:has-text('Inbound Operations')")
+    drag(page, "[data-resize='studio']", 900)  # Studio at its minimum
+    card = build_card(page, "Short delivery")  # closed in the reading view, open in Studio
+    assert card.evaluate("el => el.open")
+    body = page.locator(".panel--studio .panel__body")
+    assert body.evaluate("el => el.scrollWidth - el.clientWidth") <= 1
+    panel = page.locator(".panel--studio").bounding_box()
+    box = card.bounding_box()
+    assert box["x"] + box["width"] <= panel["x"] + panel["width"] + 1
+    assert page.js_errors == []

@@ -22,6 +22,15 @@ def test_tc_nb_001_create_a_blank_notebook(visitor):
     assert visitor.notebook_id == notebook_id
 
 
+def test_tc_nb_001_a_notebook_title_has_at_most_60_characters(visitor):
+    """Round 3: a 120-character name broke the chat heading and changed the menu's width."""
+    ok = visitor.client.post("/notebooks", data={"title": "n" * 60}, headers=visitor.json_headers())
+    assert ok.status_code == 201
+    too_long = visitor.client.post("/notebooks", data={"title": "n" * 61}, headers=visitor.json_headers())
+    assert too_long.status_code == 422
+    assert 'maxlength="60"' in visitor.refresh(ok.json()["notebook_id"]).page
+
+
 def test_tc_nb_002_at_most_five_notebooks(visitor, db):
     for i in range(4):  # the first notebook was created on the first visit
         assert (
