@@ -66,7 +66,7 @@ Expected results are written as observable outcomes. "Fake" means the fake model
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | FR-IDX-01 | Markdown chunked by sections with offsets | TC-IDX-001 | unit | Markdown with nested headings and one long section | Chunks keep heading path; long section split; offsets map back to the exact text |
 | FR-IDX-02 | PDF chunked by page | TC-IDX-002 | unit | 3-page PDF | Every chunk carries its page; offsets valid |
-| FR-IDX-03 | Embeddings via OpenRouter with privacy flags | TC-IDX-003 | unit | Embedding request built by the adapter | Model `baai/bge-m3`, `provider.zdr: true`, `data_collection: "deny"`, batched input |
+| FR-IDX-03 | Embeddings via OpenRouter with privacy flags; rate limits ridden out | TC-IDX-003 | unit, integration | Embedding request built by the adapter; HTTP 429 bursts, Retry-After, a provider that stays busy, a used-up upload time budget | Model `baai/bge-m3`, `provider.zdr: true`, `data_collection: "deny"`, batched input; up to five attempts with growing waits (Retry-After honoured, capped at 15 s), each reserved at its worst case; a busy failure says "busy, nothing was stored, try again"; no batch starts after the budget |
 | FR-IDX-04 | Every chunk has one vector and one index row | TC-IDX-004 | integration | Ingest the demo corpus with fake embeddings | Counts equal |
 
 ### Retrieval (stage 1)

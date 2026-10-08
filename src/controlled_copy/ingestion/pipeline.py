@@ -24,7 +24,7 @@ from controlled_copy.ingestion.pdf import extract_pdf
 from controlled_copy.ingestion.validate import IngestError, decode_text, detect_kind
 from controlled_copy.limits import worst_case_usd
 from controlled_copy.logs import log_event
-from controlled_copy.providers.base import EMBED_ATTEMPTS, ProviderError, call_with_deadline
+from controlled_copy.providers.base import EMBED_ATTEMPTS, ProviderError, ProviderTimeout, call_with_deadline
 from controlled_copy.services import Services
 from controlled_copy.storage.repo import (
     NewSource,
@@ -128,12 +128,16 @@ def embed_texts(services: Services, texts: list[str], kind: str = "embed") -> li
     reserves = [one * EMBED_ATTEMPTS for one in per_request]
     services.budget.check(services.session_id, calls=len(batches), reserve_usd=sum(reserves))
     vectors: list[list[float]] = []
+    deadline = time.monotonic() + settings.upload_embedding_budget_seconds
     for part, reserve, one in zip(batches, reserves, per_request, strict=True):
+        remaining = deadline - time.monotonic()
+        if remaining <= 1:
+            raise ProviderTimeout("the upload's embedding time budget is used up")
         call_id = services.budget.consume(services.session_id, kind, reserve_usd=reserve)
         try:
             result = call_with_deadline(
                 lambda part=part: services.provider.embed(part, model=settings.model_embedding),
-                settings.provider_timeout_seconds,
+                min(settings.provider_timeout_seconds, remaining),
             )
         except ProviderError as exc:
             services.budget.settle(call_id, exc.cost_usd)  # no reported cost: the reservation stays
