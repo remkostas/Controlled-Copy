@@ -32,6 +32,8 @@ Set at least these values in `.env`:
 | `PUBLISH_ADDRESS` | `0.0.0.0` |
 | `FEATURE_GOVERNANCE` | `true` for the governed-documents layer (Stage 2) |
 | `FEATURE_MODEL_PICKER` | `true` for the model picker (Stage 3; ignored before that layer is merged) |
+| `OPERATOR_NAME`, `OPERATOR_EMAIL` | Who runs the deployment; shown as the controller on `/privacy` |
+| `IMPRESSUM_URL` | An https link to the operator's Impressum (legal notice); linked from every page |
 
 Compose runs the app in deploy mode unless `.env` sets `APP_MODE` (leave it out on a server). In deploy mode the app refuses to start without an access code of at least 12 characters and a secret key of at least 32, with debug on, or with the fake model provider.
 
