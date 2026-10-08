@@ -239,6 +239,11 @@
         $$("#doc-control input, #doc-control select").forEach((field) => (field.value = ""));
       }
     }
+    // The first answer makes a chat to start over from: show New chat without a reload.
+    if (target.id === "pending-turn" && event.detail.xhr && event.detail.xhr.status < 300) {
+      const newChat = $("#new-chat");
+      if (newChat) newChat.hidden = false;
+    }
     if (target.id === "toast") {
       window.setTimeout(() => target.replaceChildren(), 8000);
     }

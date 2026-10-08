@@ -183,6 +183,14 @@ CORE_MIGRATIONS: list[Migration] = [
         ALTER TABLE model_call ADD COLUMN cost_usd REAL NOT NULL DEFAULT 0;
         """,
     ),
+    # New chat raises the notebook's chat generation; an answer started before it is not
+    # stored afterwards (pre-delivery audit PDA-03). Additive: a column with a default.
+    Migration(
+        "0004_chat_epoch",
+        """
+        ALTER TABLE notebook ADD COLUMN chat_epoch INTEGER NOT NULL DEFAULT 0;
+        """,
+    ),
 ]
 
 
