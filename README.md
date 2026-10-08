@@ -74,6 +74,6 @@ Docker Compose with Caddy: [deployment](docs/deployment.md). Browser tests need 
 
 ## More
 
-[How it was built](docs/how-it-was-built.md) · [decisions](docs/decisions.md) · [security](SECURITY.md)
+**Read in this order:** [how it was built](docs/how-it-was-built.md) (the approach, one page), then the [design notes](docs/design-notes.md) (ten questions on scope, data and limits). The rest is reference: [decisions](docs/decisions.md), [architecture](docs/architecture.md), [deployment](docs/deployment.md), [testing](docs/testing.md), [evaluation](eval/README.md), [security](SECURITY.md).
 
 Synthetic demo data only; please do not upload personal documents. [Privacy notice](https://controlled-copy.remkostas.com/privacy). Sessions are deleted at log out or seven days after the last visit. Credits: [htmx](https://htmx.org) (0BSD), [IBM Plex](https://github.com/IBM/plex) (OFL 1.1), [Lucide](https://lucide.dev) (ISC); NIST AI 100-1 is downloaded for the evaluation, not redistributed. MIT License.
