@@ -338,6 +338,16 @@
     }
   }
 
+  // Apply width changes without the column animation. The browser must compute the new
+  // widths while "is-resizing" is still set; otherwise a style update after the class is
+  // removed animates the change anyway (seen as a half-applied arrow-key step in CI).
+  function withoutAnimation(ws, change) {
+    ws.classList.add("is-resizing");
+    change();
+    void ws.offsetWidth; // flush styles now, with the animation off
+    window.requestAnimationFrame(() => ws.classList.remove("is-resizing"));
+  }
+
   // The width a panel is heading to: the set value, not the animated one mid-transition.
   function targetWidth(ws, side) {
     const set = parseFloat(ws.style.getPropertyValue(widthVar(ws, side)));
@@ -348,15 +358,15 @@
     const ws = workspace();
     if (!ws || !wideLayout()) return;
     const widths = storedWidths();
-    ws.classList.add("is-resizing"); // apply without animating from the default widths
-    for (const name of ["--col-sources", "--col-reader", "--col-studio"]) {
-      if (typeof widths[name] === "number") ws.style.setProperty(name, `${widths[name]}px`);
-    }
-    // Re-clamp for this window size without overwriting what was stored.
-    for (const side of ["sources", "studio"]) {
-      if (sidePanel(ws, side)) setSideWidth(ws, side, targetWidth(ws, side), false);
-    }
-    window.requestAnimationFrame(() => ws.classList.remove("is-resizing"));
+    withoutAnimation(ws, () => {
+      for (const name of ["--col-sources", "--col-reader", "--col-studio"]) {
+        if (typeof widths[name] === "number") ws.style.setProperty(name, `${widths[name]}px`);
+      }
+      // Re-clamp for this window size without overwriting what was stored.
+      for (const side of ["sources", "studio"]) {
+        if (sidePanel(ws, side)) setSideWidth(ws, side, targetWidth(ws, side), false);
+      }
+    });
   }
 
   document.addEventListener("pointerdown", (event) => {
@@ -390,9 +400,7 @@
     const side = handle.dataset.resize;
     // The arrow moves the edge: right widens Sources, left widens Studio.
     const grow = (event.key === "ArrowRight") === (side === "sources") ? KEY_STEP : -KEY_STEP;
-    ws.classList.add("is-resizing");
-    setSideWidth(ws, side, targetWidth(ws, side) + grow, true);
-    window.requestAnimationFrame(() => ws.classList.remove("is-resizing"));
+    withoutAnimation(ws, () => setSideWidth(ws, side, targetWidth(ws, side) + grow, true));
   });
 
   document.addEventListener("dblclick", (event) => {

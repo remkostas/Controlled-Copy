@@ -61,6 +61,26 @@ def test_tc_ui_008_arrow_keys_resize_the_studio_panel(page, server_url):
     assert page.js_errors == []
 
 
+def test_tc_ui_008_a_key_step_applies_at_once_without_animating(page, server_url):
+    """The new width must be computed while the animation is off. Otherwise the step starts a
+    transition, and a read in the next frame still sees the old width (a flaky CI failure)."""
+    page.set_viewport_size({"width": 1366, "height": 768})
+    login(page, server_url)
+    before, after = page.evaluate(
+        """async () => {
+            const handle = document.querySelector("[data-resize='studio']");
+            const panel = document.querySelector(".panel--studio");
+            const before = panel.getBoundingClientRect().width;
+            handle.focus();
+            handle.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+            return [before, panel.getBoundingClientRect().width];
+        }"""
+    )
+    assert after == pytest.approx(before + 24, abs=2)
+    assert page.js_errors == []
+
+
 @pytest.mark.parametrize("viewport_width", [1000, 1366])
 def test_tc_ui_008_reading_a_source_leaves_the_chat_room(page, server_url, long_source, viewport_width):  # noqa: F811
     page.set_viewport_size({"width": viewport_width, "height": 768})
