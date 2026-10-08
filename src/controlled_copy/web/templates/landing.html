@@ -21,7 +21,10 @@
     <form class="access" method="post" action="/access">
       <div class="field">
         <label for="access-code">Access code</label>
-        <input class="input" id="access-code" name="code" type="password" autocomplete="off" required maxlength="200">
+        <div class="field__reveal">
+          <input class="input" id="access-code" name="code" type="password" autocomplete="off" required maxlength="200">
+          <button type="button" class="btn btn--ghost btn--sm" data-reveal="access-code" aria-controls="access-code" aria-pressed="false" hidden>Show</button>
+        </div>
       </div>
       <button class="btn btn--primary" type="submit">Open the workspace</button>
     </form>

@@ -104,6 +104,9 @@ class Settings(BaseSettings):
     # 0 would silently switch refusals off and 1 would refuse everything.
     evidence_floor: float = Field(default=0.52, gt=0, lt=1)
     embedding_batch_size: int = Field(default=64, gt=0)
+    # The whole embedding step of one upload, retries included; past it the upload fails with
+    # "busy, try again" instead of keeping the visitor waiting.
+    upload_embedding_budget_seconds: float = Field(default=90.0, gt=0)
 
     video_mp4: str | None = None
     video_vtt: str | None = None

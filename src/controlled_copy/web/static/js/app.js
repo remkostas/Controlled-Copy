@@ -37,6 +37,22 @@
     }
   }
 
+  // Show or hide a typed access code. The button only appears when this script runs.
+  document.addEventListener("click", (event) => {
+    const toggle = event.target.closest("[data-reveal]");
+    if (!toggle) return;
+    const field = document.getElementById(toggle.dataset.reveal);
+    if (!field) return;
+    const show = field.type === "password";
+    field.type = show ? "text" : "password";
+    toggle.textContent = show ? "Hide" : "Show";
+    toggle.setAttribute("aria-pressed", String(show));
+    field.focus();
+  });
+  document.addEventListener("DOMContentLoaded", () => {
+    $$("[data-reveal]").forEach((toggle) => (toggle.hidden = false));
+  });
+
   // Disclosure buttons (paste form, new notebook).
   document.addEventListener("click", (event) => {
     const toggle = event.target.closest("[data-toggle]");
@@ -112,15 +128,34 @@
   function openViewer() {
     const ws = workspace();
     const browser = $("#source-browser");
+    const widening = Boolean(ws) && !ws.classList.contains("is-reading");
     if (ws) ws.classList.add("is-reading");
     if (browser) browser.hidden = true;
     showTab("sources");
     const cited = $("#cited");
     const panelBody = $("#sources-panel .panel__body");
-    if (cited) {
-      cited.scrollIntoView({ block: "center" });
-    } else if (panelBody) {
-      panelBody.scrollTop = 0;
+    if (!cited) {
+      if (panelBody) panelBody.scrollTop = 0;
+      return;
+    }
+    const center = () => cited.scrollIntoView({ block: "center" });
+    center();
+    // The reading column widens with an animation and the text reflows while it does, which
+    // moves the passage: centre it again once the column has its final width.
+    if (widening) {
+      let done = false;
+      const settle = () => {
+        if (done) return;
+        done = true;
+        ws.removeEventListener("transitionend", onEnd);
+        center();
+      };
+      // Only the column animation counts: transitions of children (a hover colour) bubble here too.
+      const onEnd = (event) => {
+        if (event.target === ws && event.propertyName === "grid-template-columns") settle();
+      };
+      ws.addEventListener("transitionend", onEnd);
+      setTimeout(settle, 400);
     }
   }
 
@@ -220,6 +255,11 @@
         $$("#doc-control input, #doc-control select").forEach((field) => (field.value = ""));
       }
     }
+    // The first answer makes a chat to start over from: show New chat without a reload.
+    if (target.id === "pending-turn" && event.detail.xhr && event.detail.xhr.status < 300) {
+      const newChat = $("#new-chat");
+      if (newChat) newChat.hidden = false;
+    }
     if (target.id === "toast") {
       window.setTimeout(() => target.replaceChildren(), 8000);
     }
@@ -243,7 +283,127 @@
     }
   });
 
+  // Resizable side panels on wide layouts: drag the inner edge of Sources or Studio, or focus
+  // it and use the arrow keys; double-click resets. The chat always keeps CHAT_MIN pixels.
+  // Widths are a per-browser convenience, so storage failures are ignored.
+  const WIDTHS_KEY = "cc-panel-widths";
+  const SIDE_MIN = 224;
+  const CHAT_MIN = 352;
+  const KEY_STEP = 24;
+
+  function storedWidths() {
+    try {
+      return JSON.parse(window.localStorage.getItem(WIDTHS_KEY)) || {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function storeWidth(name, width) {
+    try {
+      const widths = storedWidths();
+      if (width === null) delete widths[name];
+      else widths[name] = width;
+      window.localStorage.setItem(WIDTHS_KEY, JSON.stringify(widths));
+    } catch (error) {
+      // Private window or blocked storage: the width still applies to this page.
+    }
+  }
+
+  const wideLayout = () => !window.matchMedia("(max-width: 900px)").matches;
+  const sidePanel = (ws, side) => $(side === "studio" ? ".panel--studio" : ".panel--sources", ws);
+  const widthVar = (ws, side) =>
+    side === "studio" ? "--col-studio" : ws.classList.contains("is-reading") ? "--col-reader" : "--col-sources";
+
+  function setSideWidth(ws, side, wanted, remember) {
+    const other = sidePanel(ws, side === "studio" ? "sources" : "studio");
+    const max = Math.max(SIDE_MIN, ws.clientWidth - (other ? other.offsetWidth : 0) - CHAT_MIN);
+    const width = Math.round(Math.min(Math.max(wanted, SIDE_MIN), max));
+    const name = widthVar(ws, side);
+    ws.style.setProperty(name, `${width}px`);
+    if (remember) storeWidth(name, width);
+    const handle = $(`[data-resize='${side}']`, ws);
+    if (handle) {
+      handle.setAttribute("aria-valuemin", String(SIDE_MIN));
+      handle.setAttribute("aria-valuemax", String(max));
+      handle.setAttribute("aria-valuenow", String(width));
+    }
+  }
+
+  // The width a panel is heading to: the set value, not the animated one mid-transition.
+  function targetWidth(ws, side) {
+    const set = parseFloat(ws.style.getPropertyValue(widthVar(ws, side)));
+    return Number.isFinite(set) ? set : sidePanel(ws, side).offsetWidth;
+  }
+
+  function applyStoredWidths() {
+    const ws = workspace();
+    if (!ws || !wideLayout()) return;
+    const widths = storedWidths();
+    ws.classList.add("is-resizing"); // apply without animating from the default widths
+    for (const name of ["--col-sources", "--col-reader", "--col-studio"]) {
+      if (typeof widths[name] === "number") ws.style.setProperty(name, `${widths[name]}px`);
+    }
+    // Re-clamp for this window size without overwriting what was stored.
+    for (const side of ["sources", "studio"]) {
+      if (sidePanel(ws, side)) setSideWidth(ws, side, targetWidth(ws, side), false);
+    }
+    window.requestAnimationFrame(() => ws.classList.remove("is-resizing"));
+  }
+
+  document.addEventListener("pointerdown", (event) => {
+    const handle = event.target.closest("[data-resize]");
+    const ws = workspace();
+    if (!handle || !ws || !wideLayout()) return;
+    event.preventDefault();
+    const side = handle.dataset.resize;
+    handle.setPointerCapture(event.pointerId);
+    ws.classList.add("is-resizing");
+    const move = (e) => {
+      const box = ws.getBoundingClientRect();
+      setSideWidth(ws, side, side === "studio" ? box.right - e.clientX : e.clientX - box.left, true);
+    };
+    const stop = () => {
+      ws.classList.remove("is-resizing");
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", stop);
+      handle.removeEventListener("pointercancel", stop);
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", stop);
+    handle.addEventListener("pointercancel", stop);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const handle = event.target.closest && event.target.closest("[data-resize]");
+    const ws = workspace();
+    if (!handle || !ws || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    event.preventDefault();
+    const side = handle.dataset.resize;
+    // The arrow moves the edge: right widens Sources, left widens Studio.
+    const grow = (event.key === "ArrowRight") === (side === "sources") ? KEY_STEP : -KEY_STEP;
+    ws.classList.add("is-resizing");
+    setSideWidth(ws, side, targetWidth(ws, side) + grow, true);
+    window.requestAnimationFrame(() => ws.classList.remove("is-resizing"));
+  });
+
+  document.addEventListener("dblclick", (event) => {
+    const handle = event.target.closest("[data-resize]");
+    const ws = workspace();
+    if (!handle || !ws) return;
+    const name = widthVar(ws, handle.dataset.resize);
+    ws.style.removeProperty(name);
+    storeWidth(name, null);
+  });
+
+  let resizeTimer = 0;
+  window.addEventListener("resize", () => {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(applyStoredWidths, 150);
+  });
+
   document.addEventListener("DOMContentLoaded", () => {
+    applyStoredWidths();
     updateSelectionCount();
     const box = $("#question");
     if (box) updateCounter(box);
