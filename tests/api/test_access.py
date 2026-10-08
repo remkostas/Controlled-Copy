@@ -11,7 +11,7 @@ from tests.conftest import ACCESS_CODE
 
 pytestmark = [pytest.mark.api, pytest.mark.stage1]
 
-PUBLIC = {"/", "/access", "/video", "/healthz"}
+PUBLIC = {"/", "/access", "/video", "/privacy", "/healthz"}
 
 
 def test_tc_acc_001_landing_and_video_pages_are_public(app):

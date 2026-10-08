@@ -256,6 +256,12 @@ def video(request: Request, settings: SettingsDep) -> Response:
     return render(request, "video.html", {"video": data})
 
 
+@router.get("/privacy", response_class=HTMLResponse)
+def privacy(request: Request, settings: SettingsDep) -> Response:
+    """The privacy notice. Public like the start page: it must be readable before logging in."""
+    return render(request, "privacy.html", {"retention_days": settings.retention_days})
+
+
 @router.get("/healthz")
 def healthz(settings: SettingsDep) -> Response:
     """Liveness for the container health check: the process answers and the database opens."""

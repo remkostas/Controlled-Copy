@@ -112,6 +112,12 @@ class Settings(BaseSettings):
     video_vtt: str | None = None
     video_date: str | None = None
 
+    # Who runs this deployment, for the privacy notice at /privacy, and where its Impressum
+    # (legal notice) is. Set them in the deployment's .env; they stay out of the repository.
+    operator_name: str | None = None
+    operator_email: str | None = None
+    impressum_url: str | None = None
+
     @property
     def retention_days(self) -> int:
         return self.retention_hours // 24
@@ -164,6 +170,13 @@ class Settings(BaseSettings):
                 problems.append("MODEL_CHOICES must include MODEL_GENERATION (the default choice)")
             if any(not re.fullmatch(r"[a-z0-9._-]+/[a-z0-9._:-]+", m) for m in choices):
                 problems.append("MODEL_CHOICES entries must be OpenRouter model IDs (vendor/model)")
+        if self.impressum_url:
+            link = urlsplit(self.impressum_url)
+            if link.scheme != "https" or not link.hostname or any(c.isspace() for c in self.impressum_url):
+                problems.append("IMPRESSUM_URL must be an https address")
+        email = self.operator_email
+        if email and not re.fullmatch(r"[^@\s<>\"]+@[^@\s<>\"]+\.[A-Za-z]{2,}", email):
+            problems.append("OPERATOR_EMAIL must be an e-mail address")
         if self.app_mode is AppMode.DEPLOY:
             if len(secret) < 32:
                 problems.append("APP_SECRET_KEY must be set and at least 32 characters in deploy mode")

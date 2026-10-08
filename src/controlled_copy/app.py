@@ -194,6 +194,11 @@ def create_app(
         extra_dirs=registry.template_dirs,
         product_name=settings.product_name,
         tagline=settings.product_tagline,
+        legal={
+            "name": settings.operator_name,
+            "email": settings.operator_email,
+            "impressum_url": settings.impressum_url,
+        },
     )
     app.state.templates = Jinja2Templates(env=env)
 
