@@ -462,6 +462,13 @@ select {
   gap: var(--sp-2);
   min-width: 0;
 }
+/* The top bar's menus use the same type as its buttons, so a notebook name and a button
+   label read as one bar. */
+.nb-switch select,
+.model-select select {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
 .nb-switch select {
   max-width: 20rem;
   height: 2rem;
