@@ -28,7 +28,7 @@ SQLite in WAL mode with foreign keys on and `secure_delete` on, so deleted rows 
 
 ## Decision record ADR-001: module layout and the plugin registration point
 
-**Status:** Proposed by Claude Code during the first build night; accepted by Remko when he reviewed and merged Stage 1 (PR #1)
+**Status:** Proposed by Claude Code during the first build night; accepted by Remko when he reviewed and merged Stage 1
 **Date:** 2026-10-05
 
 ### Context

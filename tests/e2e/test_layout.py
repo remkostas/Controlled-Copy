@@ -159,3 +159,17 @@ def test_tc_ui_001_a_long_unbroken_question_does_not_widen_the_chat(page, server
     )
     assert log[0] <= log[1] + 1, f"the chat scrolls sideways: {log}"
     assert page.js_errors == []
+
+
+def test_tc_ans_008_the_source_name_stays_in_view_with_the_passage(page, server_url, long_source):
+    """Comparison review: centring the passage scrolled the source's name under the sticky bar."""
+    from tests.e2e.test_journey_a import login
+
+    page.set_viewport_size({"width": 1366, "height": 768})
+    login(page, server_url)
+    cite_target(page, long_source)
+    bar = page.locator(".viewer__bar").bounding_box()
+    title = page.locator("#viewer-title").bounding_box()
+    assert bar["y"] <= title["y"] and title["y"] + title["height"] <= bar["y"] + bar["height"]
+    assert page.locator("#viewer-title").inner_text() == "long-guide"
+    assert page.js_errors == []
