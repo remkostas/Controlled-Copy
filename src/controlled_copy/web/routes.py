@@ -58,6 +58,7 @@ from controlled_copy.web.segments import build_segments
 router = APIRouter()
 
 DEFAULT_NOTEBOOK_TITLE = "Untitled notebook"
+NOTEBOOK_TITLE_CHARS = 60  # a longer name does not fit the notebook menu or the chat heading
 EMBEDDING_UNAVAILABLE = "Indexing failed because the embedding provider is not available. Please try again."
 EMBEDDING_BUSY = (
     "The embedding service is busy right now and did not answer in time, even after retrying. "
@@ -113,6 +114,7 @@ def limits_view(settings: Settings) -> dict[str, Any]:
         "max_file_mb": settings.max_file_mb,
         "max_pdf_pages": settings.max_pdf_pages,
         "question_chars": settings.max_question_chars,
+        "notebook_title_chars": NOTEBOOK_TITLE_CHARS,
         "situation_chars": settings.max_situation_chars,
     }
 
@@ -314,7 +316,7 @@ def continue_to_workspace(request: Request, services: WriteDep) -> Response:
 
 @router.post("/notebooks")
 def create_notebook(
-    request: Request, services: WriteDep, title: Annotated[str, Form(max_length=120)] = ""
+    request: Request, services: WriteDep, title: Annotated[str, Form(max_length=NOTEBOOK_TITLE_CHARS)] = ""
 ) -> Response:
     cleaned = " ".join(title.split()) or DEFAULT_NOTEBOOK_TITLE
     try:

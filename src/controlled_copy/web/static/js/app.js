@@ -157,7 +157,7 @@
     const browser = $("#source-browser");
     const widening = Boolean(ws) && !ws.classList.contains("is-reading");
     // A citation shows its source even when the panel is collapsed (the stored choice stays).
-    if (ws && ws.classList.contains("sources-collapsed")) setSourcesCollapsed(ws, false, false);
+    if (ws && ws.classList.contains("sources-collapsed")) setCollapsed(ws, "sources", false, false);
     if (ws) {
       withoutAnimation(ws, () => {
         ws.classList.add("is-reading");
@@ -364,6 +364,7 @@
   // passage in Sources next to it. Close or Escape return to the chat.
   let readerOpener = null;
   let readerReturn = null;
+  let readerWasOpen = false;
 
   function openReader(output) {
     const reader = $("#output-reader");
@@ -386,6 +387,7 @@
     // goes back to where the visitor was when it closes.
     readerOpener = document.activeElement !== document.body ? document.activeElement : null;
     readerReturn = output;
+    readerWasOpen = output.open;
     $$("#studio-outputs details.output").forEach((item) => {
       item.open = false;
       if (item === output) item.setAttribute("aria-current", "true");
@@ -404,24 +406,27 @@
     reader.hidden = true;
     $(".reader__body", reader).replaceChildren();
     $$(".panel--chat > :not(.reader)").forEach((el) => (el.inert = false));
-    // Studio shows the output that was read, open, with its buttons. On a phone the visitor came
-    // from the Studio tab (Open is only there), so closing goes back to it.
+    // Studio shows the output that was read as it was before (open after a new output or Open
+    // inside it, closed after the list's own Open button). On a phone the visitor came from the
+    // Studio tab, so closing goes back to it.
     $$("#studio-outputs details.output[aria-current]").forEach((item) => item.removeAttribute("aria-current"));
     if (readerReturn && readerReturn.isConnected) {
-      readerReturn.open = true;
+      readerReturn.open = readerWasOpen;
       if (!wideLayout()) showTab("studio");
     }
-    // Back to the button that opened it, else to the output in Studio.
+    // Back to the button that opened it, else to the output in Studio, else to the question.
     const usable = (el) => el && el.isConnected && el.offsetParent !== null;
     const summary = readerReturn && $("summary", readerReturn);
-    const target = usable(readerOpener) ? readerOpener : usable(summary) ? summary : null;
+    const question = $("#question");
+    const target = [readerOpener, summary, question].find(usable);
     if (target) target.focus();
   }
 
   document.addEventListener("click", (event) => {
     const open = event.target.closest("[data-read-output]");
     if (open) {
-      openReader(open.closest("details.output"));
+      const item = open.closest(".output-item");
+      openReader(open.closest("details.output") || (item && $("details.output", item)));
       return;
     }
     if (event.target.closest("[data-reader-close]")) closeReader();
@@ -536,7 +541,7 @@
       left = Math.max(SIDE_MIN, room - right);
       ws.style.setProperty(widthVar(ws, "sources"), `${Math.round(left)}px`);
     }
-    if (left + right > room) {
+    if (left + right > room && !ws.classList.contains("studio-collapsed")) {
       right = Math.max(SIDE_MIN, room - left);
       ws.style.setProperty("--col-studio", `${Math.round(right)}px`);
     }
@@ -591,30 +596,31 @@
     });
   });
 
-  // Collapsible Sources panel on wide layouts, as in NotebookLM: more room for the chat and
-  // Studio once the sources are picked. The choice is kept per browser.
-  const COLLAPSE_KEY = "cc-sources-collapsed";
+  // Collapsible Sources and Studio panels on wide layouts, as in NotebookLM: more room for the
+  // chat, or for a Studio output next to a passage. Each choice is kept per browser.
+  const COLLAPSE_LABELS = { sources: "sources", studio: "Studio" };
+  const collapseKey = (side) => `cc-${side}-collapsed`;
 
-  function storedCollapsed() {
+  function storedCollapsed(side) {
     try {
-      return window.localStorage.getItem(COLLAPSE_KEY) === "1";
+      return window.localStorage.getItem(collapseKey(side)) === "1";
     } catch (error) {
       return false;
     }
   }
 
-  function setSourcesCollapsed(ws, collapsed, remember) {
-    ws.classList.toggle("sources-collapsed", collapsed);
-    const button = $("[data-collapse='sources']", ws);
+  function setCollapsed(ws, side, collapsed, remember) {
+    ws.classList.toggle(`${side}-collapsed`, collapsed);
+    const button = $(`[data-collapse='${side}']`, ws);
     if (button) {
-      const label = collapsed ? "Show sources" : "Hide sources";
+      const label = `${collapsed ? "Show" : "Hide"} ${COLLAPSE_LABELS[side]}`;
       button.setAttribute("aria-expanded", String(!collapsed));
       button.setAttribute("aria-label", label);
       button.title = label;
     }
     if (remember) {
       try {
-        window.localStorage.setItem(COLLAPSE_KEY, collapsed ? "1" : "0");
+        window.localStorage.setItem(collapseKey(side), collapsed ? "1" : "0");
       } catch (error) {
         // Private window or blocked storage: the choice still applies to this page.
       }
@@ -624,24 +630,29 @@
   function applyCollapsed() {
     const ws = workspace();
     if (!ws) return;
-    const wanted = wideLayout() && storedCollapsed() && !ws.classList.contains("is-reading");
-    if (wanted !== ws.classList.contains("sources-collapsed")) {
-      withoutAnimation(ws, () => {
-        setSourcesCollapsed(ws, wanted, false);
-        fitPanels(ws);
-      });
+    for (const side of ["sources", "studio"]) {
+      // An open source keeps Sources expanded.
+      const reading = side === "sources" && ws.classList.contains("is-reading");
+      const wanted = wideLayout() && storedCollapsed(side) && !reading;
+      if (wanted !== ws.classList.contains(`${side}-collapsed`)) {
+        withoutAnimation(ws, () => {
+          setCollapsed(ws, side, wanted, false);
+          fitPanels(ws);
+        });
+      }
     }
   }
 
   document.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-collapse='sources']");
+    const button = event.target.closest("[data-collapse]");
     const ws = workspace();
     if (!button || !ws) return;
-    const collapse = !ws.classList.contains("sources-collapsed");
-    // Expanding brings back the Sources width, which may no longer leave the chat its room
-    // (Studio may have been widened meanwhile): switch without the animation and re-fit.
+    const side = button.dataset.collapse;
+    const collapse = !ws.classList.contains(`${side}-collapsed`);
+    // Expanding brings back the panel's width, which may no longer leave the chat its room
+    // (the other side may have been widened meanwhile): switch without the animation and re-fit.
     withoutAnimation(ws, () => {
-      setSourcesCollapsed(ws, collapse, true);
+      setCollapsed(ws, side, collapse, true);
       fitPanels(ws);
     });
   });

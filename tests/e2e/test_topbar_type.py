@@ -29,6 +29,23 @@ def test_tc_ui_010_menus_and_buttons_share_one_type(page, server_url):
     assert page.js_errors == []
 
 
+def test_tc_ui_010_the_notebook_menu_has_one_width(page, server_url):
+    """Round 3: a long name widened the menu and moved the whole top bar."""
+    page.set_viewport_size({"width": 1366, "height": 768})
+    login(page, server_url)
+    menu = "() => document.querySelector('#nb-select').getBoundingClientRect().width"
+    first = page.evaluate(menu)
+    page.click("button[data-toggle='new-notebook']")
+    page.fill("#new-notebook-title", "3873873733" * 6)
+    page.click("#new-notebook button[type=submit]")
+    page.wait_for_selector("h1:has-text('3873873733')")
+    assert page.evaluate(menu) == pytest.approx(first, abs=1)
+    heading = page.locator(".chat-intro h1").bounding_box()
+    chat = page.locator(".panel--chat").bounding_box()
+    assert heading["x"] + heading["width"] <= chat["x"] + chat["width"], "the long name wraps"
+    assert page.js_errors == []
+
+
 def test_tc_ui_010_the_demo_label_has_no_gaps_inside(page, server_url):
     page.set_viewport_size({"width": 1366, "height": 768})
     login(page, server_url)

@@ -1,4 +1,5 @@
 {% from "partials/macros.html" import cites %}
+<div class="output-item">
 <details class="output" id="output-{{ o.id }}" {% if o.open %}open{% endif %}>
   <summary>
     <span class="output__name">{{ o.title }}</span>
@@ -17,3 +18,7 @@
     {% endif %}
   </div>
 </details>
+{% if o.kind == 'ok' %}
+<button type="button" class="btn btn--ghost btn--icon output__quick-open" data-read-output aria-label="Open {{ o.title }} large over the chat" title="Open large over the chat">{{ icon('book-open') }}</button>
+{% endif %}
+</div>

@@ -18,7 +18,7 @@
   <button type="button" class="btn btn--sm topbar__new" data-toggle="new-notebook" aria-controls="new-notebook" aria-expanded="false" title="New notebook">{{ icon('plus') }} <span class="topbar__label">New notebook</span></button>
   <form id="new-notebook" class="nb-switch" hidden hx-post="/notebooks" hx-disabled-elt="find button">
     <label class="visually-hidden" for="new-notebook-title">Notebook title</label>
-    <input class="input" id="new-notebook-title" name="title" maxlength="120" placeholder="Notebook title" required>
+    <input class="input" id="new-notebook-title" name="title" maxlength="{{ limits.notebook_title_chars }}" placeholder="Notebook title" required>
     <button class="btn btn--sm" type="submit">Create</button>
   </form>
   {% endif %}
@@ -91,6 +91,8 @@
     <div class="resizer resizer--studio" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="studio-panel" aria-label="Resize the Studio panel" data-resize="studio" title="Drag or use the arrow keys to resize; double-click to reset"></div>
     <header class="panel__head">
       <h2 class="panel__title" id="studio-title">Studio</h2>
+      <button type="button" class="btn btn--ghost btn--icon panel__toggle" data-collapse="studio" aria-controls="studio-panel"
+        aria-expanded="true" aria-label="Hide Studio" title="Hide Studio">{{ icon('panel-right-close', 'panel__toggle-close') }}{{ icon('panel-right-open', 'panel__toggle-open') }}</button>
     </header>
     <div class="panel__body">
       <div class="studio-actions">
