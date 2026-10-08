@@ -65,6 +65,8 @@ def main() -> None:
                 newest.scroll_into_view_if_needed()
                 page.screenshot(path=str(out / name))
             # Evidence: open the first citation of the supported card in the viewer.
+            if page.locator("#output-reader").is_visible():
+                page.click("[data-reader-close]")
             supported = page.locator("#studio-outputs details.output").last
             supported.evaluate("el => { el.open = true; }")  # it may already be open
             supported.locator(".card-item button.cite").first.click()

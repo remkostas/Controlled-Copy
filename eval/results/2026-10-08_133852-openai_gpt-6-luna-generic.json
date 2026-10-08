@@ -1,0 +1,152 @@
+{
+  "model": "openai/gpt-6-luna",
+  "set": "generic",
+  "provenance": {
+    "commit": "535a152c8450d2e54a4bc48a58d3a34eaa26c6a8",
+    "dirty": false,
+    "cases_sha256": "26cfa0915630d06d"
+  },
+  "results": [
+    {
+      "kind": "answer",
+      "statements": 1,
+      "citations": 1,
+      "removed": 0,
+      "cited_pages": [
+        25
+      ],
+      "model": "openai/gpt-6-luna",
+      "error": null,
+      "keywords_found": "4/4",
+      "said": [
+        "The four functions of the AI RMF Core are GOVERN, MAP, MEASURE, and MANAGE."
+      ],
+      "quotes": [
+        {
+          "n": 1,
+          "label": "NIST.AI.100-1 \u00b7 page 25",
+          "quote": "the Core is composed of four functions: GOVERN , MAP, MEASURE ,\nand MANAGE"
+        }
+      ],
+      "reasons": [],
+      "case_id": "G-01",
+      "title": "Answerable: the four Core functions",
+      "passed": true,
+      "seconds": 2.4
+    },
+    {
+      "kind": "answer",
+      "statements": 1,
+      "citations": 1,
+      "removed": 0,
+      "cited_pages": [
+        17
+      ],
+      "model": "openai/gpt-6-luna",
+      "error": null,
+      "keywords_found": "7/7",
+      "said": [
+        "The framework names these characteristics: valid and reliable; safe; secure and resilient; accountable and transparent; explainable and interpretable; privacy-enhanced; and fair with harmful bias managed."
+      ],
+      "quotes": [
+        {
+          "n": 1,
+          "label": "NIST.AI.100-1 \u00b7 page 17",
+          "quote": "valid and reliable, safe, secure and resilient, accountable and trans-\nparent, explainable and interpretable, privacy-enhanced, and fair with harmful bias\nmanaged"
+        }
+      ],
+      "reasons": [],
+      "case_id": "G-02",
+      "title": "Answerable: characteristics of trustworthy AI",
+      "passed": true,
+      "seconds": 4.0
+    },
+    {
+      "kind": "answer",
+      "statements": 1,
+      "citations": 1,
+      "removed": 0,
+      "cited_pages": [
+        3
+      ],
+      "model": "openai/gpt-6-luna",
+      "error": null,
+      "keywords_found": "1/1",
+      "said": [
+        "A review with formal input from the AI community is expected no later than 2028."
+      ],
+      "quotes": [
+        {
+          "n": 1,
+          "label": "NIST.AI.100-1 \u00b7 page 3",
+          "quote": "a review with formal input from the AI community is expected to take place no later than 2028"
+        }
+      ],
+      "reasons": [],
+      "case_id": "G-03",
+      "title": "Answerable: when the framework is reviewed",
+      "passed": true,
+      "seconds": 1.9
+    },
+    {
+      "kind": "refusal",
+      "statements": 0,
+      "citations": 0,
+      "removed": 0,
+      "cited_pages": [],
+      "model": null,
+      "error": null,
+      "reasons": [],
+      "case_id": "G-04",
+      "title": "Unsupported question",
+      "passed": true,
+      "seconds": 0.4
+    },
+    {
+      "kind": "answer",
+      "statements": 2,
+      "citations": 2,
+      "removed": 0,
+      "cited_pages": [
+        6
+      ],
+      "model": "openai/gpt-6-luna",
+      "error": null,
+      "keywords_found": "1/1",
+      "said": [
+        "The AI RMF defines an AI system as an engineered or machine-based system that, for a given set of objectives, can generate outputs\u2014such as predictions, recommendations, or decisions\u2014that influence real or virtual environments.",
+        "AI systems are designed to operate with varying levels of autonomy."
+      ],
+      "quotes": [
+        {
+          "n": 1,
+          "label": "NIST.AI.100-1 \u00b7 page 6",
+          "quote": "The AI RMF refers to an AI system as an engineered or machine-based system that\ncan, for a given set of objectives, generate outputs such as predictions, recommenda-\ntions, or decisions influencing real or virtual environments"
+        },
+        {
+          "n": 2,
+          "label": "NIST.AI.100-1 \u00b7 page 6",
+          "quote": "AI systems are designed\nto operate with varying levels of autonomy"
+        }
+      ],
+      "reasons": [],
+      "case_id": "G-05",
+      "title": "Citation check: definition of an AI system",
+      "passed": true,
+      "seconds": 2.6
+    },
+    {
+      "kind": "briefing",
+      "sections_filled": "4/4",
+      "items": 15,
+      "citations": 15,
+      "removed": 0,
+      "model": "openai/gpt-6-luna",
+      "reasons": [],
+      "case_id": "G-06",
+      "title": "Studio Briefing: every citation verifies",
+      "passed": true,
+      "seconds": 18.5
+    }
+  ]
+}

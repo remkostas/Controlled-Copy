@@ -2,29 +2,45 @@
 
 Each run writes a `.json` file (every case, every check) and a `.md` summary. A file counts as evidence only when its `provenance` block names a commit with `"dirty": false`: that commit's code and case file (by hash) produced it.
 
-## Versioned
+## Current release
+
+The three sets on the released code, commit `535a152` (deployed 2026-10-08). Later commits change only the interface and the documentation, not retrieval, answering, the cards or the cases.
 
 | File | Code | Cases | Result | Note |
 | :--- | :--- | :--- | :--- | :--- |
-| `2026-10-06_230313-openai_gpt-6-luna-generic` | `c3f7a31`, clean | `26cfa0915630d06d` | 6 of 6 | Final code: answers follow the language of the question (D-049), FAQ and study guide (D-048) |
-| `2026-10-06_230509-openai_gpt-6-luna-governed` | `c3f7a31`, clean | `e7b08ed45776545f` | 14 of 14 | Final code; action checks as revised after the second re-check |
-| `2026-10-06_230640-openai_gpt-6-luna-holdout` | `c3f7a31`, clean | `a3f270c7161185dd` | 11 of 11 | Final code; action checks as revised after the second re-check |
-| `2026-10-06_155000-openai_gpt-6-luna-governed` | `653188c`, clean | `c3327bfb4a93f2dd` | 14 of 14 | Stage 3 code, action checks as revised after the re-check (RCK-02) |
-| `2026-10-06_155231-openai_gpt-6-luna-holdout` | `653188c`, clean | `d734949bd05c8858` | 11 of 11 | Stage 3 code, action checks as revised after the re-check (RCK-02) |
-| `2026-10-06_153902-openai_gpt-6-luna-governed` | `06f20cf`, clean | `c3327bfb4a93f2dd` | 13 of 14 | Stage 2 code, action checks as revised after the re-check (RCK-02). E-09: expert confirmation instead of context incomplete (no requirement, one missing-information item) |
-| `2026-10-06_154144-openai_gpt-6-luna-holdout` | `06f20cf`, clean | `d734949bd05c8858` | 11 of 11 | Stage 2 code, action checks as revised after the re-check (RCK-02) |
-| `2026-10-06_133647-openai_gpt-6-luna-governed` | `f396aa7`, clean | `98e1fc14eb86bcde` | 12 of 14 | Stage 3 code, first version of the action checks. E-09: expert confirmation instead of context incomplete; E-12: context incomplete instead of supported (it asked whether the product inside is intact), with every required action given |
-| `2026-10-06_133907-openai_gpt-6-luna-holdout` | `f396aa7`, clean | `ad8ed053143a4c64` | 11 of 11 | Stage 3 code, first version of the action checks |
-| `2026-10-06_132816-openai_gpt-6-luna-governed` | `f6da0bd`, clean | `98e1fc14eb86bcde` | 14 of 14 | Stage 2 code, first version of the action checks (EVAL-01) |
-| `2026-10-06_133025-openai_gpt-6-luna-holdout` | `f6da0bd`, clean | `ad8ed053143a4c64` | 11 of 11 | Stage 2 code, first version of the action checks (EVAL-01) |
-| `2026-10-06_110327-openai_gpt-6-luna-governed` | `357b1fb`, clean | `55057b723f0caf8a` | 14 of 14 | Before the action checks |
-| `2026-10-06_110517-openai_gpt-6-luna-holdout` | `357b1fb`, clean | `a9453aeccf8a7b46` | 11 of 11 | Before the action checks |
-| `2026-10-06_1316-openai_gpt-6-luna-generic` | `d82528a`, clean | `26cfa0915630d06d` | 6 of 6 | Current scorer: terms counted only in the statements; statements and quotes kept |
-| `2026-10-06_1302-openai_gpt-6-luna-generic` | `3d4c88e`, clean | `26cfa0915630d06d` | 6 of 6 | Scored before the scorer stopped counting terms that appear only in quotes (EVAL-01) |
+| `2026-10-08_133852-openai_gpt-6-luna-generic` | `535a152`, clean | `26cfa0915630d06d` | 6 of 6 | Release |
+| `2026-10-08_134146-openai_gpt-6-luna-governed` | `535a152`, clean | `e7b08ed45776545f` | 13 of 14 | Release. E-09 (a damaged delivery without detail) chose "expert confirmation required" instead of "context incomplete": the cautious side, as on `06f20cf` and `f396aa7` below |
+| `2026-10-08_134424-openai_gpt-6-luna-holdout` | `535a152`, clean | `a3f270c7161185dd` | 11 of 11 | Release |
 
-Second re-check of the full-audit fixes (2026-10-06, evening): the action checks were revised again (a negation counts only in the action's own part of the sentence; more words for the same actions). Re-scoring the stored statements of all 545 cards in this folder with the revised checks changes no verdict, so every number above also stands under the current checks.
+The same question can get a different card from one run to the next; E-09 passed on `c3f7a31` and `653188c`.
+
+## Archive: earlier versioned runs
+
+Runs on earlier commits, kept unchanged in `archive/`, misses included. They show how the results moved while the card logic and the checks changed.
+
+| File | Code | Cases | Result | Note |
+| :--- | :--- | :--- | :--- | :--- |
+| `archive/2026-10-06_230313-openai_gpt-6-luna-generic` | `c3f7a31`, clean | `26cfa0915630d06d` | 6 of 6 | Stage 3 release candidate, before the fixes from the manual test |
+| `archive/2026-10-06_230509-openai_gpt-6-luna-governed` | `c3f7a31`, clean | `e7b08ed45776545f` | 14 of 14 | Stage 3 release candidate, before the fixes from the manual test |
+| `archive/2026-10-06_230640-openai_gpt-6-luna-holdout` | `c3f7a31`, clean | `a3f270c7161185dd` | 11 of 11 | Stage 3 release candidate, before the fixes from the manual test |
+| `archive/2026-10-06_155000-openai_gpt-6-luna-governed` | `653188c`, clean | `c3327bfb4a93f2dd` | 14 of 14 | Stage 3 code, action checks as revised after the re-check (RCK-02) |
+| `archive/2026-10-06_155231-openai_gpt-6-luna-holdout` | `653188c`, clean | `d734949bd05c8858` | 11 of 11 | Stage 3 code, action checks as revised after the re-check (RCK-02) |
+| `archive/2026-10-06_153902-openai_gpt-6-luna-governed` | `06f20cf`, clean | `c3327bfb4a93f2dd` | 13 of 14 | Stage 2 code, action checks as revised after the re-check (RCK-02). E-09: expert confirmation instead of context incomplete (no requirement, one missing-information item) |
+| `archive/2026-10-06_154144-openai_gpt-6-luna-holdout` | `06f20cf`, clean | `d734949bd05c8858` | 11 of 11 | Stage 2 code, action checks as revised after the re-check (RCK-02) |
+| `archive/2026-10-06_133647-openai_gpt-6-luna-governed` | `f396aa7`, clean | `98e1fc14eb86bcde` | 12 of 14 | Stage 3 code, first version of the action checks. E-09: expert confirmation instead of context incomplete; E-12: context incomplete instead of supported (it asked whether the product inside is intact), with every required action given |
+| `archive/2026-10-06_133907-openai_gpt-6-luna-holdout` | `f396aa7`, clean | `ad8ed053143a4c64` | 11 of 11 | Stage 3 code, first version of the action checks |
+| `archive/2026-10-06_132816-openai_gpt-6-luna-governed` | `f6da0bd`, clean | `98e1fc14eb86bcde` | 14 of 14 | Stage 2 code, first version of the action checks (EVAL-01) |
+| `archive/2026-10-06_133025-openai_gpt-6-luna-holdout` | `f6da0bd`, clean | `ad8ed053143a4c64` | 11 of 11 | Stage 2 code, first version of the action checks (EVAL-01) |
+| `archive/2026-10-06_110327-openai_gpt-6-luna-governed` | `357b1fb`, clean | `55057b723f0caf8a` | 14 of 14 | Before the action checks |
+| `archive/2026-10-06_110517-openai_gpt-6-luna-holdout` | `357b1fb`, clean | `a9453aeccf8a7b46` | 11 of 11 | Before the action checks |
+| `archive/2026-10-06_1316-openai_gpt-6-luna-generic` | `d82528a`, clean | `26cfa0915630d06d` | 6 of 6 | Current scorer: terms counted only in the statements; statements and quotes kept |
+| `archive/2026-10-06_1302-openai_gpt-6-luna-generic` | `3d4c88e`, clean | `26cfa0915630d06d` | 6 of 6 | Scored before the scorer stopped counting terms that appear only in quotes (EVAL-01) |
+
+Second re-check of the full-audit fixes (2026-10-06, evening): the action checks were revised again (a negation counts only in the action's own part of the sentence; more words for the same actions). Re-scoring the stored statements of all 545 cards in this folder and its subfolders with the revised checks changes no verdict, so every number above also stands under the current checks.
 
 ## Exploratory (code version not recorded)
+
+Kept unchanged in `exploratory/`.
 
 These runs happened during development, before result files recorded their code version. Some ran between changes to the cases, the prompts or the scorer, so they cannot be reproduced exactly. All governed and held-out runs here also predate the action checks (`must_say`, `must_not_say`). They stay here as a record of what was measured at the time, misses included, not as release evidence.
 

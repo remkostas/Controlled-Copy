@@ -82,6 +82,11 @@ def main() -> None:
             ask(page, "What is the forklift speed limit in the yard?")
             page.click(".studio-action:has-text('Briefing')")
             page.wait_for_selector("#studio-outputs details.output[open]", timeout=120_000)
+            # A new output opens large over the chat: keep that view, then close it for the
+            # workspace shot with the cited answers.
+            page.wait_for_selector("#output-reader:not([hidden])")
+            page.screenshot(path=str(out / "app-reading-view.png"))
+            page.click("[data-reader-close]")
             page.screenshot(path=str(out / "app-workspace.png"))
             page.locator("#chat-inner .answer button.cite").first.click()
             page.wait_for_selector("#viewer-slot mark#cited")
