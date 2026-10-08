@@ -1,9 +1,10 @@
 {% from "partials/macros.html" import status_chip %}
 <article class="viewer" data-viewer aria-labelledby="viewer-title">
+  {# The source's name sits in the sticky bar, so it stays in view when the passage is centred. #}
   <div class="viewer__bar">
     <button type="button" class="btn btn--sm" data-close-viewer>{{ icon('chevron-left') }} Sources</button>
+    <h3 class="viewer__title" id="viewer-title" title="{{ s.title }}">{{ s.title }}</h3>
   </div>
-  <h3 class="viewer__title" id="viewer-title">{{ s.title }}</h3>
   {% if s.meta and s.meta.status == 'obsolete' %}
   <p class="banner-obsolete">{{ icon('ban') }}<span>OBSOLETE{% if s.superseded_by %}, superseded by {{ s.superseded_by }}{% endif %}. Do not act on this revision.</span></p>
   {% endif %}

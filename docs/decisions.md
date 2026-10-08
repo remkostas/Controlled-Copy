@@ -27,7 +27,6 @@ The decision log behind Controlled Copy, shortened for readers outside the proje
 | D-018 | 05 | Private repository until delivery; MIT licence; Remko makes the merges | No half-finished work or accidental leaks in public | Recommended, then accepted |
 | D-019 | 05 | Product and repository in English (amended by D-049) | One language to build and test | Remko |
 | D-021 | 05 | Document control is data: revision, status, effective date, site, role. Rules, not the model, decide which documents may be used | Testable without a model | Recommended, then accepted |
-| D-022 | 05 | The video in English, self-recorded, lightly edited; the live test uncut. Hosted on the app's own `/video` page | A clear English explanation; hosting under our control | Remko |
 | D-023 | 05 | Clone-first weighting: Journey A (the NotebookLM core) gets the first build day and the polish; the layer stays small | The e-mail says "clone" twice and asks to test the clone live | Remko |
 | D-026 | 05 | Deploy by pulling `main` on the server, by hand, only after the product works completely in local testing | No registry, no CI secret, every deploy a deliberate step | Remko |
 | D-028 | 05 | Each visitor gets a private copy of the curated workspace. Remko's idea of one shared workspace with roles and a profile switcher was narrowed to this | Reviewers would see each other's changes in a shared space; the core must never get worse (Remko's condition) | Remko proposed it and asked to be challenged; the design was delegated |

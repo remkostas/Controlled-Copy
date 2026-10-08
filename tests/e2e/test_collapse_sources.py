@@ -92,6 +92,12 @@ def test_tc_ui_012_studio_collapses_too_and_is_kept(page, server_url):
     chat = width(page, ".panel--chat")
     studio = page.locator("[data-collapse='studio']")
     assert studio.get_attribute("aria-label") == "Hide Studio"
+    # Both toggles sit on the inner edge, next to the chat, at the same distance from it.
+    s_box, s_panel = toggle(page).bounding_box(), page.locator(".panel--sources").bounding_box()
+    t_box, t_panel = studio.bounding_box(), page.locator(".panel--studio").bounding_box()
+    assert t_box["x"] < page.locator("#studio-title").bounding_box()["x"], "before the word Studio"
+    inner_sources = s_panel["x"] + s_panel["width"] - (s_box["x"] + s_box["width"])
+    assert t_box["x"] - t_panel["x"] == pytest.approx(inner_sources, abs=1)
     studio.click()
     page.wait_for_function(
         "() => document.querySelector('.panel--studio').getBoundingClientRect().width < 60"

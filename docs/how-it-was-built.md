@@ -9,7 +9,8 @@ Built in four days with AI coding agents. Claude Code implemented it; Codex and 
 - **Specification before code.** I set the use case (controlled documents, from my warehouse and quality work) and the constraints, and decided scope, limits, retention and models. Claude Code turned that into a specification and a test plan before any code was written.
 - **Agents work against gates.** Every change passes the full test suite with a fake model (rules in [AGENTS.md](../AGENTS.md)). As a rule, a fix comes with a test that fails without it.
 - **Independent review.** A second agent reviewed each stage before I merged it; where they disagreed, I decided.
-- **My own test on the live site** gave issues #2 to #18, all addressed in pull requests with tests.
+- **My own test on the live site** found problems from an unreadable title to a citation that opened one page too far. Each became a GitHub issue and was fixed in a pull request with a test.
+- **How the fixes went in.** Every fix pull request passed CI before I merged it: the full suite with every optional layer off and on, the browser tests, a container build and an image scan. Related fixes went in as a batch once the batch was green. Two read-only audits, one by Claude and one by Codex, then checked the release as a whole, and their findings became the next pull requests.
 
 ## Where I overruled the AI
 
@@ -19,7 +20,7 @@ Built in four days with AI coding agents. Claude Code implemented it; Codex and 
 
 ## Two bugs and their root causes
 
-1. **A citation opened one page too far on the first click (#4).** The text reflowed while the reading column animated wider. The viewer now re-centres when the column's own animation ends, and the test hovers before it clicks, as a person does.
+1. **A citation opened one page too far on the first click.** The text reflowed while the reading column animated wider. The viewer now re-centres when the column's own animation ends, and the test hovers before it clicks, as a person does.
 2. **Uploads failed under daytime load.** A midday probe showed the embedding route answering bursts with HTTP 429. Uploads now retry with growing, randomised waits within a time budget, and say "busy, nothing was stored" if it still fails.
 
 The decisions behind the IDs in commit messages are in [decisions](decisions.md). Commit messages also name review findings by their ID (for example PDA-01); the review reports themselves stay outside the repository.

@@ -608,8 +608,13 @@ select {
   justify-content: center;
   padding: 0;
 }
+/* Each toggle sits on its panel's inner edge, next to the chat: Sources at the right end of its
+   header, Studio before its title, the same distance from the edge. */
 .panel__toggle {
   margin-left: auto;
+}
+.panel--studio .panel__toggle {
+  margin-left: calc(var(--sp-3) - var(--sp-4));
 }
 .workspace.is-resizing {
   transition: none;
@@ -985,9 +990,16 @@ details.paste > summary.btn {
   background: var(--surface-panel-alt);
   border-bottom: 1px solid var(--border);
 }
+.viewer__bar .btn {
+  flex: none;
+}
 .viewer__title {
-  font-size: var(--fs-lg);
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .titleblock {
   display: grid;
@@ -1223,6 +1235,12 @@ details.paste > summary.btn {
   font-size: var(--fs-sm);
   color: var(--text-muted);
   max-width: 65ch;
+}
+.refusal .refusal__next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
 }
 .suggestions {
   display: grid;
