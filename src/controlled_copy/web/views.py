@@ -176,6 +176,7 @@ def output_view(
         "sections": [],
         "partial": None,
         "md_url": f"/notebooks/{row['notebook_id']}/outputs/{row['id']}.md",
+        "print_url": f"/notebooks/{row['notebook_id']}/outputs/{row['id']}/print",
     }
     if row["status"] == TOMBSTONE:
         return {**base, "kind": "tombstone", "title": "Studio output removed", "meta_label": created}
