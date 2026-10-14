@@ -62,7 +62,7 @@ jobs:
       - run: python -m pytest -m "(stage1 or stage2 or stage3) and not eval and not smoke_live" --junitxml=reports/junit-stage1.xml
       - run: python scripts/test_report.py reports/junit-stage1.xml > reports/test-report.md
         if: always()
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: test-report
@@ -83,7 +83,7 @@ jobs:
       - run: python -m pytest -m "(stage1 or stage2) and not eval and not smoke_live" --junitxml=reports/junit-stage2.xml
       - run: python scripts/test_report.py reports/junit-stage2.xml > reports/test-report-stage2.md
         if: always()
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: test-report-stage2
@@ -105,7 +105,7 @@ jobs:
       - run: python -m pytest -m "(stage1 or stage2 or stage3) and not eval and not smoke_live" --junitxml=reports/junit-stage3.xml
       - run: python scripts/test_report.py reports/junit-stage3.xml > reports/test-report-stage3.md
         if: always()
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: test-report-stage3
